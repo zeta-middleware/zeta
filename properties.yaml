@@ -1,0 +1,8 @@
+Properties:
+  - FIRMWARE_VERSION:
+      nbytes: '4'
+      set: 'NULL'
+  - LOAD:
+      nbytes: '1'
+      set: 'NULL'
+      persistent: 'true'

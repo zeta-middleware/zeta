@@ -1,0 +1,1 @@
+PDB_MODULE_CREATE(hal, 512, 5, hal_event_callback)

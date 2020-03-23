@@ -1,8 +1,23 @@
+Observer:
+  - HAL: &hal
+      name: "HAL"
+      event_queue_size: 20
+  - CORE: &core
+      name: "CORE"
+      event_queue_size: 10
+      
 Properties:
   - FIRMWARE_VERSION:
       nbytes: '4'
-      set: 'NULL'
+      set: 'set_special_firmware_version'
+      observers:
+        - *hal
+        - *core
   - LOAD:
       nbytes: '1'
       set: 'NULL'
       persistent: 'true'
+      validate: 'check_load_value'
+      get: 'get_special_load'
+      observers:
+        - *core

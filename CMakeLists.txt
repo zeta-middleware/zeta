@@ -8,6 +8,14 @@ project(Pdb)
 # Generate version file
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Generating properties macro create
+add_custom_target(
+  generatePropertiesTarget
+  COMMAND python3 ${PROJECT_SOURCE_DIR}/generate_properties.py
+  )
+add_dependencies(app generatePropertiesTarget)
+
+# Add header directories
 list(APPEND HEADERS
     "${PROJECT_BINARY_DIR}/include/generated"
     "${PROJECT_BINARY_DIR}/zephyr/include/generated"
@@ -15,14 +23,11 @@ list(APPEND HEADERS
     "${PROJECT_SOURCE_DIR}/include/generated"
     )
 
+# Add source files
 list(APPEND SOURCES
     "${PROJECT_SOURCE_DIR}/src/main.c"
     "${PROJECT_SOURCE_DIR}/src/pdb.c"
-)
-
-add_custom_target(
-  generate_pdb
-  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/generate_pdb.py
+    "${PROJECT_SOURCE_DIR}/src/pdb_observers.c"
 )
 
 include_directories(${HEADERS})

@@ -1,0 +1,2 @@
+int set_special_firmware_version(pdb_property_e id, u8_t *property_value, size_t size);
+int get_special_load(pdb_property_e id, u8_t *property_value, size_t size);

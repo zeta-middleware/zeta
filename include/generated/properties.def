@@ -1,2 +1,2 @@
-PROPERTY_CREATE(FIRMWARE_VERSION, 4, NULL, pdb_property_get_private, NULL, 0, 0, FIRMWARE_VERSION)
-PROPERTY_CREATE(LOAD, 1, NULL, pdb_property_get_private, NULL, 1, 0, LOAD)
+PDB_PROPERTY_CREATE(FIRMWARE_VERSION, 4, NULL, pdb_property_get_private, set_special_firmware_version, 0, 0, FIRMWARE_VERSION)
+PDB_PROPERTY_CREATE(LOAD, 1, check_load_value, get_special_load, NULL, 1, 0, LOAD)

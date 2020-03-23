@@ -1,0 +1,1 @@
+int check_load_value(u8_t *property_value, size_t size);

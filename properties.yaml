@@ -1,10 +1,12 @@
-Observer:
+Observers:
   - HAL: &hal
-      name: "HAL"
-      event_queue_size: 20
+      name: 'HAL'
+      event_queue_size: '20'
+      diy: true
   - CORE: &core
-      name: "CORE"
-      event_queue_size: 10
+      name: 'CORE'
+      event_queue_size: '10'
+      diy: true
       
 Properties:
   - FIRMWARE_VERSION:

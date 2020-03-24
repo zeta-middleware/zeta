@@ -17,7 +17,7 @@
 #endif
 
 /* Defining PDB_PROPERTY_CREATE for enum generating */
-#define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id) PDB_##_name##_PROPERTY,
+#define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) PDB_##_name##_PROPERTY,
 
 typedef enum {
 #include "properties.def"
@@ -41,6 +41,7 @@ struct pdb_property {
     u8_t in_flash;
     u8_t changed;
     u8_t observers;
+    struct k_msgq *queues;
     pdb_property_e id;
 };
 typedef struct pdb_property pdb_property_t;

@@ -30,7 +30,7 @@ static int pdb_property_get_private(pdb_property_e id, u8_t *property_value, siz
 #endif
 
 /* Defining PDB_PROPERTY_CREATE for properties generating */
-#define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id) \
+#define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) \
     {                                                                   \
      .name = (char *) #_name,                                           \
      .data = (u8_t[]){[0 ... sizeof(u8_t) * _bytes] = 0},               \
@@ -152,16 +152,6 @@ static int pdb_property_set_private(pdb_property_e id, u8_t *property_value, siz
                     }
                     k_sem_give(&pdb_property_sema);
                     
-                    #ifdef PDB_MODULE_CREATE
-                    #undef PDB_MODULE_CREATE
-                    #endif
-#define PDB_MODULE_CREATE(_nm, _sz, _prior, _cb) \
-                    if (current_property->observers & _nm##_MODULE) {   \
-                        pdb_event_t event = {.source_thread = k_current_get(), .id = id}; \
-                        k_msgq_put(&_nm##_module_event_queue, &event, K_MSEC(250)); \
-                    }
-                    #include "observers.def"
-                    #undef PDB_MODULE_CREATE
                     
                 } else {
                     k_sem_give(&pdb_property_sema);
@@ -230,13 +220,22 @@ static void __pdb_persist_data_on_flash(void) {
             __pdb_properties[id].changed = 0;
         }
     }
-    
 }
+/* Checking if PDB_PROPERTY_CREATE is defined and undef it */
+#ifdef PDB_PROPERTY_CREATE
+#undef PDB_PROPERTY_CREATE
+#endif
+
+#define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) \
+    struct k_msgq _name##_event_queues[] = { __VA_ARGS__ }; \
+    __pdb_properties[PDB_##_name##_PROPERTY].queues = (struct k_msgq *) _name##_event_queues;
 
 
 int pdb_thread(void)
 {
-
+    #include "properties.def"
+    #undef PDB_PROPERTY_CREATE
+    
     /* int error = nvs_init(&pdb_fs, DT_FLASH_DEV_NAME); */
     /* if (error) { */
     /*     printk("Flash Init failed\n"); */

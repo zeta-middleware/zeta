@@ -8,6 +8,18 @@
 #include <misc/printk.h>
 #include <pdb.h>
 
+int set_special_firmware_version(pdb_property_e id, u8_t *property_value, size_t size) {
+    return 0;
+}
+
+int get_special_load(pdb_property_e id, u8_t *property_value, size_t size) {
+    return 0;
+}
+
+int check_load_value(u8_t *property_value, size_t size) {
+    return 0;
+}
+
 int main(void)
 {
     int err = 0;

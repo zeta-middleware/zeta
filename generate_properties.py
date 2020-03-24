@@ -8,12 +8,17 @@ class PropertyCreateGeneration :
         self.properties_macro_create = ""
         self.validators_h_create = ""
         self.callbacks_h_create = ""
+        self.observers_h_create = ""
 
-    def generate_observers(self, obs) :
-        l = [ x.strip() for x in obs.split('|')]
-        for i in range(0, len(l)) :
-            l[i] = 'PDB_' + l[i] + '_MODULE'
-        return ' | '.join(l)
+    def generate_queues(self, obs) :
+        ret = list()
+        for o in obs :
+            ret.append(o['name'] + '_event_queue')
+        return ', '.join(ret)
+        # l = [ x.strip() for x in obs.split('|')]
+        # for i in range(0, len(l)) :
+        #     l[i] = 'PDB_' + l[i] + '_MODULE'
+        # return ' | '.join(l)
 
     def generate_property_create(self, p) :
         self.properties_macro_create += "PDB_PROPERTY_CREATE("
@@ -46,19 +51,27 @@ class PropertyCreateGeneration :
 
         # getting observers
         if ('observers' in p[name]) :
-            observers = self.generate_observers(p[name]['observers'])
+            queues = self.generate_queues(p[name]['observers'])
+            observers = str(len(p[name]['observers']))
+            out = [name, nbytes, validate, get, set, in_flash, observers, name, queues]
         else :
             observers = '0'
+            out = [name, nbytes, validate, get, set, in_flash, observers, name]
 
         # mounting output macro create
-        out = [name, nbytes, validate, get, set, in_flash, observers, name]
         self.properties_macro_create += ', '.join(out) + ')\n'
+
+    def generate_observers(self, obs) :
+        for d in obs :
+            o = list(d.values())[0]
+            self.observers_h_create += 'PDB_OBSERVER_CREATE(' + o['name'] + ', ' + o['event_queue_size'] + ')\n'
 
     def run(self) :
         with open('../properties.yaml', 'r') as file:
-            properties_dict = yaml.load(file, Loader=yaml.FullLoader)
-            properties = properties_dict['Properties']
-            print(properties)
+            yaml_dict = yaml.load(file, Loader=yaml.FullLoader)
+            properties = yaml_dict['Properties']
+            observers = yaml_dict['Observers']
+            self.generate_observers(observers)
             for p in properties :
                 self.generate_property_create(p)
             with open('../include/generated/properties.def', 'w') as f :
@@ -67,6 +80,8 @@ class PropertyCreateGeneration :
                 f.write(self.validators_h_create)
             with open('../include/generated/callbacks.def', 'w') as f :
                 f.write(self.callbacks_h_create)
+            with open('../include/generated/observers.def', 'w') as f :
+                f.write(self.observers_h_create)
 
 def main():
     pcg = PropertyCreateGeneration()

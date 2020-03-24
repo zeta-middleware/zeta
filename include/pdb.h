@@ -41,7 +41,7 @@ struct pdb_property {
     u8_t in_flash;
     u8_t changed;
     u8_t observers;
-    struct k_msgq *queues;
+    struct k_msgq **queues;
     pdb_property_e id;
 };
 typedef struct pdb_property pdb_property_t;

@@ -13,7 +13,7 @@ class PropertyCreateGeneration :
     def generate_queues(self, obs) :
         ret = list()
         for o in obs :
-            ret.append(o['name'] + '_event_queue')
+            ret.append('&' + o['name'] + '_event_queue')
         return ', '.join(ret)
         # l = [ x.strip() for x in obs.split('|')]
         # for i in range(0, len(l)) :

@@ -227,8 +227,8 @@ static void __pdb_persist_data_on_flash(void) {
 #endif
 
 #define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) \
-    struct k_msgq _name##_event_queues[] = { __VA_ARGS__ }; \
-    __pdb_properties[PDB_##_name##_PROPERTY].queues = (struct k_msgq *) _name##_event_queues;
+    struct k_msgq *_name##_event_queues[] = { __VA_ARGS__, NULL };       \
+    __pdb_properties[PDB_##_name##_PROPERTY].queues = (struct k_msgq **) _name##_event_queues;
 
 
 int pdb_thread(void)

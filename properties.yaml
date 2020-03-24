@@ -6,12 +6,14 @@ Observers:
   - CORE: &core
       name: 'CORE'
       event_queue_size: '10'
-      diy: true
+      diy: false
+      thread_size: '512'
+      thread_priority: '5'
+      event_callback: 'core_event_callback'
       
 Properties:
   - FIRMWARE_VERSION:
       nbytes: '4'
-      set: 'set_special_firmware_version'
       observers:
         - *hal
         - *core

@@ -20,6 +20,10 @@ int check_load_value(u8_t *property_value, size_t size) {
     return 0;
 }
 
+int core_event_callback(pdb_event_t *event) {
+    return 0;
+}
+
 int main(void)
 {
     int err = 0;

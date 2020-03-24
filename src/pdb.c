@@ -230,7 +230,6 @@ static void __pdb_persist_data_on_flash(void) {
     struct k_msgq *_name##_event_queues[] = { __VA_ARGS__, NULL };       \
     __pdb_properties[PDB_##_name##_PROPERTY].queues = (struct k_msgq **) _name##_event_queues;
 
-
 int pdb_thread(void)
 {
     #include "properties.def"

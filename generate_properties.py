@@ -27,7 +27,7 @@ class PropertyCreateGeneration :
         name = list(p.keys())[0]
 
         # getting property size
-        nbytes = p[name]['nbytes'] if 'nbytes' in p[name] else '1'
+        nbytes = p[name]['nbytes'] if 'nbytes' in p[name] else 1
 
         # getting set function
         set = p[name]['set'] if 'set' in p[name] else 'pdb_property_set_private'
@@ -46,7 +46,7 @@ class PropertyCreateGeneration :
 
         # getting persistency
         if ('persistent' in p[name]) :
-            in_flash = '1' if p[name]['persistent'] == 'true' else '0'
+            in_flash = '1' if p[name]['persistent'] == True else '0'
         else :
             in_flash = '0'
 
@@ -54,10 +54,10 @@ class PropertyCreateGeneration :
         if ('observers' in p[name]) :
             queues = self.generate_queues(p[name]['observers'])
             observers = str(len(p[name]['observers']))
-            out = [name, nbytes, validate, get, set, in_flash, observers, name, queues]
+            out = [name, str(nbytes), validate, get, set, in_flash, observers, name, queues]
         else :
             observers = '0'
-            out = [name, nbytes, validate, get, set, in_flash, observers, name]
+            out = [name, str(nbytes), validate, get, set, in_flash, observers, name]
 
         # mounting output macro create
         self.properties_create += ', '.join(out) + ')\n'
@@ -65,9 +65,9 @@ class PropertyCreateGeneration :
     def generate_observers(self, obs) :
         for d in obs :
             o = list(d.values())[0]
-            self.observers_def += 'PDB_OBSERVER_CREATE(' + o['name'] + ', ' + o['event_queue_size'] + ')\n'
+            self.observers_def += 'PDB_OBSERVER_CREATE(' + o['name'] + ', ' + str(o['event_queue_size']) + ')\n'
             if 'diy' in o and o['diy'] == False :
-                self.observers_check += 'PDB_OBSERVER_THREAD_CREATE(' + o['name'] + ', ' + o['thread_size'] + ', ' + o['thread_priority'] + ', ' + o['event_callback'] + ');\n'
+                self.observers_check += 'PDB_OBSERVER_THREAD_CREATE(' + o['name'] + ', ' + str(o['thread_size']) + ', ' + str(o['thread_priority']) + ', ' + o['event_callback'] + ');\n'
 
     def run(self) :
         with open('../properties.yaml', 'r') as file:
@@ -77,15 +77,15 @@ class PropertyCreateGeneration :
             self.generate_observers(observers)
             for p in properties :
                 self.generate_property_create(p)
-            with open('zephyr/include/generated/properties.def', 'w') as f :
+            with open('zephyr/include/generated/pdb_properties.def', 'w') as f :
                 f.write(self.properties_create)
-            with open('zephyr/include/generated/validators.def', 'w') as f :
+            with open('zephyr/include/generated/pdb_validators.def', 'w') as f :
                 f.write(self.validators_def)
-            with open('zephyr/include/generated/callbacks.def', 'w') as f :
+            with open('zephyr/include/generated/pdb_callbacks.def', 'w') as f :
                 f.write(self.callbacks)
-            with open('zephyr/include/generated/observers.def', 'w') as f :
+            with open('zephyr/include/generated/pdb_observers.def', 'w') as f :
                 f.write(self.observers_def)
-            with open('zephyr/include/generated/observers_thread.def', 'w') as f :
+            with open('zephyr/include/generated/pdb_observers_thread.def', 'w') as f :
                 f.write(self.observers_check)
 
 def main():

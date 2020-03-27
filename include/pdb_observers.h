@@ -19,7 +19,7 @@
 #define PDB_OBSERVER_CREATE(_nm, _sz) \
     extern struct k_msgq _nm##_event_queue;
 
-#include "observers.def"
+#include "pdb_observers.def"
 #undef PDB_OBSERVER_CREATE
 
 #define PDB_OBSERVER_THREAD_CREATE(_nm, _sz, _prior, _cb);              \

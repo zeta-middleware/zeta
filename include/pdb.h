@@ -20,7 +20,7 @@
 #define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) PDB_##_name##_PROPERTY,
 
 typedef enum {
-#include "properties.def"
+#include "pdb_properties.def"
               PDB_PROPERTY_COUNT
 } pdb_property_e;
 

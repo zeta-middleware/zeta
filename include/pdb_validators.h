@@ -11,6 +11,6 @@
 #define PDB_VALIDATORS_H_
 
 #include "pdb.h"
-#include "validators.def"
+#include "pdb_validators.def"
 
 #endif

@@ -16,10 +16,10 @@
 #define PDB_OBSERVER_CREATE(_nm, _sz) \
     K_MSGQ_DEFINE(_nm##_event_queue, sizeof(pdb_event_t), _sz, 1);
 
-#include "observers.def"
+#include "pdb_observers.def"
 #undef PDB_OBSERVER_CREATE
 
-#include "observers_thread.def"
+#include "pdb_observers_thread.def"
 
 
 

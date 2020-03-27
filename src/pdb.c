@@ -9,14 +9,14 @@
 
 int pdb_thread(void);
 
-#define NVS_SECTOR_SIZE 1//,DT_FLASH_ERASE_BLOCK_SIZE  // 4096
-#define NVS_SECTOR_COUNT 2//,4
-#define NVS_STORAGE_OFFSET 3//,DT_FLASH_AREA_PROPERTIES_OFFSET
+/* #define NVS_SECTOR_SIZE DT_FLASH_ERASE_BLOCK_SIZE  // 4096 */
+/* #define NVS_SECTOR_COUNT 4 */
+/* #define NVS_STORAGE_OFFSET DT_FLASH_AREA_PROPERTIES_OFFSET */
 
 static struct nvs_fs pdb_fs = {
-                               .sector_size  = NVS_SECTOR_SIZE,
-                               .sector_count = NVS_SECTOR_COUNT,
-                               .offset       = NVS_STORAGE_OFFSET,
+                               /* .sector_size  = NVS_SECTOR_SIZE, */
+                               /* .sector_count = NVS_SECTOR_COUNT, */
+                               /* .offset       = NVS_STORAGE_OFFSET, */
 };
 
 K_SEM_DEFINE(pdb_property_sema, 1, 1);
@@ -45,7 +45,7 @@ static int pdb_property_get_private(pdb_property_e id, u8_t *property_value, siz
     },
 
 static pdb_property_t __pdb_properties[PDB_PROPERTY_COUNT] = {
-#include "properties.def"
+#include "pdb_properties.def"
 };
 
 #undef PDB_PROPERTY_CREATE
@@ -232,7 +232,7 @@ static void __pdb_persist_data_on_flash(void) {
 
 int pdb_thread(void)
 {
-    #include "properties.def"
+    #include "pdb_properties.def"
     #undef PDB_PROPERTY_CREATE
     
     /* int error = nvs_init(&pdb_fs, DT_FLASH_DEV_NAME); */
@@ -241,7 +241,7 @@ int pdb_thread(void)
     /* } else { */
     /*     printk("NVS started...[OK]\n"); */
     /* } */
-    __pdb_recover_data_from_flash();
+    /* __pdb_recover_data_from_flash(); */
 
     while (1) {
         k_sleep(K_SECONDS(10));

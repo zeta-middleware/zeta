@@ -1,26 +1,26 @@
 Observers:
   - HAL: &hal
       name: 'HAL'
-      event_queue_size: '20'
-      diy: true
+      event_queue_size: 20
+      diy: True
   - CORE: &core
       name: 'CORE'
-      event_queue_size: '10'
-      diy: false
-      thread_size: '512'
-      thread_priority: '5'
+      event_queue_size: 10
+      diy: False
+      thread_size: 512
+      thread_priority: 5
       event_callback: 'core_event_callback'
       
 Properties:
   - FIRMWARE_VERSION:
-      nbytes: '4'
+      nbytes: 4
       observers:
         - *hal
         - *core
   - LOAD:
-      nbytes: '1'
+      nbytes: 1
       set: 'NULL'
-      persistent: 'true'
+      persistent: True
       validate: 'check_load_value'
       get: 'get_special_load'
       observers:

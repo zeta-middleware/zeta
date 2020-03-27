@@ -2,6 +2,7 @@
 #include <string.h>
 #include <zephyr.h>
 
+#include "devicetree_fixups.h"
 #include "pdb.h"
 #include "pdb_validators.h"
 #include "pdb_callbacks.h"

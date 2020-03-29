@@ -36,7 +36,7 @@ class PropertyCreateGeneration :
 
         # getting validate function
         validate = p[name]['validate'] if 'validate' in p[name] else 'NULL'
-        if validate != 'NULL' and validate != 'pdb_binary' :
+        if validate != 'NULL' and validate != 'pdb_validator_different_of_zero' :
             self.validators_def += 'int ' + validate + '(u8_t *property_value, size_t size);\n'
 
         # getting get function
@@ -57,7 +57,7 @@ class PropertyCreateGeneration :
             out = [name, str(nbytes), validate, get, set, in_flash, observers, name, queues]
         else :
             observers = '0'
-            out = [name, str(nbytes), validate, get, set, in_flash, observers, name]
+            out = [name, str(nbytes), validate, get, set, in_flash, observers, name, 'NULL']
 
         # mounting output macro create
         self.properties_create += ', '.join(out) + ')\n'

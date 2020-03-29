@@ -1,27 +1,22 @@
 Observers:
-  - HAL: &hal
-      name: 'HAL'
-      event_queue_size: 20
-      diy: True
   - CORE: &core
       name: 'CORE'
-      event_queue_size: 10
-      diy: False
-      thread_size: 512
-      thread_priority: 5
-      event_callback: 'core_event_callback'
+      event_queue_size: 20
+      diy: True
       
 Properties:
   - FIRMWARE_VERSION:
       nbytes: 4
-      observers:
-        - *hal
-        - *core
-  - LOAD:
-      nbytes: 1
       set: 'NULL'
+  - PERSISTENT_VAL:
+      nbytes: 1
       persistent: True
-      validate: 'check_load_value'
-      get: 'get_special_load'
+      validate: 'pdb_validator_different_of_zero'
+  - ECHO_HAL:
+      nbytes: 1
       observers:
         - *core
+  - SET_GET:
+      nbytes: 1
+      set: 'set_plus_1'
+      get: 'get_plus_1'

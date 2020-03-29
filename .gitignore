@@ -27,3 +27,4 @@ src/_fake.c
 gdb_test.br
 .ccls
 tags
+flash.bin

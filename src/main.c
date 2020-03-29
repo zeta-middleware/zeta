@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "autoconf.h"
+
+#ifdef CONFIG_ZTEST
+#include "pdb_unit_tests.h"
+#endif
+
 #include <zephyr.h>
 #include <pdb.h>
 
@@ -23,8 +29,22 @@ int core_event_callback(pdb_event_t *event) {
     return 0;
 }
 
+#ifdef CONFIG_ZTEST
+void test_main(void) {
+    ztest_test_suite(PDB_PROPERTIES_CREATION,
+                     ztest_unit_test(test_properties_name),
+                     ztest_unit_test(test_properties_size),
+                     ztest_unit_test(test_properties_set),
+                     ztest_unit_test(test_properties_get),
+                     ztest_unit_test(test_properties_validate)
+                     );
+    
+    ztest_run_test_suite(PDB_PROPERTIES_CREATION);
+}
+#else
 void main(void)
 {
     int err = 0;
     printk("Hello World! %d %d\n", pdb_property_get_size(PDB_FIRMWARE_VERSION_PROPERTY, &err), PDB_LOAD_PROPERTY);
 }
+#endif

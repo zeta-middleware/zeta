@@ -28,6 +28,9 @@ list(APPEND SOURCES
     "${PROJECT_SOURCE_DIR}/src/main.c"
     "${PROJECT_SOURCE_DIR}/src/pdb.c"
     "${PROJECT_SOURCE_DIR}/src/pdb_observers.c"
+    "${PROJECT_SOURCE_DIR}/src/pdb_unit_tests.c"
+    "${PROJECT_SOURCE_DIR}/src/pdb_validators.c"
+
 )
 
 include_directories(${HEADERS})

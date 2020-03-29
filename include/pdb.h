@@ -11,6 +11,8 @@
 #include <zephyr.h>
 #include <zephyr/types.h>
 
+#define PDB_VALUE_REF(x) (u8_t *)(&x), sizeof(x)
+
 /* Checking if PDB_PROPERTY_CREATE is defined and undef it */
 #ifdef PDB_PROPERTY_CREATE
 #undef PDB_PROPERTY_CREATE
@@ -77,6 +79,17 @@ pdb_property_t *pdb_property_get_ref(pdb_property_e id);
 int pdb_property_get(pdb_property_e id, u8_t *property_value, size_t size);
 
 /** 
+ * Gets the property value private.
+ * 
+ * @param id property ID.
+ * @param property_value handle the property value.
+ * @param size property value size.
+ * 
+ * @return error code.
+ */
+int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t size);
+
+/** 
  * Sets the property value.
  * 
  * @param id property ID.
@@ -86,5 +99,18 @@ int pdb_property_get(pdb_property_e id, u8_t *property_value, size_t size);
  * @return error code.
  */
 int pdb_property_set(pdb_property_e id, u8_t *property_value, size_t size);
+
+
+/** 
+ * Sets the property value private.
+ * 
+ * @param id property ID.
+ * @param property_value property value that must to be setted.
+ * @param size property value size.
+ * 
+ * @return error code.
+ */
+int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t size);
+
 
 #endif

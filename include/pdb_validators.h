@@ -13,4 +13,6 @@
 #include "pdb.h"
 #include "pdb_validators.def"
 
+int pdb_validator_different_of_zero(u8_t *data, size_t size);
+
 #endif

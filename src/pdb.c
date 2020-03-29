@@ -22,8 +22,8 @@ static struct nvs_fs pdb_fs = {
 
 K_SEM_DEFINE(pdb_property_sema, 1, 1);
 
-static int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t size);
-static int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t size);
+int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t size);
+int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t size);
 
 /* Checking if PDB_PROPERTY_CREATE is defined and undef it */
 #ifdef PDB_PROPERTY_CREATE
@@ -89,7 +89,7 @@ int pdb_property_get(pdb_property_e id, u8_t *property_value, size_t size)
     return error;
 }
 
-static int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t size)
+int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t size)
 {
     int ret = 0;
     if (id < PDB_PROPERTY_COUNT) {
@@ -126,6 +126,7 @@ int pdb_property_set(pdb_property_e id, u8_t *property_value, size_t size)
                 printk("Current property set: %d, error code: %d\n", id, error);
             }
         } else {
+            printk("The value doesn't satisfy valid function of property %d\n", id);
             error = -EINVAL;
         }
     } else {
@@ -135,7 +136,7 @@ int pdb_property_set(pdb_property_e id, u8_t *property_value, size_t size)
     return error;
 }
 
-static int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t size)
+int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t size)
 {
     int ret = 0;
     if (id < PDB_PROPERTY_COUNT) {
@@ -152,8 +153,7 @@ static int pdb_property_set_private(pdb_property_e id, u8_t *property_value, siz
                         current_property->changed++;
                     }
                     k_sem_give(&pdb_property_sema);
-                    
-                    
+                    // #TODO: mandar para as queues dos observers                                   
                 } else {
                     k_sem_give(&pdb_property_sema);
                 }

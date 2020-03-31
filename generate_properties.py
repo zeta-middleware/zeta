@@ -10,6 +10,7 @@ class PropertyCreateGeneration :
         self.callbacks = ""
         self.observers_def = ""
         self.observers_check = ""
+        self.properties_initial_value = ""
 
     def generate_queues(self, obs) :
         ret = list()
@@ -34,6 +35,18 @@ class PropertyCreateGeneration :
         if set != 'NULL' and set != 'pdb_property_set_private' :
             self.callbacks += 'int ' + set + '(pdb_property_e id, u8_t *property_value, size_t size);\n'
 
+        if set == 'NULL':
+            self.properties_initial_value += 'PDB_PROPERTIES_INITIAL_VALUE(' + name + ', ' + str(nbytes) + ', '
+            arr = '0'
+            if 'initial_value' in p[name] :
+                if len(p[name]['initial_value']) == nbytes :
+                    arr = ', '.join(['0x{:02X}'.format(x) for x in p[name]['initial_value']])
+                else :
+                    exit(5)
+                    pass
+                pass
+            self.properties_initial_value += arr + ')\n'
+                
         # getting validate function
         validate = p[name]['validate'] if 'validate' in p[name] else 'NULL'
         if validate != 'NULL' and validate != 'pdb_validator_different_of_zero' :
@@ -87,6 +100,8 @@ class PropertyCreateGeneration :
                 f.write(self.observers_def)
             with open('zephyr/include/generated/pdb_observers_thread.def', 'w') as f :
                 f.write(self.observers_check)
+            with open('zephyr/include/generated/pdb_properties_initial_value.def', 'w') as f :
+                f.write(self.properties_initial_value)                
 
 def main():
     pcg = PropertyCreateGeneration()

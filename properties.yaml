@@ -8,6 +8,7 @@ Properties:
   - FIRMWARE_VERSION:
       nbytes: 4
       set: 'NULL'
+      initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
   - PERSISTENT_VAL:
       nbytes: 1
       persistent: True

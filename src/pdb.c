@@ -24,6 +24,16 @@ K_SEM_DEFINE(pdb_property_sema, 1, 1);
 
 int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t size);
 int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t size);
+/* Checking if PDB_PROPERTIES_INITIAL_VALUE is defined and undef it */
+#ifdef PDB_PROPERTIES_INITIAL_VALUE
+#undef PDB_PROPERTIES_INITIAL_VALUE
+#endif
+
+#define PDB_PROPERTIES_INITIAL_VALUE(_name, _size, ...) \
+    u8_t _name##_initial_value[_size] = {__VA_ARGS__};
+
+#include "pdb_properties_initial_value.def"
+#undef PDB_PROPERTIES_INITIAL_VALUE
 
 /* Checking if PDB_PROPERTY_CREATE is defined and undef it */
 #ifdef PDB_PROPERTY_CREATE
@@ -222,6 +232,15 @@ static void __pdb_persist_data_on_flash(void) {
         }
     }
 }
+
+/* Checking if PDB_PROPERTIES_INITIAL_VALUE is defined and undef it */
+#ifdef PDB_PROPERTIES_INITIAL_VALUE
+#undef PDB_PROPERTIES_INITIAL_VALUE
+#endif
+
+#define PDB_PROPERTIES_INITIAL_VALUE(_name, _size, ...) \
+    __pdb_properties[PDB_##_name##_PROPERTY].data = _name##_initial_value;
+
 /* Checking if PDB_PROPERTY_CREATE is defined and undef it */
 #ifdef PDB_PROPERTY_CREATE
 #undef PDB_PROPERTY_CREATE
@@ -233,9 +252,11 @@ static void __pdb_persist_data_on_flash(void) {
 
 int pdb_thread(void)
 {
-    #include "pdb_properties.def"
-    #undef PDB_PROPERTY_CREATE
-    
+#include "pdb_properties.def"
+#include "pdb_properties_initial_value.def"
+#undef PDB_PROPERTY_CREATE
+#undef PDB_PROPERTIES_INITIAL_VALUE
+
     int error = nvs_init(&pdb_fs, DT_FLASH_DEV_NAME);
     if (error) {
         printk("Flash Init failed\n");

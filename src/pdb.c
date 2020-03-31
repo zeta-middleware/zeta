@@ -42,18 +42,15 @@ int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t siz
 
 /* Defining PDB_PROPERTY_CREATE for properties generating */
 #define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) \
-    {                                                                   \
-     .name = (char *) #_name,                                           \
-     .data = (u8_t[]){[0 ... sizeof(u8_t) * _bytes] = 0},               \
-     .validate = _validate,                                             \
-     .get = _get,                                                       \
-     .set = _set,                                                       \
-     .size = sizeof(u8_t) * _bytes,                                     \
-     .in_flash = _in_flash,                                             \
-     .changed = 0,                                                      \
-     .observers = _observers,                                           \
-     .id = PDB_##_name##_PROPERTY                                       \
-    },
+    {.name      = (const char *) #_name,                                                           \
+     .validate  = _validate,                                                                       \
+     .get       = _get,                                                                            \
+     .set       = _set,                                                                            \
+     .size      = sizeof(u8_t) * _bytes,                                                           \
+     .in_flash  = _in_flash,                                                                       \
+     .changed   = 0,                                                                               \
+     .observers = _observers,                                                                      \
+     .id        = PDB_##_name##_PROPERTY},
 
 static pdb_property_t __pdb_properties[PDB_PROPERTY_COUNT] = {
 #include "pdb_properties.def"

@@ -10,41 +10,46 @@
 #include "pdb_unit_tests.h"
 #endif
 
-#include <zephyr.h>
 #include <pdb.h>
+#include <zephyr.h>
 
-int set_special_firmware_version(pdb_property_e id, u8_t *property_value, size_t size) {
+int set_special_firmware_version(pdb_property_e id, u8_t *property_value, size_t size)
+{
     return 0;
 }
 
-int get_special_load(pdb_property_e id, u8_t *property_value, size_t size) {
+int get_special_load(pdb_property_e id, u8_t *property_value, size_t size)
+{
     return 0;
 }
 
-int check_load_value(u8_t *property_value, size_t size) {
+int check_load_value(u8_t *property_value, size_t size)
+{
     return 0;
 }
 
-int core_event_callback(pdb_event_t *event) {
+int core_event_callback(pdb_event_t *event)
+{
     return 0;
 }
 
 #ifdef CONFIG_ZTEST
-void test_main(void) {
-    ztest_test_suite(PDB_PROPERTIES_CREATION,
-                     ztest_unit_test(test_properties_name),
-                     ztest_unit_test(test_properties_size),
-                     ztest_unit_test(test_properties_set),
-                     ztest_unit_test(test_properties_get),
-                     ztest_unit_test(test_properties_validate)
-                     );
-    
+void test_main(void)
+{
+    ztest_test_suite(PDB_PROPERTIES_CREATION, ztest_unit_test(test_properties_name),
+                     ztest_unit_test(test_properties_size), ztest_unit_test(test_properties_set),
+                     ztest_unit_test(test_properties_get));
+
+    ztest_test_suite(PDB_CORRECTNESS, ztest_unit_test(test_set));
+
     ztest_run_test_suite(PDB_PROPERTIES_CREATION);
+    ztest_run_test_suite(PDB_CORRECTNESS);
 }
 #else
 void main(void)
 {
     int err = 0;
-    printk("Hello World! %d %d\n", pdb_property_get_size(PDB_FIRMWARE_VERSION_PROPERTY, &err), PDB_LOAD_PROPERTY);
+    printk("Hello World! %d %d\n", pdb_property_size(PDB_FIRMWARE_VERSION_PROPERTY, &err),
+           PDB_LOAD_PROPERTY);
 }
 #endif

@@ -1,12 +1,13 @@
+#include "pdb.h"
+
 #include <fs/nvs.h>
 #include <string.h>
 #include <zephyr.h>
 
 #include "devicetree_fixups.h"
-#include "pdb.h"
-#include "pdb_validators.h"
 #include "pdb_callbacks.h"
 #include "pdb_observers.h"
+#include "pdb_validators.h"
 
 int pdb_thread(void);
 
@@ -15,15 +16,17 @@ int pdb_thread(void);
 #define NVS_STORAGE_OFFSET DT_FLASH_AREA_STORAGE_OFFSET
 
 static struct nvs_fs pdb_fs = {
-                               .sector_size  = NVS_SECTOR_SIZE,
-                               .sector_count = NVS_SECTOR_COUNT,
-                               .offset       = NVS_STORAGE_OFFSET,
+    .sector_size  = NVS_SECTOR_SIZE,
+    .sector_count = NVS_SECTOR_COUNT,
+    .offset       = NVS_STORAGE_OFFSET,
 };
 
 K_SEM_DEFINE(pdb_property_sema, 1, 1);
 
-int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t size);
-int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t size);
+K_THREAD_DEFINE(pdb_thread_id, PDB_THREAD_SIZE, pdb_thread, NULL, NULL, NULL, PDB_THREAD_PRIORITY,
+                0, K_NO_WAIT);
+
+
 /* Checking if PDB_PROPERTIES_INITIAL_VALUE is defined and undef it */
 #ifdef PDB_PROPERTIES_INITIAL_VALUE
 #undef PDB_PROPERTIES_INITIAL_VALUE
@@ -58,9 +61,18 @@ static pdb_property_t __pdb_properties[PDB_PROPERTY_COUNT] = {
 
 #undef PDB_PROPERTY_CREATE
 
-size_t pdb_property_get_size(pdb_property_e id, int *error)
+static pdb_property_t *pdb_property_get_ref(pdb_property_e id)
 {
-    size_t size      = 0;
+    if (id < PDB_PROPERTY_COUNT) {
+        return &__pdb_properties[id];
+    } else {
+        return NULL;
+    }
+}
+
+size_t pdb_property_size(pdb_property_e id, int *error)
+{
+    size_t size       = 0;
     pdb_property_t *p = pdb_property_get_ref(id);
     if (p) {
         size = (size_t) p->size;
@@ -72,18 +84,9 @@ size_t pdb_property_get_size(pdb_property_e id, int *error)
     return size;
 }
 
-pdb_property_t *pdb_property_get_ref(pdb_property_e id)
-{
-    if (id < PDB_PROPERTY_COUNT) {
-        return &__pdb_properties[id];
-    } else {
-        return NULL;
-    }
-}
-
 int pdb_property_get(pdb_property_e id, u8_t *property_value, size_t size)
 {
-    int error               = 0;
+    int error                = 0;
     pdb_property_t *property = pdb_property_get_ref(id);
     if (property && property->get) {
         error = property->get(id, property_value, size);
@@ -120,8 +123,8 @@ int pdb_property_get_private(pdb_property_e id, u8_t *property_value, size_t siz
 
 int pdb_property_set(pdb_property_e id, u8_t *property_value, size_t size)
 {
-    int error               = 0;
-    int valid               = 1;
+    int error                = 0;
+    int valid                = 1;
     pdb_property_t *property = pdb_property_get_ref(id);
     if (property && property->set) {
         if (property->validate) {
@@ -130,14 +133,14 @@ int pdb_property_set(pdb_property_e id, u8_t *property_value, size_t size)
         if (valid) {
             error = property->set(id, property_value, size);
             if (error) {
-                printk("Current property set: %d, error code: %d\n", id, error);
+                printk("Current property set: %d, error code: %d!\n", id, error);
             }
         } else {
-            printk("The value doesn't satisfy valid function of property %d\n", id);
+            printk("The value doesn't satisfy valid function of property %d!\n", id);
             error = -EINVAL;
         }
     } else {
-        printk("The property %d is read only.\n", id);
+        printk("The property %d is read only or there isn't!\n", id);
         error = -ENODEV;
     }
     return error;
@@ -154,13 +157,12 @@ int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t siz
                 ret = -EBUSY;
             } else {
                 if (memcmp(current_property->data, property_value, size)) {
-                    memcpy(current_property->data, property_value,
-                           current_property->size);
+                    memcpy(current_property->data, property_value, current_property->size);
                     if (current_property->changed < 255) {
                         current_property->changed++;
                     }
                     k_sem_give(&pdb_property_sema);
-                    // #TODO: mandar para as queues dos observers                                   
+                    // #TODO: mandar para as queues dos observers
                 } else {
                     k_sem_give(&pdb_property_sema);
                 }
@@ -174,7 +176,8 @@ int pdb_property_set_private(pdb_property_e id, u8_t *property_value, size_t siz
     return ret;
 }
 
-static void __pdb_recover_data_from_flash(void) {
+static void __pdb_recover_data_from_flash(void)
+{
     int rc = 0;
     printk("Start...\n");
     if (k_sem_take(&pdb_property_sema, K_SECONDS(5)) != 0) {
@@ -207,7 +210,8 @@ static void __pdb_recover_data_from_flash(void) {
     }
 }
 
-static void __pdb_persist_data_on_flash(void) {
+static void __pdb_persist_data_on_flash(void)
+{
     int bytes_written = 0;
     for (u16_t id = 0; id < PDB_PROPERTY_COUNT; ++id) {
         if (__pdb_properties[id].in_flash) {
@@ -244,7 +248,7 @@ static void __pdb_persist_data_on_flash(void) {
 #endif
 
 #define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) \
-    struct k_msgq *_name##_event_queues[] = { __VA_ARGS__, NULL };       \
+    struct k_msgq *_name##_event_queues[]           = {__VA_ARGS__, NULL};                         \
     __pdb_properties[PDB_##_name##_PROPERTY].queues = (struct k_msgq **) _name##_event_queues;
 
 int pdb_thread(void)
@@ -267,4 +271,15 @@ int pdb_thread(void)
         __pdb_persist_data_on_flash();
     }
     return 0;
+}
+
+const char *pdb_property_name(pdb_property_e id)
+{
+    pdb_property_t *p = pdb_property_get_ref(id);
+
+    if (p) {
+        return p->name;
+    }
+
+    return (const char *) p;
 }

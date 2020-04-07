@@ -16,39 +16,47 @@
 
 
 #define PDB_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
+#define PDB_ASSERT_VAL(_p, _e, _err, ...) \
+    if (_p != _e) {                       \
+        printk(__VA_ARGS__);              \
+        return _err;                      \
+    }
 
-/* Checking if PDB_PROPERTY_CREATE is defined and undef it */
-#ifdef PDB_PROPERTY_CREATE
-#undef PDB_PROPERTY_CREATE
-#endif
+#define PDB_ASSERT(_p, _err, ...) \
+    if (_p) {                     \
+        printk(__VA_ARGS__);      \
+        return _err;              \
+    }
+
 
 /* Defining PDB_PROPERTY_CREATE for enum generating */
-#define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id, ...) \
-    PDB_##_name##_PROPERTY,
+/* #define PDB_PROPERTY_CREATE(_name, _bytes, _validate, _get, _set, _in_flash, _observers, _id,
+ * ...) \ */
+/*     PDB_##_name##_PROPERTY, */
 
-typedef enum {
-#include "pdb_properties.def"
-    PDB_PROPERTY_COUNT
-} pdb_property_e;
-
-#undef PDB_PROPERTY_CREATE
+typedef enum { PDB_PROPERTY_COUNT } pdb_property_e;
 
 typedef struct {
     k_tid_t source_thread;
     pdb_property_e id;
 } pdb_event_t;
 
+typedef void (*pdb_callback_f)(pdb_property_e id);
+
 struct pdb_property {
     const char *name;
     u8_t *data;
     int (*validate)(u8_t *data, size_t size);
     int (*get)(pdb_property_e id, u8_t *property_value, size_t size);
+    int (*pre_set)(void);
     int (*set)(pdb_property_e id, u8_t *property_value, size_t size);
+    int (*pos_set)(void);
     u8_t size;
     u8_t in_flash;
     u8_t changed;
     u8_t observers;
-    struct k_msgq **queues;
+    struct k_sem *sem;
+    pdb_callback_f *cbs;
     pdb_property_e id;
 };
 typedef struct pdb_property pdb_property_t;
@@ -63,7 +71,7 @@ typedef struct pdb_property pdb_property_t;
  */
 size_t pdb_property_size(pdb_property_e id, int *error);
 
-
+/* TODO: Add doxygen comments about pdb_property_name */
 const char *pdb_property_name(pdb_property_e id);
 
 /**

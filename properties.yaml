@@ -1,23 +1,44 @@
-Observers:
+Config:
+    - event_queue_size: 5
+Services:
   - CORE: &core
       name: 'CORE'
-      event_queue_size: 20
-      diy: True
+      priority: 5
+      stack_size: 512
+  - HAL: &hal
+      name: 'HAL'
+      priority: 2
+      stack_size: 1024
+  - APP: &app
+      name: 'APP'
+      priority: 1
+      stack_size: 2048
       
-Properties:
+Channels:
   - FIRMWARE_VERSION:
-      nbytes: 4
-      set: 'NULL'
+      size: 4
+      set_handler: 'NULL'
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
   - PERSISTENT_VAL:
-      nbytes: 1
+      size: 1
       persistent: True
       validate: 'pdb_validator_different_of_zero'
+      owners:
+        - *core
+        - *hal
   - ECHO_HAL:
-      nbytes: 1
-      observers:
+      size: 1
+      subscribers:
+        - *core
+        - *hal
+      publishers:
+        - *hal
+        - *app
         - *core
   - SET_GET:
-      nbytes: 1
-      set: 'set_plus_1'
+      size: 1
+      set_handler: 'set_plus_1'
       get: 'get_plus_1'
+      publishers:
+        - *core
+        - *app

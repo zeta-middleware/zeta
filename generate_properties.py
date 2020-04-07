@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# TODO: Reimplementar esse arquivo para um script de geração de template
 import yaml
 from os import getcwd
 

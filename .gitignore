@@ -28,3 +28,4 @@ gdb_test.br
 .ccls
 tags
 flash.bin
+.pdb-project.org

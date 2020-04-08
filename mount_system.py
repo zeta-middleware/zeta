@@ -20,15 +20,15 @@ typedef enum {{
     PDB_CHANNEL_COUNT
 }} __attribute__((packed)) pdb_channel_e;'''
         
-    def gen(self):
+    def gen_file(self):
         with open('templates/pdb.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('build/zephyr/include/generated/pdb.h', 'w') as header :
+            with open('generated/include/pdb.h', 'w') as header :
                 header.write(t.substitute(channels_enum=self.channels_enum))
 
     def run(self) :
         self.gen_enum()
-        self.gen()
+        self.gen_file()
 
 class PdbSource :
     def __init__(self, yaml_dict) :
@@ -51,6 +51,7 @@ K_SEM_DEFINE({sem}, 1, 1);
                 pre_set = "NULL"
                 set = "pdb_channel_set_private"
                 pos_set = "NULL"
+                pre_get = "NULL"
                 get = "pdb_channel_get_private"
                 size = v['size']
                 data_list = list()
@@ -75,13 +76,11 @@ K_SEM_DEFINE({sem}, 1, 1);
                 # Getting set functions
                 if 'pre_set' in v :
                     pre_set = v['pre_set']
-                if 'set' in v :
-                    set = v['set']
                 if 'pos_set' in v :
                     pos_set = v['pos_set']
                 # Getting get function
-                if 'get' in v :
-                    get = v['get']
+                if 'pre_get' in v :
+                    pre_get = v['pre_get']
                 # Getting persistent
                 if 'persistent' in v and v['persistent'] :
                     persistent = "1"
@@ -103,6 +102,7 @@ K_SEM_DEFINE({sem}, 1, 1);
     {{
         .name = "{name}",       
         .validate = {validate},
+        .pre_get = {pre_get},
         .get = {get},
         .pre_set = {pre_set},
         .set = {set},
@@ -122,17 +122,17 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {{
     {channels}
 }};                
 '''
-    def gen(self) :
+    def gen_file(self) :
         with open('templates/pdb.template.c', 'r') as source_template :
             s = Template(source_template.read())
-            with open('build/zephyr/src/generated/pdb.c', 'w') as source :
+            with open('generated/src/pdb.c', 'w') as source :
                 source.write(s.substitute(channels_creation=self.channels_creation, channels_sems=self.channels_sems))
         pass
     
     def run(self) :
         self.gen_sems()
         self.gen_creation()
-        self.gen()
+        self.gen_file()
 
 
 class PdbCallbacks :
@@ -152,17 +152,136 @@ void {name_function}(pdb_channel_e id);
         
     def run(self) :
         self.gen_callbacks()
-        self.gen()
+        self.gen_file()
 
-    def gen(self) :
+    def gen_file(self) :
         with open('templates/pdb_callbacks.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('build/zephyr/include/generated/pdb_callbacks.h', 'w') as header :
+            with open('generated/include/pdb_callbacks.h', 'w') as header :
                 header.write(t.substitute(services_callbacks=self.services_callbacks))
 
+
+class PdbThreadHeader :
+    def __init__(self, yaml_dict) :
+        self.services = yaml_dict['Services']
+        self.services_sections = f''''''
+
+    def gen_threads_header(self) :
+        for s in self.services :
+            for k, v in s.items() :
+                name = v['name']
+                name_tid = v['name'] + "_thread_id"
+                name_thread = v['name'] + "_task"
+                priority = v['priority']
+                stack_size = v['stack_size']
+                self.services_sections += f'''
+/* BEGIN {name} SECTION */
+void {name_thread}(void);
+extern k_tid_t {name_tid};
+#define {name}_TASK_PRIORITY {priority}
+#define {name}_STACK_SIZE {stack_size}
+/* END {name} SECTION */
+'''
+    def gen_file(self) :
+        with open('templates/pdb_threads.template.h', 'r') as header_template :
+            t = Template(header_template.read())
+            with open('generated/include/pdb_threads.h', 'w') as header :
+                header.write(t.substitute(services_sections=self.services_sections))
+        
+    def run(self) :
+        self.gen_threads_header()
+        self.gen_file()
+
+class PdbThreadSource :
+    def __init__(self, yaml_dict) :
+        self.services = yaml_dict['Services']
+        self.services_threads = f''''''
+
+    def gen_threads_source(self) :
+        for s in self.services :
+            for k, v in s.items() :
+                name = v['name']
+                name_tid = v['name'] + "_thread_id"
+                name_thread = v['name'] + "_task"
+                priority = v['priority']
+                stack_size = v['stack_size']
+                self.services_threads += f'''
+/* BEGIN {name} THREAD DEFINE */
+K_THREAD_DEFINE({name_tid},
+                {stack_size},
+                {name_thread},
+                NULL, NULL, NULL,
+                {priority},
+                0,
+                K_NO_WAIT
+                );
+/* END {name} THREAD DEFINE */                
+'''
+
+    def gen_file(self) :
+        with open('templates/pdb_threads.template.c', 'r') as source_template :
+            s = Template(source_template.read())
+            with open('generated/src/pdb_threads.c', 'w') as source :
+                source.write(s.substitute(services_threads=self.services_threads))
+
+    def run(self) :
+        self.gen_threads_source()
+        self.gen_file()
+
+
+class PdbCustomFunctions :
+    def __init__(self, yaml_dict) :
+        self.channels = yaml_dict['Channels']
+        self.channels_functions = f''''''
+        pass
+
+    def gen_custom_functions(self) :
+        for c in self.channels :
+            for k, v in c.items() :
+                name = k
+                self.channels_functions += f'''
+/* BEGIN {name} CHANNEL FUNCTIONS */
+'''
+                if 'pre_get' in v :
+                    pre_get_name = v['pre_get']
+                    self.channels_functions += f'''
+int {pre_get_name}(pdb_channel_e id);
+'''
+                    pass
+                if 'pre_set' in v :
+                    pre_set_name = v['pre_set_name']
+                    self.channels_functions += f'''
+int {pre_set_name}(pdb_channel_e id);
+'''        
+                if 'pos_set' in v :
+                    pos_set_name = v['pos_set_name']
+                    self.channels_functions += f'''
+int {pos_set_name}(pdb_channel_e id);
+'''
+                    pass
+                if 'validate' in v :
+                    validate_name = v['validate']
+                    self.channels_functions += f'''
+int {validate_name}(u8_t *data, size_t size);
+'''
+                self.channels_functions += f'''
+/* END {name} CHANNEL FUNCTIONS */
+'''
+
+    def gen_file(self) :
+        with open('templates/pdb_custom_functions.template.h', 'r') as header_template :
+            t = Template(header_template.read())
+            with open('generated/include/pdb_custom_functions.h', 'w') as header :
+                header.write(t.substitute(custom_functions=self.channels_functions))
+
+    def run(self) :
+        self.gen_custom_functions()
+        self.gen_file()
+    
 def main() :
     try :
-        os.makedirs('build/zephyr/src/generated')
+        os.makedirs('generated/src')
+        os.makedirs('generated/include')
     except FileExistsError as fe_error:
         print("[MESSAGE]: Skip creation of zephyr/src/generated folder")
         
@@ -171,6 +290,8 @@ def main() :
         PdbHeader(yaml_dict).run()
         PdbSource(yaml_dict).run()
         PdbCallbacks(yaml_dict).run()
-    
+        PdbThreadHeader(yaml_dict).run()
+        PdbThreadSource(yaml_dict).run()
+        PdbCustomFunctions(yaml_dict).run()
 if __name__ == "__main__":
     main()

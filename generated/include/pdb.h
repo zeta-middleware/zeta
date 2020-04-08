@@ -28,7 +28,14 @@
         return _err;              \
     }
 
-$channels_enum
+
+typedef enum {
+    PDB_FIRMWARE_VERSION_CHANNEL,
+    PDB_PERSISTENT_VAL_CHANNEL,
+    PDB_ECHO_HAL_CHANNEL,
+    PDB_SET_GET_CHANNEL,
+    PDB_CHANNEL_COUNT
+} __attribute__((packed)) pdb_channel_e;
 
 typedef struct {
     k_tid_t source_thread;

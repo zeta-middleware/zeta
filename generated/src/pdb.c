@@ -22,12 +22,96 @@ static struct nvs_fs pdb_fs = {
     .offset       = NVS_STORAGE_OFFSET,
 };
 
-$channels_sems
+
+K_SEM_DEFINE(pdb_FIRMWARE_VERSION_channel_sem, 1, 1);
+
+K_SEM_DEFINE(pdb_PERSISTENT_VAL_channel_sem, 1, 1);
+
+K_SEM_DEFINE(pdb_ECHO_HAL_channel_sem, 1, 1);
+
+K_SEM_DEFINE(pdb_SET_GET_channel_sem, 1, 1);
+
 
 K_THREAD_DEFINE(pdb_thread_id, PDB_THREAD_SIZE, pdb_thread, NULL, NULL, NULL,
                     PDB_THREAD_PRIORITY, 0, K_NO_WAIT);
 
-$channels_creation
+
+static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {
+    
+    {
+        .name = "PDB_FIRMWARE_VERSION_CHANNEL",       
+        .validate = NULL,
+        .pre_get = NULL,
+        .get = pdb_channel_get_private,
+        .pre_set = NULL,
+        .set = pdb_channel_set_private,
+        .pos_set = NULL,
+        .size = 4,
+        .persistent = 0,
+        .changed = 0,
+        .sem = &pdb_FIRMWARE_VERSION_channel_sem,
+        .publishers_id = NULL,
+        .subscribers_cbs = NULL,
+        .id = PDB_FIRMWARE_VERSION_CHANNEL,
+        .data = {0xF1, 0xF2, 0xF3, 0xF4}
+    },
+
+    {
+        .name = "PDB_PERSISTENT_VAL_CHANNEL",       
+        .validate = pdb_validator_different_of_zero,
+        .pre_get = NULL,
+        .get = pdb_channel_get_private,
+        .pre_set = NULL,
+        .set = pdb_channel_set_private,
+        .pos_set = NULL,
+        .size = 1,
+        .persistent = 1,
+        .changed = 0,
+        .sem = &pdb_PERSISTENT_VAL_channel_sem,
+        .publishers_id = { CORE_thread_id, HAL_thread_id, NULL },
+        .subscribers_cbs = NULL,
+        .id = PDB_PERSISTENT_VAL_CHANNEL,
+        .data = {0xFF}
+    },
+
+    {
+        .name = "PDB_ECHO_HAL_CHANNEL",       
+        .validate = NULL,
+        .pre_get = NULL,
+        .get = pdb_channel_get_private,
+        .pre_set = NULL,
+        .set = pdb_channel_set_private,
+        .pos_set = NULL,
+        .size = 1,
+        .persistent = 0,
+        .changed = 0,
+        .sem = &pdb_ECHO_HAL_channel_sem,
+        .publishers_id = { HAL_thread_id, APP_thread_id, CORE_thread_id, NULL },
+        .subscribers_cbs = { CORE_service_callback, HAL_service_callback, NULL },
+        .id = PDB_ECHO_HAL_CHANNEL,
+        .data = {0xFF}
+    },
+
+    {
+        .name = "PDB_SET_GET_CHANNEL",       
+        .validate = NULL,
+        .pre_get = get_plus_1,
+        .get = pdb_channel_get_private,
+        .pre_set = NULL,
+        .set = pdb_channel_set_private,
+        .pos_set = NULL,
+        .size = 1,
+        .persistent = 0,
+        .changed = 0,
+        .sem = &pdb_SET_GET_channel_sem,
+        .publishers_id = { CORE_thread_id, APP_thread_id, NULL },
+        .subscribers_cbs = NULL,
+        .id = PDB_SET_GET_CHANNEL,
+        .data = {0xFF}
+    },
+
+};                
+
 
 static pdb_channel_t *pdb_channel_get_ref(pdb_channel_e id)
 {

@@ -3,17 +3,14 @@ Services:
       name: 'CORE'
       priority: 5
       stack_size: 512
-      event_queue_size: 5
   - HAL: &hal
       name: 'HAL'
       priority: 2
       stack_size: 1024
-      event_queue_size: 5
   - APP: &app
       name: 'APP'
       priority: 1
       stack_size: 2048
-      event_queue_size: 5
       
 Channels:
   - FIRMWARE_VERSION:
@@ -39,7 +36,7 @@ Channels:
   - SET_GET:
       size: 1
       set_handler: 'set_plus_1'
-      get: 'get_plus_1'
+      pre_get: 'get_plus_1'
       publishers:
         - *core
         - *app

@@ -11,7 +11,7 @@
 #define PDB_CALLBACKS_H_
 
 #include "pdb.h"
-#include "pdb_callbacks.def"
+
+$services_callbacks
 
 #endif
-

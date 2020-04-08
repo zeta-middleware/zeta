@@ -16,16 +16,16 @@
 
 
 #define PDB_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
-#define PDB_ASSERT_VAL(_p, _e, _err, ...) \
-    if (_p != _e) {                       \
-        printk(__VA_ARGS__);              \
-        return _err;                      \
+#define PDB_CHECK_VAL(_p, _e, _err, _format, ...) \
+    if (_p != _e) {                               \
+        printk(_format, ##__VA_ARGS__);           \
+        return _err;                              \
     }
 
-#define PDB_ASSERT(_p, _err, ...) \
-    if (_p) {                     \
-        printk(__VA_ARGS__);      \
-        return _err;              \
+#define PDB_CHECK(_p, _err, _format, ...) \
+    if (_p) {                             \
+        printk(_format, ##__VA_ARGS__);   \
+        return _err;                      \
     }
 
 
@@ -44,19 +44,21 @@ typedef struct {
 typedef void (*pdb_callback_f)(pdb_property_e id);
 
 struct pdb_property {
+    /* #TODO: Adicionar owners da property */
     const char *name;
     u8_t *data;
     int (*validate)(u8_t *data, size_t size);
     int (*get)(pdb_property_e id, u8_t *property_value, size_t size);
-    int (*pre_set)(void);
+    int (*pre_set)(pdb_property_e id);
     int (*set)(pdb_property_e id, u8_t *property_value, size_t size);
-    int (*pos_set)(void);
+    int (*pos_set)(pdb_property_e id);
     u8_t size;
     u8_t in_flash;
     u8_t changed;
     u8_t observers;
     struct k_sem *sem;
-    pdb_callback_f *cbs;
+    k_tid_t *publishers_id;
+    pdb_callback_f *subscribers_cb;
     pdb_property_e id;
 };
 typedef struct pdb_property pdb_property_t;

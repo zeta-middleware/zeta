@@ -1,7 +1,7 @@
 /*!
- * @file
+ * @file pdb.template.h
  * @brief This is the abstraction information relative to NB hardware
- *
+ * DON'T EDIT THIS FILE
  */
 
 #ifndef PDB_H_
@@ -12,8 +12,7 @@
 #include <zephyr/types.h>
 
 #define PDB_THREAD_SIZE 1024
-#define PDB_THREAD_PRIORITY -2
-
+#define PDB_THREAD_PRIORITY 100
 
 #define PDB_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
 #define PDB_CHECK_VAL(_p, _e, _err, ...) \
@@ -58,7 +57,7 @@ struct pdb_channel {
     u8_t persistent;
     u8_t changed;
     struct k_sem *sem;
-    k_tid_t *publishers_id;
+    const k_tid_t *publishers_id;
     pdb_callback_f *subscribers_cbs;
     pdb_channel_e id;
 };
@@ -74,7 +73,13 @@ typedef struct pdb_channel pdb_channel_t;
  */
 size_t pdb_channel_size(pdb_channel_e id, int *error);
 
-/* TODO: Add doxygen comments about pdb_channel_name */
+/** 
+ * Returns the channel name
+ * 
+ * @param id id channel id
+ * 
+ * @return channel name
+ */
 const char *pdb_channel_name(pdb_channel_e id);
 
 /**

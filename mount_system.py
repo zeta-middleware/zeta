@@ -21,9 +21,9 @@ typedef enum {{
 }} __attribute__((packed)) pdb_channel_e;'''
         
     def gen_file(self):
-        with open('templates/pdb.template.h', 'r') as header_template :
+        with open('../templates/pdb.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('generated/include/pdb.h', 'w') as header :
+            with open('../generated/include/pdb.h', 'w') as header :
                 header.write(t.substitute(channels_enum=self.channels_enum))
 
     def run(self) :
@@ -33,16 +33,33 @@ typedef enum {{
 class PdbSource :
     def __init__(self, yaml_dict) :
         self.channels = yaml_dict['Channels']
-        self.channels_creation = f''
+        self.config = yaml_dict['Config']
+        self.channels_creation = f''''''
         self.channels_sems = f''''''
+        self.sector_size = f''''''
+        self.sector_count = f''''''
+        self.storage_offset = f''''''
+        self.arrays_init = f''''''
+        self.set_publishers = f'''
+/* BEGIN SET CHANNEL PUBLISHERS */
+'''
+
 
     def gen_sems(self) :
+        self.channels_sems += f'''
+/* BEGIN INITIALIZING CHANNEL SEMAPHORES */
+'''
         for c in self.channels :
             for k, v in c.items() :
                 sem = "pdb_" + k + "_channel_sem"
                 self.channels_sems += f'''
 K_SEM_DEFINE({sem}, 1, 1);
 '''
+
+        self.channels_sems += f'''
+/* END INITIALIZING CHANNEL SEMAPHORES */
+'''
+
     def gen_creation(self) :
         channels = f''''''
         for c in self.channels :
@@ -58,7 +75,12 @@ K_SEM_DEFINE({sem}, 1, 1);
                 data_list = ["0xFF" for i in range(0, size)]
                 persistent = "0"
                 subscribers = "NULL"
-                publishers = "NULL"
+                data_init = ""
+                subscribers_init = ""
+                publishers_init = "{NULL}"
+                name_data = k + "_data"
+                name_subscribers = k + "_subscribers"
+                name_publishers = k + "_publishers"
                 
                 # Getting name
                 name = "PDB_" + k + "_CHANNEL"
@@ -69,7 +91,8 @@ K_SEM_DEFINE({sem}, 1, 1);
                 # Getting data
                 if 'initial_value' in v :
                     data_list = ["0x{:02X}".format(x) for x in v['initial_value']]
-                data = "{" + ", ".join(data_list)  + "}"
+                data_init = "u8_t " + name_data + "[] = {" + ", ".join(data_list)  + "};"
+                data = name_data
                 # Getting validate
                 if 'validate' in v :
                     validate = v['validate']
@@ -90,13 +113,20 @@ K_SEM_DEFINE({sem}, 1, 1);
                     subscribers_list = list()
                     for s in v['subscribers'] :
                         subscribers_list.append(s['name'] + "_service_callback")
-                    subscribers = "{ " + ", ".join(subscribers_list) + ", NULL }"
+                    subscribers_init = "pdb_callback_f " + name_subscribers + "[] = { " + ", ".join(subscribers_list) + ", NULL };"
+                    subscribers = name_subscribers
                 if 'publishers' in v :
                     publishers_list = list()
                     for p in v['publishers'] :
                         publishers_list.append(p['name'] + "_thread_id")
-                    publishers = "{ " + ", ".join(publishers_list)  + ", NULL }"
+                    publishers_init = "{ " + ", ".join(publishers_list)  + ", NULL };"
                     pass
+                self.arrays_init += f'''
+/* BEGIN {name} INIT ARRAYS */
+{data_init}
+{subscribers_init}
+/* END {name} INIT ARRAYS */
+'''                
 
                 channels += f'''
     {{
@@ -111,25 +141,38 @@ K_SEM_DEFINE({sem}, 1, 1);
         .persistent = {persistent},
         .changed = 0,
         .sem = &{sem},
-        .publishers_id = {publishers},
         .subscribers_cbs = {subscribers},
         .id = {name},
         .data = {data}
     }},\n'''
-                
+
+                self.set_publishers += f'''
+    const k_tid_t {name_publishers}[] = {publishers_init};
+    __pdb_channels[{name}].publishers_id = {name_publishers};
+'''
+        self.set_publishers += f'''
+/* END SET CHANNEL PUBLISHERS */
+'''
         self.channels_creation = f'''
 static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {{
     {channels}
 }};                
 '''
+
+    def gen_nvs_config(self) :
+        self.sector_size = self.config['nvs_sector_size']
+        self.sector_count = self.config['nvs_sector_count']
+        self.storage_offset = self.config['nvs_storage_offset']
+
     def gen_file(self) :
-        with open('templates/pdb.template.c', 'r') as source_template :
+        with open('../templates/pdb.template.c', 'r') as source_template :
             s = Template(source_template.read())
-            with open('generated/src/pdb.c', 'w') as source :
-                source.write(s.substitute(channels_creation=self.channels_creation, channels_sems=self.channels_sems))
+            with open('../generated/src/pdb.c', 'w') as source :
+                source.write(s.substitute(channels_creation=self.channels_creation, channels_sems=self.channels_sems, nvs_sector_size=self.sector_size, nvs_sector_count=self.sector_count, nvs_storage_offset=self.storage_offset, arrays_init=self.arrays_init, set_publishers=self.set_publishers))
         pass
     
     def run(self) :
+        self.gen_nvs_config()
         self.gen_sems()
         self.gen_creation()
         self.gen_file()
@@ -155,9 +198,9 @@ void {name_function}(pdb_channel_e id);
         self.gen_file()
 
     def gen_file(self) :
-        with open('templates/pdb_callbacks.template.h', 'r') as header_template :
+        with open('../templates/pdb_callbacks.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('generated/include/pdb_callbacks.h', 'w') as header :
+            with open('../generated/include/pdb_callbacks.h', 'w') as header :
                 header.write(t.substitute(services_callbacks=self.services_callbacks))
 
 
@@ -177,15 +220,15 @@ class PdbThreadHeader :
                 self.services_sections += f'''
 /* BEGIN {name} SECTION */
 void {name_thread}(void);
-extern k_tid_t {name_tid};
+extern const k_tid_t {name_tid};
 #define {name}_TASK_PRIORITY {priority}
 #define {name}_STACK_SIZE {stack_size}
 /* END {name} SECTION */
 '''
     def gen_file(self) :
-        with open('templates/pdb_threads.template.h', 'r') as header_template :
+        with open('../templates/pdb_threads.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('generated/include/pdb_threads.h', 'w') as header :
+            with open('../generated/include/pdb_threads.h', 'w') as header :
                 header.write(t.substitute(services_sections=self.services_sections))
         
     def run(self) :
@@ -219,9 +262,9 @@ K_THREAD_DEFINE({name_tid},
 '''
 
     def gen_file(self) :
-        with open('templates/pdb_threads.template.c', 'r') as source_template :
+        with open('../templates/pdb_threads.template.c', 'r') as source_template :
             s = Template(source_template.read())
-            with open('generated/src/pdb_threads.c', 'w') as source :
+            with open('../generated/src/pdb_threads.c', 'w') as source :
                 source.write(s.substitute(services_threads=self.services_threads))
 
     def run(self) :
@@ -269,9 +312,9 @@ int {validate_name}(u8_t *data, size_t size);
 '''
 
     def gen_file(self) :
-        with open('templates/pdb_custom_functions.template.h', 'r') as header_template :
+        with open('../templates/pdb_custom_functions.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('generated/include/pdb_custom_functions.h', 'w') as header :
+            with open('../generated/include/pdb_custom_functions.h', 'w') as header :
                 header.write(t.substitute(custom_functions=self.channels_functions))
 
     def run(self) :
@@ -280,12 +323,12 @@ int {validate_name}(u8_t *data, size_t size);
     
 def main() :
     try :
-        os.makedirs('generated/src')
-        os.makedirs('generated/include')
+        os.makedirs('../generated/src')
+        os.makedirs('../generated/include')
     except FileExistsError as fe_error:
-        print("[MESSAGE]: Skip creation of zephyr/src/generated folder")
+        print("[MESSAGE]: Skip creation of generated folder")
         
-    with open('properties.yaml', 'r') as f:
+    with open('../properties.yaml', 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
         PdbHeader(yaml_dict).run()
         PdbSource(yaml_dict).run()

@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Generating properties macro create
 add_custom_target(
   generatePropertiesTarget
-  COMMAND python3 ${PROJECT_SOURCE_DIR}/generate_properties.py
+  COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py
   )
 add_dependencies(app generatePropertiesTarget)
 
@@ -20,17 +20,14 @@ list(APPEND HEADERS
     "${PROJECT_BINARY_DIR}/include/generated"
     "${PROJECT_BINARY_DIR}/zephyr/include/generated"
     "${PROJECT_SOURCE_DIR}/include"
-    "${PROJECT_SOURCE_DIR}/include/generated"
+    "${PROJECT_SOURCE_DIR}/generated/include"
     )
 
 # Add source files
 list(APPEND SOURCES
     "${PROJECT_SOURCE_DIR}/src/main.c"
-    "${PROJECT_SOURCE_DIR}/src/pdb.c"
-    "${PROJECT_SOURCE_DIR}/src/pdb_observers.c"
-    "${PROJECT_SOURCE_DIR}/src/pdb_unit_tests.c"
-    "${PROJECT_SOURCE_DIR}/src/pdb_validators.c"
-
+    "${PROJECT_SOURCE_DIR}/generated/src/pdb.c"
+    "${PROJECT_SOURCE_DIR}/generated/src/pdb_threads.c"
 )
 
 include_directories(${HEADERS})

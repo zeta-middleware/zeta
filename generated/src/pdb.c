@@ -4,7 +4,6 @@
 
 #include "pdb.h"
 
-/* #TODO: Remover código legado da estratégia dos includes */
 #include "devicetree_fixups.h"
 #include "pdb_threads.h"
 #include "pdb_custom_functions.h"
@@ -12,16 +11,12 @@
 
 int pdb_thread(void);
 
-#define NVS_SECTOR_SIZE DT_FLASH_ERASE_BLOCK_SIZE  // 4096
+#define NVS_SECTOR_SIZE DT_FLASH_ERASE_BLOCK_SIZE
 #define NVS_SECTOR_COUNT 4
 #define NVS_STORAGE_OFFSET DT_FLASH_AREA_STORAGE_OFFSET
 
-static struct nvs_fs pdb_fs = {
-    .sector_size  = NVS_SECTOR_SIZE,
-    .sector_count = NVS_SECTOR_COUNT,
-    .offset       = NVS_STORAGE_OFFSET,
-};
 
+/* BEGIN INITIALIZING CHANNEL SEMAPHORES */
 
 K_SEM_DEFINE(pdb_FIRMWARE_VERSION_channel_sem, 1, 1);
 
@@ -31,9 +26,40 @@ K_SEM_DEFINE(pdb_ECHO_HAL_channel_sem, 1, 1);
 
 K_SEM_DEFINE(pdb_SET_GET_channel_sem, 1, 1);
 
+/* END INITIALIZING CHANNEL SEMAPHORES */
+
 
 K_THREAD_DEFINE(pdb_thread_id, PDB_THREAD_SIZE, pdb_thread, NULL, NULL, NULL,
                     PDB_THREAD_PRIORITY, 0, K_NO_WAIT);
+
+
+
+/* BEGIN PDB_FIRMWARE_VERSION_CHANNEL INIT ARRAYS */
+u8_t FIRMWARE_VERSION_data[] = {0xF1, 0xF2, 0xF3, 0xF4};
+
+/* END PDB_FIRMWARE_VERSION_CHANNEL INIT ARRAYS */
+
+/* BEGIN PDB_PERSISTENT_VAL_CHANNEL INIT ARRAYS */
+u8_t PERSISTENT_VAL_data[] = {0xFF};
+
+/* END PDB_PERSISTENT_VAL_CHANNEL INIT ARRAYS */
+
+/* BEGIN PDB_ECHO_HAL_CHANNEL INIT ARRAYS */
+u8_t ECHO_HAL_data[] = {0xFF};
+pdb_callback_f ECHO_HAL_subscribers[] = { CORE_service_callback, HAL_service_callback, NULL };
+/* END PDB_ECHO_HAL_CHANNEL INIT ARRAYS */
+
+/* BEGIN PDB_SET_GET_CHANNEL INIT ARRAYS */
+u8_t SET_GET_data[] = {0xFF};
+
+/* END PDB_SET_GET_CHANNEL INIT ARRAYS */
+
+
+static struct nvs_fs pdb_fs = {
+    .sector_size  = NVS_SECTOR_SIZE,
+    .sector_count = NVS_SECTOR_COUNT,
+    .offset       = NVS_STORAGE_OFFSET,
+};
 
 
 static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {
@@ -50,10 +76,9 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {
         .persistent = 0,
         .changed = 0,
         .sem = &pdb_FIRMWARE_VERSION_channel_sem,
-        .publishers_id = NULL,
         .subscribers_cbs = NULL,
         .id = PDB_FIRMWARE_VERSION_CHANNEL,
-        .data = {0xF1, 0xF2, 0xF3, 0xF4}
+        .data = FIRMWARE_VERSION_data
     },
 
     {
@@ -68,10 +93,9 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {
         .persistent = 1,
         .changed = 0,
         .sem = &pdb_PERSISTENT_VAL_channel_sem,
-        .publishers_id = { CORE_thread_id, HAL_thread_id, NULL },
         .subscribers_cbs = NULL,
         .id = PDB_PERSISTENT_VAL_CHANNEL,
-        .data = {0xFF}
+        .data = PERSISTENT_VAL_data
     },
 
     {
@@ -86,10 +110,9 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {
         .persistent = 0,
         .changed = 0,
         .sem = &pdb_ECHO_HAL_channel_sem,
-        .publishers_id = { HAL_thread_id, APP_thread_id, CORE_thread_id, NULL },
-        .subscribers_cbs = { CORE_service_callback, HAL_service_callback, NULL },
+        .subscribers_cbs = ECHO_HAL_subscribers,
         .id = PDB_ECHO_HAL_CHANNEL,
-        .data = {0xFF}
+        .data = ECHO_HAL_data
     },
 
     {
@@ -104,10 +127,9 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {
         .persistent = 0,
         .changed = 0,
         .sem = &pdb_SET_GET_channel_sem,
-        .publishers_id = { CORE_thread_id, APP_thread_id, NULL },
         .subscribers_cbs = NULL,
         .id = PDB_SET_GET_CHANNEL,
-        .data = {0xFF}
+        .data = SET_GET_data
     },
 
 };                
@@ -140,13 +162,12 @@ int pdb_channel_get(pdb_channel_e id, u8_t *channel_value, size_t size)
 {
     int error              = 0;
     pdb_channel_t *channel = pdb_channel_get_ref(id);
-    if (channel && channel->get) {
-        error = channel->get(id, channel_value, size);
-        if (error) {
-            printk("Current channel get: %d, error code: %d\n", id, error);
-        }
-    } else {
-        printk("The channel #%d does not have a get implementation.\n", id);
+    PDB_CHECK(channel, -ENODEV, "The channel %d was not found!\n", id);
+    PDB_CHECK(channel->get, -EPERM, "The channel %d does not have get implementation!\n", id);
+    PDB_CHECK(channel->pre_get(id), -EIO, "Error in pre-get function of channel %d\n", id);
+    error = channel->get(id, channel_value, size);
+    if (error) {
+        printk("Current channel get: %d, error code: %d\n", id, error);
     }
     return error;
 }
@@ -175,11 +196,18 @@ int pdb_channel_get_private(pdb_channel_e id, u8_t *channel_value, size_t size)
 
 int pdb_channel_set(pdb_channel_e id, u8_t *channel_value, size_t size)
 {
-    /* #TODO: Adicionar pre-set e pos-set */
     int error              = 0;
     int valid              = 1;
     pdb_channel_t *channel = pdb_channel_get_ref(id);
+    const k_tid_t *p_id;
 
+    for(p_id = channel->publishers_id ; *p_id != NULL ; ++p_id) {
+        if (*p_id == k_current_get()) {
+            break;
+        }
+    }
+
+    PDB_CHECK(p_id, -EPERM, "The current thread has not the permission to change channel %d!\n", id);
     PDB_CHECK_VAL(channel, NULL, -ENODEV, "The channel %d was not found!\n", id);
     PDB_CHECK_VAL(channel->set, NULL, -EPERM, "The channel %d is read only!\n", id);
     if (channel->validate) {
@@ -285,6 +313,23 @@ static void __pdb_persist_data_on_flash(void)
 int pdb_thread(void)
 {
     /* #TODO: Alterar o funcionamento da thread do pdb */
+    
+/* BEGIN SET CHANNEL PUBLISHERS */
+
+    const k_tid_t FIRMWARE_VERSION_publishers[] = {NULL};
+    __pdb_channels[PDB_FIRMWARE_VERSION_CHANNEL].publishers_id = FIRMWARE_VERSION_publishers;
+
+    const k_tid_t PERSISTENT_VAL_publishers[] = { CORE_thread_id, HAL_thread_id, NULL };;
+    __pdb_channels[PDB_PERSISTENT_VAL_CHANNEL].publishers_id = PERSISTENT_VAL_publishers;
+
+    const k_tid_t ECHO_HAL_publishers[] = { HAL_thread_id, APP_thread_id, CORE_thread_id, NULL };;
+    __pdb_channels[PDB_ECHO_HAL_CHANNEL].publishers_id = ECHO_HAL_publishers;
+
+    const k_tid_t SET_GET_publishers[] = { CORE_thread_id, APP_thread_id, NULL };;
+    __pdb_channels[PDB_SET_GET_CHANNEL].publishers_id = SET_GET_publishers;
+
+/* END SET CHANNEL PUBLISHERS */
+
     int error = nvs_init(&pdb_fs, DT_FLASH_DEV_NAME);
     if (error) {
         printk("Flash Init failed\n");

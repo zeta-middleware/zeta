@@ -4,7 +4,6 @@
 
 #include "pdb.h"
 
-/* #TODO: Remover código legado da estratégia dos includes */
 #include "devicetree_fixups.h"
 #include "pdb_threads.h"
 #include "pdb_custom_functions.h"
@@ -12,20 +11,23 @@
 
 int pdb_thread(void);
 
-#define NVS_SECTOR_SIZE DT_FLASH_ERASE_BLOCK_SIZE  // 4096
-#define NVS_SECTOR_COUNT 4
-#define NVS_STORAGE_OFFSET DT_FLASH_AREA_STORAGE_OFFSET
+#define NVS_SECTOR_SIZE $nvs_sector_size
+#define NVS_SECTOR_COUNT $nvs_sector_count
+#define NVS_STORAGE_OFFSET $nvs_storage_offset
+
+$channels_sems
+
+K_THREAD_DEFINE(pdb_thread_id, PDB_THREAD_SIZE, pdb_thread, NULL, NULL, NULL,
+                    PDB_THREAD_PRIORITY, 0, K_NO_WAIT);
+
+
+$arrays_init
 
 static struct nvs_fs pdb_fs = {
     .sector_size  = NVS_SECTOR_SIZE,
     .sector_count = NVS_SECTOR_COUNT,
     .offset       = NVS_STORAGE_OFFSET,
 };
-
-$channels_sems
-
-K_THREAD_DEFINE(pdb_thread_id, PDB_THREAD_SIZE, pdb_thread, NULL, NULL, NULL,
-                    PDB_THREAD_PRIORITY, 0, K_NO_WAIT);
 
 $channels_creation
 
@@ -56,13 +58,12 @@ int pdb_channel_get(pdb_channel_e id, u8_t *channel_value, size_t size)
 {
     int error              = 0;
     pdb_channel_t *channel = pdb_channel_get_ref(id);
-    if (channel && channel->get) {
-        error = channel->get(id, channel_value, size);
-        if (error) {
-            printk("Current channel get: %d, error code: %d\n", id, error);
-        }
-    } else {
-        printk("The channel #%d does not have a get implementation.\n", id);
+    PDB_CHECK(channel, -ENODEV, "The channel %d was not found!\n", id);
+    PDB_CHECK(channel->get, -EPERM, "The channel %d does not have get implementation!\n", id);
+    PDB_CHECK(channel->pre_get(id), -EIO, "Error in pre-get function of channel %d\n", id);
+    error = channel->get(id, channel_value, size);
+    if (error) {
+        printk("Current channel get: %d, error code: %d\n", id, error);
     }
     return error;
 }
@@ -91,11 +92,18 @@ int pdb_channel_get_private(pdb_channel_e id, u8_t *channel_value, size_t size)
 
 int pdb_channel_set(pdb_channel_e id, u8_t *channel_value, size_t size)
 {
-    /* #TODO: Adicionar pre-set e pos-set */
     int error              = 0;
     int valid              = 1;
     pdb_channel_t *channel = pdb_channel_get_ref(id);
+    const k_tid_t *p_id;
 
+    for(p_id = channel->publishers_id ; *p_id != NULL ; ++p_id) {
+        if (*p_id == k_current_get()) {
+            break;
+        }
+    }
+
+    PDB_CHECK(p_id, -EPERM, "The current thread has not the permission to change channel %d!\n", id);
     PDB_CHECK_VAL(channel, NULL, -ENODEV, "The channel %d was not found!\n", id);
     PDB_CHECK_VAL(channel->set, NULL, -EPERM, "The channel %d is read only!\n", id);
     if (channel->validate) {
@@ -201,6 +209,7 @@ static void __pdb_persist_data_on_flash(void)
 int pdb_thread(void)
 {
     /* #TODO: Alterar o funcionamento da thread do pdb */
+    $set_publishers
     int error = nvs_init(&pdb_fs, DT_FLASH_DEV_NAME);
     if (error) {
         printk("Flash Init failed\n");

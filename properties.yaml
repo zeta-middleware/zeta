@@ -20,28 +20,21 @@ Services:
 Channels:
   - FIRMWARE_VERSION:
       size: 4
-      set_handler: 'NULL'
+      set: 'NULL'
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
-  - PERSISTENT_VAL:
-      size: 1
+      
+  - POWER_VAL:
+      size: 2
       persistent: True
       validate: 'pdb_validator_different_of_zero'
+      subscribers:
+        - *app
       publishers:
         - *core
-        - *hal
-  - ECHO_HAL:
+        
+  - SENSOR_VAL:
       size: 1
       subscribers:
         - *core
-        - *hal
       publishers:
         - *hal
-        - *app
-        - *core
-  - SET_GET:
-      size: 1
-      set_handler: 'set_plus_1'
-      pre_get: 'get_plus_1'
-      publishers:
-        - *core
-        - *app

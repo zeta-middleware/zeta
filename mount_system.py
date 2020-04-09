@@ -97,11 +97,15 @@ K_SEM_DEFINE({sem}, 1, 1);
                 if 'validate' in v :
                     validate = v['validate']
                 # Getting set functions
+                if 'set' in v and v['set'] == 'NULL' :
+                    set = 'NULL'
                 if 'pre_set' in v :
                     pre_set = v['pre_set']
                 if 'pos_set' in v :
                     pos_set = v['pos_set']
                 # Getting get function
+                if 'get' in v and v['get'] == 'NULL' :
+                    get = 'NULL'
                 if 'pre_get' in v :
                     pre_get = v['pre_get']
                 # Getting persistent
@@ -119,7 +123,9 @@ K_SEM_DEFINE({sem}, 1, 1);
                     publishers_list = list()
                     for p in v['publishers'] :
                         publishers_list.append(p['name'] + "_thread_id")
-                    publishers_init = "{ " + ", ".join(publishers_list)  + ", NULL };"
+                        pass
+                    publishers_list.append("pdb_thread_id")
+                    publishers_init = "{ " + ", ".join(publishers_list)  + ", NULL }"
                     pass
                 self.arrays_init += f'''
 /* BEGIN {name} INIT ARRAYS */
@@ -139,7 +145,6 @@ K_SEM_DEFINE({sem}, 1, 1);
         .pos_set = {pos_set},
         .size = {size},
         .persistent = {persistent},
-        .changed = 0,
         .sem = &{sem},
         .subscribers_cbs = {subscribers},
         .id = {name},
@@ -288,18 +293,18 @@ class PdbCustomFunctions :
                 if 'pre_get' in v :
                     pre_get_name = v['pre_get']
                     self.channels_functions += f'''
-int {pre_get_name}(pdb_channel_e id);
+int {pre_get_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
 '''
                     pass
                 if 'pre_set' in v :
-                    pre_set_name = v['pre_set_name']
+                    pre_set_name = v['pre_set']
                     self.channels_functions += f'''
-int {pre_set_name}(pdb_channel_e id);
+int {pre_set_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
 '''        
                 if 'pos_set' in v :
-                    pos_set_name = v['pos_set_name']
+                    pos_set_name = v['pos_set']
                     self.channels_functions += f'''
-int {pos_set_name}(pdb_channel_e id);
+int {pos_set_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
 '''
                     pass
                 if 'validate' in v :

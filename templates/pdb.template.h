@@ -12,11 +12,11 @@
 #include <zephyr/types.h>
 
 #define PDB_THREAD_SIZE 256
-#define PDB_THREAD_PRIORITY 100
+#define PDB_THREAD_PRIORITY 0
 
 #define PDB_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
 #define PDB_CHECK_VAL(_p, _e, _err, ...) \
-    if (_p != _e) {                       \
+    if (_p == _e) {                       \
         printk(__VA_ARGS__);              \
         return _err;                      \
     }
@@ -36,18 +36,26 @@ typedef struct {
 
 typedef void (*pdb_callback_f)(pdb_channel_e id);
 
+union opt_data {
+    struct {
+        u8_t pend_persistent : 1;
+        u8_t pend_callback : 1;
+    } field;
+    u8_t data;
+};
+
 struct pdb_channel {
     const char *name;
     u8_t *data;
     int (*validate)(u8_t *data, size_t size);
-    int (*pre_get)(pdb_channel_e id);
+    int (*pre_get)(pdb_channel_e id, u8_t *channel_value, size_t size);
     int (*get)(pdb_channel_e id, u8_t *channel_value, size_t size);
-    int (*pre_set)(pdb_channel_e id);
+    int (*pre_set)(pdb_channel_e id, u8_t *channel_value, size_t size);
     int (*set)(pdb_channel_e id, u8_t *channel_value, size_t size);
-    int (*pos_set)(pdb_channel_e id);
+    int (*pos_set)(pdb_channel_e id, u8_t *channel_value, size_t size);
     u8_t size;
     u8_t persistent;
-    u8_t changed;
+    union opt_data opt;
     struct k_sem *sem;
     const k_tid_t *publishers_id;
     pdb_callback_f *subscribers_cbs;
@@ -94,7 +102,7 @@ int pdb_channel_get(pdb_channel_e id, u8_t *channel_value, size_t size);
  *
  * @return error code.
  */
-int pdb_channel_get_private(pdb_channel_e id, u8_t *channel_value, size_t size);
+/* int pdb_channel_get_private(pdb_channel_e id, u8_t *channel_value, size_t size); */
 
 /**
  * Sets the channel value.
@@ -117,7 +125,7 @@ int pdb_channel_set(pdb_channel_e id, u8_t *channel_value, size_t size);
  *
  * @return error code.
  */
-int pdb_channel_set_private(pdb_channel_e id, u8_t *channel_value, size_t size);
+/* int pdb_channel_set_private(pdb_channel_e id, u8_t *channel_value, size_t size); */
 
 
 #endif

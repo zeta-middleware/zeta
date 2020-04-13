@@ -21,10 +21,10 @@ void pdb_thread_nvs(void);
 static int pdb_channel_get_private(pdb_channel_e id, u8_t *channel_value, size_t size);
 static int pdb_channel_set_private(pdb_channel_e id, u8_t *channel_value, size_t size);
 
-K_THREAD_DEFINE(pdb_thread_id, PDB_THREAD_SIZE, pdb_thread, NULL, NULL, NULL,
+K_THREAD_DEFINE(pdb_thread_id, PDB_THREAD_NVS_STACK_SIZE, pdb_thread, NULL, NULL, NULL,
                     PDB_THREAD_PRIORITY, 0, K_NO_WAIT);
 
-K_THREAD_DEFINE(pdb_thread_nvs_id, PDB_THREAD_SIZE, pdb_thread_nvs, NULL, NULL, NULL,
+K_THREAD_DEFINE(pdb_thread_nvs_id, PDB_THREAD_NVS_STACK_SIZE, pdb_thread_nvs, NULL, NULL, NULL,
                     PDB_THREAD_PRIORITY, 0, K_NO_WAIT);
 
 
@@ -243,7 +243,6 @@ void pdb_thread(void)
     /* #TODO: Alterar o funcionamento da thread do pdb */
     $set_publishers
 
-    printk("Publishers were setted\n");
     while (1) {
         k_sleep(K_MSEC(100));
         __pdb_check_channels_changes();

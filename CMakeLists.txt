@@ -10,10 +10,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Generating properties macro create
 add_custom_target(
-  generatePropertiesTarget
-  COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py
+  generateFiles ALL
+  COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py ${CMAKE_CURRENT_SOURCE_DIR}
+  BYPRODUCTS "${PROJECT_SOURCE_DIR}/generated/src/pdb.c" "${PROJECT_SOURCE_DIR}/generated/src/pdb_threads.c"
+  COMMENT "Generating files from templates"
   )
-add_dependencies(app generatePropertiesTarget)
+add_dependencies(app generateFiles)
 
 # Add header directories
 list(APPEND HEADERS

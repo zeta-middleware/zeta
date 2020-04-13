@@ -6,7 +6,10 @@ from string import Template
 class PdbHeader :
     def __init__(self, yaml_dict) :
         self.channels = yaml_dict['Channels']
+        self.configs = yaml_dict['Config']
         self.channels_enum = f''
+        self.pdb_stack_size = f''
+        self.storage_stack_size = f''
 
     def gen_enum(self) :
         channels_names_list = list()
@@ -19,15 +22,22 @@ typedef enum {{
     {channel_names},
     PDB_CHANNEL_COUNT
 }} __attribute__((packed)) pdb_channel_e;'''
-        
+
+    def gen_configs(self) :
+        pdb_stack_size = self.configs['pdb_stack_size']
+        storage_stack_size = self.configs['storage_stack_size']
+        self.pdb_stack_size += f'''{pdb_stack_size}'''
+        self.storage_stack_size += f'''{storage_stack_size}'''
+        pass
     def gen_file(self):
         with open('../templates/pdb.template.h', 'r') as header_template :
             t = Template(header_template.read())
             with open('../generated/include/pdb.h', 'w') as header :
-                header.write(t.substitute(channels_enum=self.channels_enum))
+                header.write(t.substitute(channels_enum=self.channels_enum, storage_stack_size=self.storage_stack_size, pdb_stack_size=self.pdb_stack_size))
 
     def run(self) :
         self.gen_enum()
+        self.gen_configs()
         self.gen_file()
 
 class PdbSource :
@@ -329,9 +339,12 @@ int {validate_name}(u8_t *data, size_t size);
 def main() :
     try :
         os.makedirs('../generated/src')
+    except FileExistsError as fe_error:
+        print("[MESSAGE]: Skip creation of generated/src folder")        
+    try:
         os.makedirs('../generated/include')
     except FileExistsError as fe_error:
-        print("[MESSAGE]: Skip creation of generated folder")
+        print("[MESSAGE]: Skip creation of generated/include folder")
         
     with open('../properties.yaml', 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)

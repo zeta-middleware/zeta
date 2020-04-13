@@ -11,7 +11,8 @@
 #include <zephyr.h>
 #include <zephyr/types.h>
 
-#define PDB_THREAD_SIZE 256
+#define PDB_THREAD_NVS_STACK_SIZE $storage_stack_size
+#define PDB_THREAD_STACK_SIZE $pdb_stack_size
 #define PDB_THREAD_PRIORITY 0
 
 #define PDB_VALUE_REF(x) (u8_t *) (&x), sizeof(x)

@@ -33,7 +33,7 @@ typedef enum {{
     def gen_file(self):
         with open('../templates/pdb.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('../generated/include/pdb.h', 'w') as header :
+            with open('zephyr/include/generated/pdb.h', 'w') as header :
                 header.write(t.substitute(channels_enum=self.channels_enum, storage_stack_size=self.storage_stack_size, pdb_stack_size=self.pdb_stack_size))
 
     def run(self) :
@@ -182,7 +182,7 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {{
     def gen_file(self) :
         with open('../templates/pdb.template.c', 'r') as source_template :
             s = Template(source_template.read())
-            with open('../generated/src/pdb.c', 'w') as source :
+            with open('zephyr/src/generated/pdb.c', 'w') as source :
                 source.write(s.substitute(channels_creation=self.channels_creation, channels_sems=self.channels_sems, nvs_sector_size=self.sector_size, nvs_sector_count=self.sector_count, nvs_storage_offset=self.storage_offset, arrays_init=self.arrays_init, set_publishers=self.set_publishers))
         pass
     
@@ -215,7 +215,7 @@ void {name_function}(pdb_channel_e id);
     def gen_file(self) :
         with open('../templates/pdb_callbacks.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('../generated/include/pdb_callbacks.h', 'w') as header :
+            with open('zephyr/include/generated/pdb_callbacks.h', 'w') as header :
                 header.write(t.substitute(services_callbacks=self.services_callbacks))
 
 
@@ -243,7 +243,7 @@ extern const k_tid_t {name_tid};
     def gen_file(self) :
         with open('../templates/pdb_threads.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('../generated/include/pdb_threads.h', 'w') as header :
+            with open('zephyr/include/generated/pdb_threads.h', 'w') as header :
                 header.write(t.substitute(services_sections=self.services_sections))
         
     def run(self) :
@@ -279,7 +279,7 @@ K_THREAD_DEFINE({name_tid},
     def gen_file(self) :
         with open('../templates/pdb_threads.template.c', 'r') as source_template :
             s = Template(source_template.read())
-            with open('../generated/src/pdb_threads.c', 'w') as source :
+            with open('zephyr/src/generated/pdb_threads.c', 'w') as source :
                 source.write(s.substitute(services_threads=self.services_threads))
 
     def run(self) :
@@ -329,7 +329,7 @@ int {validate_name}(u8_t *data, size_t size);
     def gen_file(self) :
         with open('../templates/pdb_custom_functions.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('../generated/include/pdb_custom_functions.h', 'w') as header :
+            with open('zephyr/include/generated/pdb_custom_functions.h', 'w') as header :
                 header.write(t.substitute(custom_functions=self.channels_functions))
 
     def run(self) :
@@ -338,15 +338,11 @@ int {validate_name}(u8_t *data, size_t size);
     
 def main() :
     try :
-        os.makedirs('../generated/src')
+        os.makedirs('../build/zephyr/src/generated/')
     except FileExistsError as fe_error:
-        print("[PDB]: Skip creation of generated/src folder")        
-    try:
-        os.makedirs('../generated/include')
-    except FileExistsError as fe_error:
-        print("[PDB]: Skip creation of generated/include folder")
+        print("[PDB]: Skip creation of srs/generated folder")        
         
-    with open('../properties.yaml', 'r') as f:
+    with open('../pdb.yaml', 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
         PdbHeader(yaml_dict).run()
         PdbSource(yaml_dict).run()

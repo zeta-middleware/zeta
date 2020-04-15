@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_custom_target(
   generateFiles ALL
   COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py ${CMAKE_CURRENT_SOURCE_DIR}
-  BYPRODUCTS "${PROJECT_SOURCE_DIR}/generated/src/pdb.c" "${PROJECT_SOURCE_DIR}/generated/src/pdb_threads.c"
+  BYPRODUCTS "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb.c" "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb_threads.c"
   COMMENT "Generating files from templates"
   )
 add_dependencies(app generateFiles)
@@ -23,14 +23,13 @@ list(APPEND HEADERS
     "${PROJECT_BINARY_DIR}/include/generated"
     "${PROJECT_BINARY_DIR}/zephyr/include/generated"
     "${PROJECT_SOURCE_DIR}/include"
-    "${PROJECT_SOURCE_DIR}/generated/include"
     )
 
 # Add source files
 list(APPEND SOURCES
     "${PROJECT_SOURCE_DIR}/src/main.c"
-    "${PROJECT_SOURCE_DIR}/generated/src/pdb.c"
-    "${PROJECT_SOURCE_DIR}/generated/src/pdb_threads.c"
+    "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb.c"
+    "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb_threads.c"
 )
 
 include_directories(${HEADERS})

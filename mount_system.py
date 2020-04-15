@@ -1,3 +1,4 @@
+# TODO: Criar os warnings nos arquivos gerados
 import yaml
 import os
 from os import getcwd
@@ -28,7 +29,7 @@ typedef enum {{
         storage_stack_size = self.configs['storage_stack_size']
         self.pdb_stack_size += f'''{pdb_stack_size}'''
         self.storage_stack_size += f'''{storage_stack_size}'''
-        pass
+
     def gen_file(self):
         with open('../templates/pdb.template.h', 'r') as header_template :
             t = Template(header_template.read())
@@ -53,7 +54,6 @@ class PdbSource :
         self.set_publishers = f'''
 /* BEGIN SET CHANNEL PUBLISHERS */
 '''
-
 
     def gen_sems(self) :
         self.channels_sems += f'''
@@ -340,11 +340,11 @@ def main() :
     try :
         os.makedirs('../generated/src')
     except FileExistsError as fe_error:
-        print("[MESSAGE]: Skip creation of generated/src folder")        
+        print("[PDB]: Skip creation of generated/src folder")        
     try:
         os.makedirs('../generated/include')
     except FileExistsError as fe_error:
-        print("[MESSAGE]: Skip creation of generated/include folder")
+        print("[PDB]: Skip creation of generated/include folder")
         
     with open('../properties.yaml', 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)

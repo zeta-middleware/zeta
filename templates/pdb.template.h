@@ -16,6 +16,7 @@
 #define PDB_THREAD_PRIORITY 0
 
 #define PDB_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
+
 #define PDB_CHECK_VAL(_p, _e, _err, ...) \
     if (_p == _e) {                       \
         printk(__VA_ARGS__);              \
@@ -81,7 +82,7 @@ size_t pdb_channel_size(pdb_channel_e id, int *error);
  * 
  * @return channel name
  */
-const char *pdb_channel_name(pdb_channel_e id);
+const char *pdb_channel_name(pdb_channel_e id, int *error);
 
 /**
  * Gets the channel value.

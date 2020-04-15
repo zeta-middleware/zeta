@@ -134,7 +134,6 @@ K_SEM_DEFINE({sem}, 1, 1);
                     for p in v['publishers'] :
                         publishers_list.append(p['name'] + "_thread_id")
                         pass
-                    publishers_list.append("pdb_thread_id")
                     publishers_init = "{ " + ", ".join(publishers_list)  + ", NULL }"
                     pass
                 self.arrays_init += f'''

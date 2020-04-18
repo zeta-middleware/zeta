@@ -24,13 +24,16 @@ list(APPEND SOURCES
 
 if(CONFIG_ZTEST)
   message("Ztest enabled, adding test_main.c file to source files.")
+  list(APPEND HEADERS
+    "${PROJECT_SOURCE_DIR}/test/include"
+    )
   list(APPEND SOURCES
-    "${PROJECT_SOURCE_DIR}/src/test_main.c"
+    "${PROJECT_SOURCE_DIR}/test/src/test_main.c"
     )
   # Generating properties macro create
   add_custom_target(
     generateFiles ALL
-    COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py -f pdb_test.yaml 
+    COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py -f ../test/pdb_test.yaml 
     BYPRODUCTS "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb.c" "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb_threads.c"
     COMMENT "Generating files from templates"
     )
@@ -43,7 +46,7 @@ else()
   # Generating properties macro create
   add_custom_target(
     generateFiles ALL
-    COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py -f pdb.yaml 
+    COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py -f ../pdb.yaml 
     BYPRODUCTS "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb.c" "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb_threads.c"
     COMMENT "Generating files from templates"
     )

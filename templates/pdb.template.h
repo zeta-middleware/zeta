@@ -18,20 +18,20 @@
 #define PDB_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
 
 #define PDB_CHECK_VAL(_p, _e, _err, ...) \
-    if (_p == _e) {                       \
-        printk(__VA_ARGS__);              \
-        return _err;                      \
+    if (_p == _e) {                      \
+        printk(__VA_ARGS__);             \
+        return _err;                     \
     }
 
 #define PDB_CHECK(_p, _err, ...) \
-    if (_p) {                     \
-        printk(__VA_ARGS__);      \
-        return _err;              \
+    if (_p) {                    \
+        printk(__VA_ARGS__);     \
+        return _err;             \
     }
 
 $channels_enum
 
-typedef struct {
+    typedef struct {
     k_tid_t source_thread;
     pdb_channel_e id;
 } pdb_event_t;
@@ -52,6 +52,7 @@ struct pdb_channel {
     int (*validate)(u8_t *data, size_t size);
     int (*pre_get)(pdb_channel_e id, u8_t *channel_value, size_t size);
     int (*get)(pdb_channel_e id, u8_t *channel_value, size_t size);
+    int (*pos_get)(pdb_channel_e id, u8_t *channel_value, size_t size);
     int (*pre_set)(pdb_channel_e id, u8_t *channel_value, size_t size);
     int (*set)(pdb_channel_e id, u8_t *channel_value, size_t size);
     int (*pos_set)(pdb_channel_e id, u8_t *channel_value, size_t size);
@@ -75,11 +76,11 @@ typedef struct pdb_channel pdb_channel_t;
  */
 size_t pdb_channel_size(pdb_channel_e id, int *error);
 
-/** 
+/**
  * Returns the channel name
- * 
+ *
  * @param id id channel id
- * 
+ *
  * @return channel name
  */
 const char *pdb_channel_name(pdb_channel_e id, int *error);

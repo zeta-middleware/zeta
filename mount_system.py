@@ -81,6 +81,7 @@ K_SEM_DEFINE({sem}, 1, 1);
                 set = "pdb_channel_set_private"
                 pos_set = "NULL"
                 pre_get = "NULL"
+                pos_get = "NULL"
                 get = "pdb_channel_get_private"
                 size = v['size']
                 data_list = list()
@@ -120,6 +121,8 @@ K_SEM_DEFINE({sem}, 1, 1);
                     get = 'NULL'
                 if 'pre_get' in v :
                     pre_get = v['pre_get']
+                if 'pos_get' in v :
+                    pos_get = v['pos_get']
                 # Getting persistent
                 if 'persistent' in v and v['persistent'] :
                     persistent = "1"
@@ -151,6 +154,7 @@ K_SEM_DEFINE({sem}, 1, 1);
         .validate = {validate},
         .pre_get = {pre_get},
         .get = {get},
+        .pos_get = {pos_get},
         .pre_set = {pre_set},
         .set = {set},
         .pos_set = {pos_set},
@@ -307,6 +311,12 @@ class PdbCustomFunctions :
 int {pre_get_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
 '''
                     pass
+                if 'pos_get' in v :
+                    pos_get_name = v['pos_get']
+                    self.channels_functions += f'''
+int {pos_get_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
+'''
+                    pass
                 if 'pre_set' in v :
                     pre_set_name = v['pre_set']
                     self.channels_functions += f'''
@@ -352,7 +362,7 @@ def main() :
                         help='Yaml that must be read in order to mount system.')
     args = parser.parse_args(sys.argv[1:])    
         
-    with open('../' + args.yamlfile, 'r') as f:
+    with open(args.yamlfile, 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
         PdbHeader(yaml_dict).run()
         PdbSource(yaml_dict).run()

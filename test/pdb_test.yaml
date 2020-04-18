@@ -1,0 +1,53 @@
+Config:
+  nvs_sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  nvs_sector_count: 4
+  nvs_storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+  pdb_stack_size: 512
+  storage_stack_size: 512
+
+Services:
+  - CORE: &core
+      name: 'CORE'
+      priority: 5
+      stack_size: 512
+  - HAL: &hal
+      name: 'HAL'
+      priority: 2
+      stack_size: 1024
+  - APP: &app
+      name: 'APP'
+      priority: 1
+      stack_size: 2048
+      
+Channels:
+  - FIRMWARE_VERSION:
+      size: 4
+      set: 'NULL'
+      initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
+
+# pos_set_reach_limit: aciona alguma coisa que faça com que a escrita nesse channel obedeça um intervalo de tempo
+  - COUNT_REACH_LIMIT:
+     size: 1
+     persistent: True
+     pos_set: 'pos_set_reach_limit'
+     subscribers:
+       - *app
+     publishers:
+       - *core
+      
+# pre_set_power_calibrate: apenas pega o dado e aplica um offset
+  - POWER_VAL:
+      size: 2
+      validate: 'power_validate_different_of_zero'
+      pre_set: 'pre_set_power_calibrate'
+      subscribers:
+        - *core
+      publishers:
+        - *hal
+# pre_get_pms_wakeup: verificar se o timer estourou, para a partir daí acordar o módulo e realizar a coleta
+# pos_get_pms_sleep: botar o módulo para dormir e iniciar o timer
+  - PMS_SENSOR_VAL:
+      size: 1
+      pre_get: 'pre_get_pms_wakeup'
+      pos_get: 'pos_get_pms_sleep'
+      set: 'NULL'

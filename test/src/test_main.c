@@ -4,23 +4,7 @@
 #include <string.h>
 
 #include "pdb.h"
-#include "pdb_unit_tests.h"
 
-int set_plus_1(pdb_property_e id, u8_t *property_value, size_t size)
-{
-    u8_t new_value = *property_value + 1;
-    pdb_property_set_private(id, &new_value, size);
-
-    return 0;
-}
-
-int get_plus_1(pdb_property_e id, u8_t *property_value, size_t size)
-{
-    pdb_property_get_private(id, property_value, size);
-    *property_value = *property_value + 1;
-
-    return 0;
-}
 
 void test_properties_name(void)
 {

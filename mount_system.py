@@ -1,6 +1,8 @@
 # TODO: Criar os warnings nos arquivos gerados
 import yaml
 import os
+import argparse
+import sys
 from os import getcwd
 from string import Template
 
@@ -336,12 +338,21 @@ int {validate_name}(u8_t *data, size_t size);
         self.gen_file()
     
 def main() :
+    print("*********************************************")
+    print("*             PDB Mount System              *")
+    print("*********************************************")
     try :
         os.makedirs('../build/zephyr/src/generated/')
     except FileExistsError as fe_error:
         print("[PDB]: Skip creation of srs/generated folder")        
+        pass
         
-    with open('../pdb.yaml', 'r') as f:
+    parser = argparse.ArgumentParser(description='PDB mount system')
+    parser.add_argument('-f', '--yamlfile', default='pdb.yaml',
+                        help='Yaml that must be read in order to mount system.')
+    args = parser.parse_args(sys.argv[1:])    
+        
+    with open('../' + args.yamlfile, 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
         PdbHeader(yaml_dict).run()
         PdbSource(yaml_dict).run()

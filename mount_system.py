@@ -96,11 +96,11 @@ K_SEM_DEFINE({sem}, 1, 1);
                 name_publishers = k + "_publishers"
                 
                 # Getting name
-                name = "PDB_" + k + "_CHANNEL"
+                name = k
                 # Getting sem
                 sem = "pdb_" + k + "_channel_sem"
                 # Getting ID
-                id = name
+                id = "PDB_" + k + "_CHANNEL"
                 # Getting data
                 if 'initial_value' in v :
                     data_list = ["0x{:02X}".format(x) for x in v['initial_value']]
@@ -162,13 +162,13 @@ K_SEM_DEFINE({sem}, 1, 1);
         .persistent = {persistent},
         .sem = &{sem},
         .subscribers_cbs = {subscribers},
-        .id = {name},
+        .id = {id},
         .data = {data}
     }},\n'''
 
                 self.set_publishers += f'''
     const k_tid_t {name_publishers}[] = {publishers_init};
-    __pdb_channels[{name}].publishers_id = {name_publishers};
+    __pdb_channels[{id}].publishers_id = {name_publishers};
 '''
         self.set_publishers += f'''
 /* END SET CHANNEL PUBLISHERS */

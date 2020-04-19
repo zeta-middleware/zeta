@@ -29,6 +29,7 @@ if(CONFIG_ZTEST)
     )
   list(APPEND SOURCES
     "${PROJECT_SOURCE_DIR}/test/src/test_main.c"
+    "${PROJECT_SOURCE_DIR}/test/src/test_functions.c"
     )
   # Generating properties macro create
   add_custom_target(

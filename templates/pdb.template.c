@@ -9,6 +9,7 @@
 #include <fs/nvs.h>
 #include <string.h>
 #include <zephyr.h>
+#include <logging/log.h>
 
 #include "pdb.h"
 
@@ -16,6 +17,8 @@
 #include "pdb_threads.h"
 #include "pdb_custom_functions.h"
 #include "pdb_callbacks.h"
+
+LOG_MODULE_REGISTER(PDB, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define NVS_SECTOR_SIZE $nvs_sector_size
 #define NVS_SECTOR_COUNT $nvs_sector_count
@@ -50,9 +53,13 @@ const char *pdb_channel_name(pdb_channel_e id, int *error)
 {
     if (id < PDB_CHANNEL_COUNT) {
         pdb_channel_t *p = &__pdb_channels[id];
+        if (error) {
+            *error = 0;
+        }
         return p->name;
     }
     else {
+        LOG_INF("The channel #%d there isn't!", id);
         if (error) {
             *error = -EINVAL;
         }
@@ -64,10 +71,13 @@ size_t pdb_channel_size(pdb_channel_e id, int *error)
 {
     if (id < PDB_CHANNEL_COUNT) {
         pdb_channel_t *p = &__pdb_channels[id];
+        if (error) {
+            *error = 0;
+        }
         return (size_t) p->size;
     }
     else {
-        printk("The channel #%d was not found!\n", id);
+        LOG_INF("The channel #%d there isn't!", id);
         if (error) {
             *error = -EINVAL;
         }
@@ -75,20 +85,24 @@ size_t pdb_channel_size(pdb_channel_e id, int *error)
     }
 }
 
-/* #TODO: Deixar de utilizar o channel_get_ref */
 int pdb_channel_get(pdb_channel_e id, u8_t *channel_value, size_t size)
 {
     if (id < PDB_CHANNEL_COUNT) {
         int error              = 0;
         pdb_channel_t *channel = &__pdb_channels[id];
         PDB_CHECK_VAL(channel->get, NULL, -EPERM, "channel #%d does not have get implementation!\n", id);
+        PDB_CHECK(size != channel->size, -EINVAL, "channel #%d has a different size!(%d)(%d)\n", id, size, channel->size);
         if (channel->pre_get) {
             error = channel->pre_get(id, channel_value, size);
+            PDB_CHECK(error, error, "Error(code %d) in pre-get function of channel #%d\n", error, id);
         }
-        PDB_CHECK(error, error, "Error in pre-get function of channel #%d\n", id);
         error = channel->get(id, channel_value, size);
-        PDB_CHECK(error, error, "Current channel #%d, error code: %d\n", id, error)
-            return error;
+        PDB_CHECK(error, error, "Current channel #%d, error code: %d\n", id, error);
+        if (channel->pos_get) {
+            error = channel->pos_get(id, channel_value, size);
+            PDB_CHECK(error, error, "Error(code %d) in pos-get function of channel #%d!\n", error, id);
+        }
+        return error;
     }
     else {
         printk("The channel #%d was not found!\n", id); 
@@ -100,16 +114,12 @@ static int pdb_channel_get_private(pdb_channel_e id, u8_t *channel_value, size_t
 {
     int ret = 0;
     pdb_channel_t *channel = &__pdb_channels[id];
-    if (channel->size == size) {
-        if (k_sem_take(channel->sem, K_MSEC(200))) {
-            printk("Could not get the channel. Channel is busy\n");
-            ret = -EBUSY;
-        } else {
-            memcpy(channel_value, channel->data, channel->size);
-            k_sem_give(channel->sem);
-        }
+    if (k_sem_take(channel->sem, K_MSEC(200))) {
+        printk("Could not get the channel. Channel is busy\n");
+        ret = -EBUSY;
     } else {
-        ret = -EINVAL;
+        memcpy(channel_value, channel->data, channel->size);
+        k_sem_give(channel->sem);
     }
     return ret;
 }
@@ -129,6 +139,7 @@ int pdb_channel_set(pdb_channel_e id, u8_t *channel_value, size_t size)
         }
         PDB_CHECK_VAL(*pub_id, NULL,-EPERM, "The current thread has not the permission to change channel #%d!\n", id);
         PDB_CHECK_VAL(channel->set, NULL, -EPERM, "The channel #%d is read only!\n", id);
+        PDB_CHECK(size != channel->size, -EINVAL, "The channel #%d has a different size!\n", id);
         if (channel->validate) {
             valid = channel->validate(channel_value, size);
         }
@@ -155,25 +166,21 @@ static int pdb_channel_set_private(pdb_channel_e id, u8_t *channel_value, size_t
 {
     int ret = 0;
     pdb_channel_t *channel = &__pdb_channels[id];
-    if (channel->size == size) {
-        if (k_sem_take(channel->sem, K_MSEC(200))) {
-            printk("Could not set the channel. Channel is busy\n");
-            ret = -EBUSY;
-        } else {
-            if (memcmp(channel->data, channel_value, size)) {
-                memcpy(channel->data, channel_value, channel->size);
-                channel->opt.field.pend_callback = 1;
-                if (k_msgq_put(&pdb_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                    printk("[Channel #%d] Error sending channels change message to PDB thread!\n", id);
-                }
-                channel->opt.field.pend_persistent = (channel->persistent) ? 1:0;
-                k_sem_give(channel->sem);
-            } else {
-                k_sem_give(channel->sem);
-            }
-        }
+    if (k_sem_take(channel->sem, K_MSEC(200))) {
+        printk("Could not set the channel. Channel is busy\n");
+        ret = -EBUSY;
     } else {
-        ret = -EINVAL;
+        if (memcmp(channel->data, channel_value, size)) {
+            memcpy(channel->data, channel_value, channel->size);
+            channel->opt.field.pend_callback = 1;
+            if (k_msgq_put(&pdb_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
+                printk("[Channel #%d] Error sending channels change message to PDB thread!\n", id);
+            }
+            channel->opt.field.pend_persistent = (channel->persistent) ? 1:0;
+            k_sem_give(channel->sem);
+        } else {
+            k_sem_give(channel->sem);
+        }
     }
     return ret;
 }
@@ -236,11 +243,8 @@ static void __pdb_persist_data_on_flash(void)
 
 void pdb_thread(void)
 {
-    /* #TODO: Alterar o funcionamento da thread do pdb */
     $set_publishers
 
-
-/* #TODO: alterar o k_sleep por um semáforo */
     u8_t id = 0;
     while (1) {
         k_msgq_get(&pdb_channels_changed_msgq, &id, K_FOREVER);

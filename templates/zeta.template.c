@@ -5,7 +5,6 @@
  *
  */
 
-/* #TODO: Padronizar os prints do sistema. */
 #include <fs/nvs.h>
 #include <logging/log.h>
 #include <string.h>

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13.1)
 set(BOARD_ROOT ${CMAKE_SOURCE_DIR})
 
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
-project(Pdb)
+project(Zeta)
 
 # Generate version file
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -18,12 +18,12 @@ list(APPEND HEADERS
 
 # Add source files
 list(APPEND SOURCES
-    "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb.c"
-    "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb_threads.c"
+    "${PROJECT_BINARY_DIR}/zephyr/src/generated/zeta.c"
+    "${PROJECT_BINARY_DIR}/zephyr/src/generated/zeta_threads.c"
     )
 
 if(CONFIG_ZTEST)
-  message("Ztest enabled, adding test_main.c file to source files.")
+  message("Ztest enabled, adding test_main.c and user source files to source files list.")
   list(APPEND HEADERS
     "${PROJECT_SOURCE_DIR}/test/include"
     )
@@ -34,21 +34,21 @@ if(CONFIG_ZTEST)
   # Generating properties macro create
   add_custom_target(
     generateFiles ALL
-    COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py -f ../test/pdb_test.yaml 
-    BYPRODUCTS "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb.c" "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb_threads.c"
+    COMMAND python3 ${PROJECT_SOURCE_DIR}/zeta_generate.py -f ../test/zeta_test.yaml 
+    BYPRODUCTS "${PROJECT_BINARY_DIR}/zephyr/src/generated/zeta.c" "${PROJECT_BINARY_DIR}/zephyr/src/generated/zeta_threads.c"
     COMMENT "Generating files from templates"
     )
   add_dependencies(app generateFiles)
 else()
-  message("Ztest disabled, adding main.c file to source files.")
+  message("Ztest disabled, adding main.c and user source files to source files list.")
   list(APPEND SOURCES
     "${PROJECT_SOURCE_DIR}/src/main.c"
     )
   # Generating properties macro create
   add_custom_target(
     generateFiles ALL
-    COMMAND python3 ${PROJECT_SOURCE_DIR}/mount_system.py -f ../pdb.yaml 
-    BYPRODUCTS "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb.c" "${PROJECT_BINARY_DIR}/zephyr/src/generated/pdb_threads.c"
+    COMMAND python3 ${PROJECT_SOURCE_DIR}/zeta_generate.py -f ../zeta.yaml 
+    BYPRODUCTS "${PROJECT_BINARY_DIR}/zephyr/src/generated/zeta.c" "${PROJECT_BINARY_DIR}/zephyr/src/generated/zeta_threads.c"
     COMMENT "Generating files from templates"
     )
   add_dependencies(app generateFiles)

@@ -6,44 +6,44 @@ import sys
 from os import getcwd
 from string import Template
 
-class PdbHeader :
+class ZetaHeader :
     def __init__(self, yaml_dict) :
         self.channels = yaml_dict['Channels']
         self.configs = yaml_dict['Config']
         self.channels_enum = f''
-        self.pdb_stack_size = f''
+        self.zeta_stack_size = f''
         self.storage_stack_size = f''
 
     def gen_enum(self) :
         channels_names_list = list()
         for c in self.channels :
             name = list(c.keys())[0]
-            channels_names_list.append("PDB_" + name + "_CHANNEL")
+            channels_names_list.append("ZETA_" + name + "_CHANNEL")
         channel_names = ',\n    '.join([f'{x}' for x in channels_names_list])
         self.channels_enum = f'''
 typedef enum {{
     {channel_names},
-    PDB_CHANNEL_COUNT
-}} __attribute__((packed)) pdb_channel_e;'''
+    ZETA_CHANNEL_COUNT
+}} __attribute__((packed)) zeta_channel_e;'''
 
     def gen_configs(self) :
-        pdb_stack_size = self.configs['pdb_stack_size']
+        zeta_stack_size = self.configs['zeta_stack_size']
         storage_stack_size = self.configs['storage_stack_size']
-        self.pdb_stack_size += f'''{pdb_stack_size}'''
+        self.zeta_stack_size += f'''{zeta_stack_size}'''
         self.storage_stack_size += f'''{storage_stack_size}'''
 
     def gen_file(self):
-        with open('../templates/pdb.template.h', 'r') as header_template :
+        with open('../templates/zeta.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('zephyr/include/generated/pdb.h', 'w') as header :
-                header.write(t.substitute(channels_enum=self.channels_enum, storage_stack_size=self.storage_stack_size, pdb_stack_size=self.pdb_stack_size))
+            with open('zephyr/include/generated/zeta.h', 'w') as header :
+                header.write(t.substitute(channels_enum=self.channels_enum, storage_stack_size=self.storage_stack_size, zeta_stack_size=self.zeta_stack_size))
 
     def run(self) :
         self.gen_enum()
         self.gen_configs()
         self.gen_file()
 
-class PdbSource :
+class ZetaSource :
     def __init__(self, yaml_dict) :
         self.channels = yaml_dict['Channels']
         self.config = yaml_dict['Config']
@@ -63,7 +63,7 @@ class PdbSource :
 '''
         for c in self.channels :
             for k, v in c.items() :
-                sem = "pdb_" + k + "_channel_sem"
+                sem = "zeta_" + k + "_channel_sem"
                 self.channels_sems += f'''
 K_SEM_DEFINE({sem}, 1, 1);
 '''
@@ -78,11 +78,11 @@ K_SEM_DEFINE({sem}, 1, 1);
             for k, v in c.items() :
                 validate = "NULL"
                 pre_set = "NULL"
-                set = "pdb_channel_set_private"
+                set = "zeta_channel_set_private"
                 pos_set = "NULL"
                 pre_get = "NULL"
                 pos_get = "NULL"
-                get = "pdb_channel_get_private"
+                get = "zeta_channel_get_private"
                 size = v['size']
                 data_list = list()
                 data_list = ["0xFF" for i in range(0, size)]
@@ -98,9 +98,9 @@ K_SEM_DEFINE({sem}, 1, 1);
                 # Getting name
                 name = k
                 # Getting sem
-                sem = "pdb_" + k + "_channel_sem"
+                sem = "zeta_" + k + "_channel_sem"
                 # Getting ID
-                id = "PDB_" + k + "_CHANNEL"
+                id = "ZETA_" + k + "_CHANNEL"
                 # Getting data
                 if 'initial_value' in v :
                     data_list = ["0x{:02X}".format(x) for x in v['initial_value']]
@@ -132,7 +132,7 @@ K_SEM_DEFINE({sem}, 1, 1);
                     subscribers_list = list()
                     for s in v['subscribers'] :
                         subscribers_list.append(s['name'] + "_service_callback")
-                    subscribers_init = "pdb_callback_f " + name_subscribers + "[] = { " + ", ".join(subscribers_list) + ", NULL };"
+                    subscribers_init = "zeta_callback_f " + name_subscribers + "[] = { " + ", ".join(subscribers_list) + ", NULL };"
                     subscribers = name_subscribers
                 if 'publishers' in v :
                     publishers_list = list()
@@ -168,13 +168,13 @@ K_SEM_DEFINE({sem}, 1, 1);
 
                 self.set_publishers += f'''
     const k_tid_t {name_publishers}[] = {publishers_init};
-    __pdb_channels[{id}].publishers_id = {name_publishers};
+    __zeta_channels[{id}].publishers_id = {name_publishers};
 '''
         self.set_publishers += f'''
 /* END SET CHANNEL PUBLISHERS */
 '''
         self.channels_creation = f'''
-static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {{
+static zeta_channel_t __zeta_channels[ZETA_CHANNEL_COUNT] = {{
     {channels}
 }};                
 '''
@@ -185,9 +185,9 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {{
         self.storage_offset = self.config['nvs_storage_offset']
 
     def gen_file(self) :
-        with open('../templates/pdb.template.c', 'r') as source_template :
+        with open('../templates/zeta.template.c', 'r') as source_template :
             s = Template(source_template.read())
-            with open('zephyr/src/generated/pdb.c', 'w') as source :
+            with open('zephyr/src/generated/zeta.c', 'w') as source :
                 source.write(s.substitute(channels_creation=self.channels_creation, channels_sems=self.channels_sems, nvs_sector_size=self.sector_size, nvs_sector_count=self.sector_count, nvs_storage_offset=self.storage_offset, arrays_init=self.arrays_init, set_publishers=self.set_publishers))
         pass
     
@@ -198,7 +198,7 @@ static pdb_channel_t __pdb_channels[PDB_CHANNEL_COUNT] = {{
         self.gen_file()
 
 
-class PdbCallbacks :
+class ZetaCallbacks :
     def __init__(self, yaml_dict) :
         self.services = yaml_dict['Services']
         self.services_callbacks = f''''''
@@ -210,7 +210,7 @@ class PdbCallbacks :
             for k, v in s.items() :
                 name_function = k + "_service_callback"
                 self.services_callbacks +=f'''
-void {name_function}(pdb_channel_e id);
+void {name_function}(zeta_channel_e id);
 '''
         
     def run(self) :
@@ -218,13 +218,13 @@ void {name_function}(pdb_channel_e id);
         self.gen_file()
 
     def gen_file(self) :
-        with open('../templates/pdb_callbacks.template.h', 'r') as header_template :
+        with open('../templates/zeta_callbacks.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('zephyr/include/generated/pdb_callbacks.h', 'w') as header :
+            with open('zephyr/include/generated/zeta_callbacks.h', 'w') as header :
                 header.write(t.substitute(services_callbacks=self.services_callbacks))
 
 
-class PdbThreadHeader :
+class ZetaThreadHeader :
     def __init__(self, yaml_dict) :
         self.services = yaml_dict['Services']
         self.services_sections = f''''''
@@ -246,16 +246,16 @@ extern const k_tid_t {name_tid};
 /* END {name} SECTION */
 '''
     def gen_file(self) :
-        with open('../templates/pdb_threads.template.h', 'r') as header_template :
+        with open('../templates/zeta_threads.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('zephyr/include/generated/pdb_threads.h', 'w') as header :
+            with open('zephyr/include/generated/zeta_threads.h', 'w') as header :
                 header.write(t.substitute(services_sections=self.services_sections))
         
     def run(self) :
         self.gen_threads_header()
         self.gen_file()
 
-class PdbThreadSource :
+class ZetaThreadSource :
     def __init__(self, yaml_dict) :
         self.services = yaml_dict['Services']
         self.services_threads = f''''''
@@ -282,9 +282,9 @@ K_THREAD_DEFINE({name_tid},
 '''
 
     def gen_file(self) :
-        with open('../templates/pdb_threads.template.c', 'r') as source_template :
+        with open('../templates/zeta_threads.template.c', 'r') as source_template :
             s = Template(source_template.read())
-            with open('zephyr/src/generated/pdb_threads.c', 'w') as source :
+            with open('zephyr/src/generated/zeta_threads.c', 'w') as source :
                 source.write(s.substitute(services_threads=self.services_threads))
 
     def run(self) :
@@ -292,7 +292,7 @@ K_THREAD_DEFINE({name_tid},
         self.gen_file()
 
 
-class PdbCustomFunctions :
+class ZetaCustomFunctions :
     def __init__(self, yaml_dict) :
         self.channels = yaml_dict['Channels']
         self.channels_functions = f''''''
@@ -308,24 +308,24 @@ class PdbCustomFunctions :
                 if 'pre_get' in v :
                     pre_get_name = v['pre_get']
                     self.channels_functions += f'''
-int {pre_get_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
+int {pre_get_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
 '''
                     pass
                 if 'pos_get' in v :
                     pos_get_name = v['pos_get']
                     self.channels_functions += f'''
-int {pos_get_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
+int {pos_get_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
 '''
                     pass
                 if 'pre_set' in v :
                     pre_set_name = v['pre_set']
                     self.channels_functions += f'''
-int {pre_set_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
+int {pre_set_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
 '''        
                 if 'pos_set' in v :
                     pos_set_name = v['pos_set']
                     self.channels_functions += f'''
-int {pos_set_name}(pdb_channel_e id, u8_t *channel_value, size_t size);
+int {pos_set_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
 '''
                     pass
                 if 'validate' in v :
@@ -338,9 +338,9 @@ int {validate_name}(u8_t *data, size_t size);
 '''
 
     def gen_file(self) :
-        with open('../templates/pdb_custom_functions.template.h', 'r') as header_template :
+        with open('../templates/zeta_custom_functions.template.h', 'r') as header_template :
             t = Template(header_template.read())
-            with open('zephyr/include/generated/pdb_custom_functions.h', 'w') as header :
+            with open('zephyr/include/generated/zeta_custom_functions.h', 'w') as header :
                 header.write(t.substitute(custom_functions=self.channels_functions))
 
     def run(self) :
@@ -349,26 +349,26 @@ int {validate_name}(u8_t *data, size_t size);
     
 def main() :
     print("*********************************************")
-    print("*             PDB Mount System              *")
+    print("*              ZETA GENERATION              *")
     print("*********************************************")
     try :
         os.makedirs('../build/zephyr/src/generated/')
     except FileExistsError as fe_error:
-        print("[PDB]: Skip creation of srs/generated folder")        
+        print("[ZETA]: Skip creation of srs/generated folder")        
         pass
         
-    parser = argparse.ArgumentParser(description='PDB mount system')
-    parser.add_argument('-f', '--yamlfile', default='pdb.yaml',
+    parser = argparse.ArgumentParser(description='ZETA mount system')
+    parser.add_argument('-f', '--yamlfile', default='zeta.yaml',
                         help='Yaml that must be read in order to mount system.')
     args = parser.parse_args(sys.argv[1:])    
         
     with open(args.yamlfile, 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
-        PdbHeader(yaml_dict).run()
-        PdbSource(yaml_dict).run()
-        PdbCallbacks(yaml_dict).run()
-        PdbThreadHeader(yaml_dict).run()
-        PdbThreadSource(yaml_dict).run()
-        PdbCustomFunctions(yaml_dict).run()
+        ZetaHeader(yaml_dict).run()
+        ZetaSource(yaml_dict).run()
+        ZetaCallbacks(yaml_dict).run()
+        ZetaThreadHeader(yaml_dict).run()
+        ZetaThreadSource(yaml_dict).run()
+        ZetaCustomFunctions(yaml_dict).run()
 if __name__ == "__main__":
     main()

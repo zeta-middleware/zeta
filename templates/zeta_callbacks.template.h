@@ -7,10 +7,10 @@
  *
  */
 
-#ifndef PDB_CALLBACKS_H_
-#define PDB_CALLBACKS_H_
+#ifndef ZETA_CALLBACKS_H_
+#define ZETA_CALLBACKS_H_
 
-#include "pdb.h"
+#include "zeta.h"
 
 $services_callbacks
 

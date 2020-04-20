@@ -1,5 +1,5 @@
-#ifndef PDB_UNIT_TESTES_H_
-#define PDB_UNIT_TESTES_H_
+#ifndef ZETA_UNIT_TESTES_H_
+#define ZETA_UNIT_TESTES_H_
 #include "autoconf.h"
 #ifdef CONFIG_ZTEST
 

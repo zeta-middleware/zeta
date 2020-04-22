@@ -410,7 +410,30 @@ class ZetaCLI(object):
             help='The project root folder where the files will be generated',
             default=".")
         args = parser.parse_args(sys.argv[2:])
-        print("Gen cmake file on the project folder ->", args.project_dir)
+        global ZETA_DIR
+        ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+        global PROJECT_DIR
+        PROJECT_DIR = args.project_dir
+        global ZETA_TEMPLATES_DIR
+        ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        print("Zeta >> Generating cmake file on", args.project_dir)
+        with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
+                  'r') as header_template:
+            t = Template(header_template.read())
+            with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
+                cmake.write(t.substitute(zeta_dir=__file__))
+        print("Zeta >> Generating conf file on", args.project_dir)
+        with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.conf',
+                  'r') as header_template:
+            t = Template(header_template.read())
+            with open(f'{PROJECT_DIR}/zeta.conf', 'w') as cmake:
+                cmake.write(t.substitute(zeta_dir=__file__))
+        if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
+            print("Zeta >> Generating yaml file on", args.project_dir)
+            with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.yaml',
+                      'r') as header_template:
+                with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
+                    cmake.write(header_template.read())
 
     def gen(self):
         parser = argparse.ArgumentParser(
@@ -418,8 +441,8 @@ class ZetaCLI(object):
             usage='zeta gen [-p] yamlfile')
         # prefixing the argument with -- means it's optional
         parser.add_argument(
-            '-p',
-            '--project_dir',
+            '-b',
+            '--build_dir',
             type=str,
             help='The project root folder where the files will be generated',
             default=".")
@@ -427,37 +450,47 @@ class ZetaCLI(object):
             'yamlfile',
             help='Yaml that must be read in order to mount system.')
         args = parser.parse_args(sys.argv[2:])
-        print("*********************************************")
-        print("*              ZETA GENERATION              *")
-        print("*********************************************")
-        global ZETA_DIR
-        ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
-        global PROJECT_DIR
-        PROJECT_DIR = args.project_dir
-        global ZETA_SRC_DIR
-        ZETA_SRC_DIR = f"{PROJECT_DIR}/build/zeta/src"
-        global ZETA_INCLUDE_DIR
-        ZETA_INCLUDE_DIR = f"{PROJECT_DIR}/build/zeta/include"
-        global ZETA_TEMPLATES_DIR
-        ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        if os.path.exists(args.yamlfile):
+            print("*********************************************")
+            print("*              ZETA GENERATION              *")
+            print("*********************************************")
+            print(os.getcwd())
+            global ZETA_DIR
+            ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+            print(ZETA_DIR)
+            global PROJECT_DIR
+            PROJECT_DIR = args.build_dir
+            print(PROJECT_DIR)
+            global ZETA_SRC_DIR
+            ZETA_SRC_DIR = f"{PROJECT_DIR}/zeta/src"
+            print(ZETA_SRC_DIR)
+            global ZETA_INCLUDE_DIR
+            ZETA_INCLUDE_DIR = f"{PROJECT_DIR}/zeta/include"
+            print(ZETA_INCLUDE_DIR)
+            global ZETA_TEMPLATES_DIR
+            ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+            print(ZETA_TEMPLATES_DIR)
 
-        try:
-            os.makedirs(ZETA_SRC_DIR)
-        except FileExistsError as fe_error:
-            print("[ZETA]: Source folder already exists")
-        try:
-            os.makedirs(ZETA_INCLUDE_DIR)
-        except FileExistsError as fe_error:
-            print("[ZETA]: Include folder already exists")
+            try:
+                os.makedirs(ZETA_SRC_DIR)
+            except FileExistsError as fe_error:
+                print("[ZETA]: Source folder already exists")
+            try:
+                os.makedirs(ZETA_INCLUDE_DIR)
+            except FileExistsError as fe_error:
+                print("[ZETA]: Include folder already exists")
 
-        with open(args.yamlfile, 'r') as f:
-            yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
-            ZetaHeader(yaml_dict).run()
-            ZetaSource(yaml_dict).run()
-            ZetaCallbacks(yaml_dict).run()
-            ZetaThreadHeader(yaml_dict).run()
-            ZetaThreadSource(yaml_dict).run()
-            ZetaCustomFunctions(yaml_dict).run()
+            with open(args.yamlfile, 'r') as f:
+                yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
+                ZetaHeader(yaml_dict).run()
+                ZetaSource(yaml_dict).run()
+                ZetaCallbacks(yaml_dict).run()
+                ZetaThreadHeader(yaml_dict).run()
+                ZetaThreadSource(yaml_dict).run()
+                ZetaCustomFunctions(yaml_dict).run()
+        else:
+            print(" Zeta >> ERROR >> File does not exists!")
+
 
 if __name__ == "__main__":
     ZetaCLI()

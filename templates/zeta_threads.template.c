@@ -7,7 +7,8 @@
  *
  */
 
-#include "zeta.h"
 #include "zeta_threads.h"
+
+#include "zeta.h"
 
 $services_threads

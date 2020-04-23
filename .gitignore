@@ -36,3 +36,4 @@ tags.lock
 dist/
 zeta_cli.egg-info/
 venv/
+__pycache__/

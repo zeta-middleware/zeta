@@ -54,5 +54,20 @@ else()
   
 endif()  
 
-include_directories(${HEADERS})
+target_include_directories(app PRIVATE ${HEADERS})
 target_sources(app PRIVATE ${SOURCES})
+
+#####################################
+# Setting tests                     #
+#####################################
+
+# enable_testing()
+# # list(APPEND TEST_HEADERS
+# #     "build/include/generated"
+# #     "build/zephyr/include/generated"
+# #     "include"
+# #     )
+
+# add_executable(testandoCtest test/src/main_ctest.c)
+# target_include_directories(testandoCtest PRIVATE ${HEADERS})
+# add_test(TestandoCtest testandoCtest)

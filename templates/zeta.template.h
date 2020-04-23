@@ -19,19 +19,19 @@
 
 #define ZETA_CHECK_VAL(_p, _e, _err, ...) \
     if (_p == _e) {                      \
-        printk(__VA_ARGS__);             \
+        LOG_INF(__VA_ARGS__);             \
         return _err;                     \
     }
 
 #define ZETA_CHECK(_p, _err, ...) \
     if (_p) {                    \
-        printk(__VA_ARGS__);     \
+        LOG_INF(__VA_ARGS__);     \
         return _err;             \
     }
 
 $channels_enum
 
-    typedef struct {
+typedef struct {
     k_tid_t source_thread;
     zeta_channel_e id;
 } zeta_event_t;

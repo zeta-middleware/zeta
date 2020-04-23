@@ -25,29 +25,19 @@ Channels:
       set: 'NULL'
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
 
-# pos_set_reach_limit: aciona alguma coisa que faça com que a escrita nesse channel obedeça um intervalo de tempo
-  - COUNT_REACH_LIMIT:
-     size: 1
-     persistent: True
-     pos_set: 'pos_set_reach_limit'
-     subscribers:
-       - *app
-     publishers:
-       - *core
-      
-# pre_set_power_calibrate: apenas pega o dado e aplica um offset
   - POWER_VAL:
       size: 2
-      validate: 'power_validate_different_of_zero'
-      pre_set: 'pre_set_power_calibrate'
+      persistent: True
+      validate: 'power_validate_different_zero'
+      pre_set: 'pre_set_power'
+      pos_set: 'pos_set_power'
       subscribers:
         - *core
       publishers:
         - *hal
-# pre_get_pms_wakeup: verificar se o timer estourou, para a partir daí acordar o módulo e realizar a coleta
-# pos_get_pms_sleep: botar o módulo para dormir e iniciar o timer
-  - PMS_SENSOR_VAL:
+        
+  - DATA_VAL:
       size: 1
-      pre_get: 'pre_get_pms_wakeup'
-      pos_get: 'pos_get_pms_sleep'
+      pre_get: 'pre_get_data_val'
+      pos_get: 'pos_get_data_val'
       set: 'NULL'

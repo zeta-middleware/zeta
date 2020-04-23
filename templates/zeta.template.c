@@ -16,6 +16,7 @@
 #include "zeta_custom_functions.h"
 #include "zeta_threads.h"
 
+
 LOG_MODULE_REGISTER(ZETA, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define NVS_SECTOR_SIZE $nvs_sector_size
@@ -88,25 +89,27 @@ int zeta_channel_get(zeta_channel_e id, u8_t *channel_value, size_t size)
     if (id < ZETA_CHANNEL_COUNT) {
         int error               = 0;
         zeta_channel_t *channel = &__zeta_channels[id];
-        ZETA_CHECK_VAL(channel->get, NULL, -EPERM,
-                       "channel #%d does not have get implementation!\n", id);
-        ZETA_CHECK(size != channel->size, -EINVAL, "channel #%d has a different size!(%d)(%d)\n",
-                   id, size, channel->size);
+        ZETA_CHECK_VAL(channel_value, NULL, -EFAULT,
+                       "get function was called with channel_value parameter as NULL!");
+        ZETA_CHECK_VAL(channel->get, NULL, -EPERM, "channel #%d does not have get implementation!",
+                       id);
+        ZETA_CHECK(size != channel->size, -EINVAL, "channel #%d has a different size!(%d)(%d)", id,
+                   size, channel->size);
         if (channel->pre_get) {
             error = channel->pre_get(id, channel_value, size);
-            ZETA_CHECK(error, error, "Error(code %d) in pre-get function of channel #%d\n", error,
+            ZETA_CHECK(error, error, "Error(code %d) in pre-get function of channel #%d", error,
                        id);
         }
         error = channel->get(id, channel_value, size);
-        ZETA_CHECK(error, error, "Current channel #%d, error code: %d\n", id, error);
+        ZETA_CHECK(error, error, "Current channel #%d, error code: %d", id, error);
         if (channel->pos_get) {
             error = channel->pos_get(id, channel_value, size);
-            ZETA_CHECK(error, error, "Error(code %d) in pos-get function of channel #%d!\n", error,
+            ZETA_CHECK(error, error, "Error(code %d) in pos-get function of channel #%d!", error,
                        id);
         }
         return error;
     } else {
-        LOG_INF("The channel #%d was not found!\n", id);
+        LOG_INF("The channel #%d was not found!", id);
         return -ENODATA;
     }
 }
@@ -116,7 +119,7 @@ static int zeta_channel_get_private(zeta_channel_e id, u8_t *channel_value, size
     int ret                 = 0;
     zeta_channel_t *channel = &__zeta_channels[id];
     if (k_sem_take(channel->sem, K_MSEC(200))) {
-        LOG_INF("Could not get the channel. Channel is busy\n");
+        LOG_INF("Could not get the channel. Channel is busy");
         ret = -EBUSY;
     } else {
         memcpy(channel_value, channel->data, channel->size);
@@ -139,27 +142,28 @@ int zeta_channel_set(zeta_channel_e id, u8_t *channel_value, size_t size)
             }
         }
         ZETA_CHECK_VAL(*pub_id, NULL, -EPERM,
-                       "The current thread has not the permission to change channel #%d!\n", id);
-        ZETA_CHECK_VAL(channel->set, NULL, -EPERM, "The channel #%d is read only!\n", id);
-        ZETA_CHECK(size != channel->size, -EINVAL, "The channel #%d has a different size!\n", id);
+                       "The current thread has not the permission to change channel #%d!", id);
+        ZETA_CHECK_VAL(channel_value, NULL, -EFAULT,
+                       "set function was called with channel_value paramater as NULL!");
+        ZETA_CHECK_VAL(channel->set, NULL, -EPERM, "The channel #%d is read only!", id);
+        ZETA_CHECK(size != channel->size, -EINVAL, "The channel #%d has a different size!", id);
         if (channel->validate) {
             valid = channel->validate(channel_value, size);
         }
-        ZETA_CHECK(!valid, -EINVAL, "The value doesn't satisfy valid function of channel #%d!\n",
-                   id);
+        ZETA_CHECK(!valid, -EAGAIN, "The value doesn't satisfy valid function of channel #%d!", id);
         if (channel->pre_set) {
             error = channel->pre_set(id, channel_value, size);
         }
-        ZETA_CHECK(error, error, "Error on pre_set function of channel #%d!\n", id);
+        ZETA_CHECK(error, error, "Error on pre_set function of channel #%d!", id);
         error = channel->set(id, channel_value, size);
-        ZETA_CHECK(error, error, "Current channel #%d, error code: %d!\n", id, error);
+        ZETA_CHECK(error, error, "Current channel #%d, error code: %d!", id, error);
         if (channel->pos_set) {
             error = channel->pos_set(id, channel_value, size);
         }
-        ZETA_CHECK(error, error, "Error on pos_set function of channel #%d!\n", id);
+        ZETA_CHECK(error, error, "Error on pos_set function of channel #%d!", id);
         return error;
     } else {
-        LOG_INF("The channel #%d was not found!\n", id);
+        LOG_INF("The channel #%d was not found!", id);
         return -ENODATA;
     }
 }
@@ -169,15 +173,14 @@ static int zeta_channel_set_private(zeta_channel_e id, u8_t *channel_value, size
     int ret                 = 0;
     zeta_channel_t *channel = &__zeta_channels[id];
     if (k_sem_take(channel->sem, K_MSEC(200))) {
-        LOG_INF("Could not set the channel. Channel is busy\n");
+        LOG_INF("Could not set the channel. Channel is busy");
         ret = -EBUSY;
     } else {
         if (memcmp(channel->data, channel_value, size)) {
             memcpy(channel->data, channel_value, channel->size);
             channel->opt.field.pend_callback = 1;
             if (k_msgq_put(&zeta_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                LOG_INF("[Channel #%d] Error sending channels change message to ZETA thread!\n",
-                        id);
+                LOG_INF("[Channel #%d] Error sending channels change message to ZETA thread!", id);
             }
             channel->opt.field.pend_persistent = (channel->persistent) ? 1 : 0;
             k_sem_give(channel->sem);
@@ -191,7 +194,7 @@ static int zeta_channel_set_private(zeta_channel_e id, u8_t *channel_value, size
 static void __zeta_recover_data_from_flash(void)
 {
     int rc = 0;
-    LOG_INF("[ ] Recovering data from flash\n");
+    LOG_INF("[ ] Recovering data from flash");
     for (u16_t id = 0; id < ZETA_CHANNEL_COUNT; ++id) {
         if (__zeta_channels[id].persistent) {
             if (!k_sem_take(__zeta_channels[id].sem, K_SECONDS(5))) {
@@ -200,15 +203,15 @@ static void __zeta_recover_data_from_flash(void)
                     LOG_INF("Id: %d", id);
                     LOG_HEXDUMP_INF(__zeta_channels[id].data, __zeta_channels[id].size, "Value: ");
                 } else { /* item was not found, add it */
-                    LOG_INF("No values found for channel #%d\n", id);
+                    LOG_INF("No values found for channel #%d", id);
                 }
                 k_sem_give(__zeta_channels[id].sem);
             } else {
-                LOG_INF("Could not recover the channel. Channel is busy\n");
+                LOG_INF("Could not recover the channel. Channel is busy");
             }
         }
     }
-    LOG_INF("[X] Recovering data from flash\n");
+    LOG_INF("[X] Recovering data from flash");
 }
 
 static void __zeta_persist_data_on_flash(void)
@@ -221,11 +224,11 @@ static void __zeta_persist_data_on_flash(void)
                 nvs_write(&zeta_fs, id, __zeta_channels[id].data, __zeta_channels[id].size);
             if (bytes_written > 0) { /* item was found and updated*/
                 __zeta_channels[id].opt.field.pend_persistent = 0;
-                LOG_INF("channel #%d value updated on the flash\n", id);
+                LOG_INF("channel #%d value updated on the flash", id);
             } else if (bytes_written == 0) {
                 /* LOG_INF("channel #%d value is already on the flash.", id); */
             } else { /* item was not found, add it */
-                LOG_INF("channel #%d could not be stored\n", id);
+                LOG_INF("channel #%d could not be stored", id);
             }
         }
     }
@@ -246,11 +249,11 @@ void zeta_thread(void)
                 __zeta_channels[id].opt.field.pend_callback = 0;
             } else {
                 LOG_INF(
-                    "[ZETA-THREAD]: Received pend_callback from a channel(#%d) without changes!\n",
+                    "[ZETA-THREAD]: Received pend_callback from a channel(#%d) without changes!",
                     id);
             }
         } else {
-            LOG_INF("[ZETA-THREAD]: Received an invalid ID channel #%d\n", id);
+            LOG_INF("[ZETA-THREAD]: Received an invalid ID channel #%d", id);
         }
     }
 }
@@ -259,9 +262,9 @@ void zeta_thread_nvs(void)
 {
     int error = nvs_init(&zeta_fs, DT_FLASH_DEV_NAME);
     if (error) {
-        LOG_INF("Flash Init failed\n");
+        LOG_INF("Flash Init failed");
     } else {
-        LOG_INF("NVS started...[OK]\n");
+        LOG_INF("NVS started...[OK]");
     }
     __zeta_recover_data_from_flash();
 

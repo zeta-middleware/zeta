@@ -1,8 +1,18 @@
-/*!
- * @file zeta.template.h
- * @brief This is the abstraction information relative to NB hardware
- * DON'T EDIT THIS FILE
+/* ***************************************************************** */
+/*                       THIS FILE IS A TEMPLATE                     */
+/*                         DON'T EDIT THIS FILE                      */
+/* ***************************************************************** */
+
+/**
+ * @file   zeta.template.h
+ * @author Rodrigo Peixoto 
+ * @author Lucas Peixoto <lucaspeixotoac@gmail.com>
+ * 
+ * @brief Zeta header file
+ * 
+ * 
  */
+
 
 #ifndef ZETA_H_
 #define ZETA_H_

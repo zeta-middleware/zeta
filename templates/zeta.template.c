@@ -1,9 +1,17 @@
+/* ***************************************************************** */
+/*                       THIS FILE IS A TEMPLATE                     */
+/*                         DON'T EDIT THIS FILE                      */
+/* ***************************************************************** */
+
 /**
  * @file   zeta.template.c
+ * @author Rodrigo Peixoto
  * @author Lucas Peixoto <lucaspeixotoac@gmail.com>
  *
  *
+ *
  */
+
 
 #include <fs/nvs.h>
 #include <logging/log.h>

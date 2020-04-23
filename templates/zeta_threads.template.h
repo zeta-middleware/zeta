@@ -1,3 +1,8 @@
+/* ***************************************************************** */
+/*                       THIS FILE IS A TEMPLATE                     */
+/*                         DON'T EDIT THIS FILE                      */
+/* ***************************************************************** */
+
 /**
  * @file   zeta_threads.template.h
  * @author Lucas Peixoto <lucaspeixotoac@gmail.com>

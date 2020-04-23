@@ -36,7 +36,9 @@ if __name__ == "__main__":
     #  Upload pip package
     sh("python3 -m twine upload --repository testpypi dist/*").show()
     #  Clea nup the mess
-    sh("rm -rf build; rm -rf dist; rm -rf zeta_cli.egg-info").show()
+    sh("rm -rf build").show()
+    sh("rm -rf dist").show()
+    sh("rm -rf zeta_cli.egg-info").show()
 
 
 

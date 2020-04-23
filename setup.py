@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="zeta-cli",  # Replace with your own username
-    version="0.1.7",
+    version="0.1.11",
     author="Rodrigo Peixoto",
     author_email="rodrigopex@gmail.com",
     description=
@@ -16,7 +16,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lucaspeixotot/zeta",
-    packages=setuptools.find_packages(),
+    packages=["zeta"],
+    packages_data={"zeta": ['templates/*']},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -25,5 +26,5 @@ setuptools.setup(
     python_requires='>=3.6',
     entry_points={"console_scripts": ["zeta = zeta.zeta:run"]},
     include_package_data=True,
-    install_requires=["pyyaml>=5.3.1"]
+    install_requires=["pyyaml"]
 )

@@ -419,9 +419,9 @@ class ZetaCLI(object):
         print("Zeta >> Generating cmake file on", args.project_dir)
         with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
                   'r') as header_template:
-            t = Template(header_template.read())
+            t = header_template.read()
             with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
-                cmake.write(t.substitute(zeta_dir=__file__))
+                cmake.write(t)
         print("Zeta >> Generating conf file on", args.project_dir)
         with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.conf',
                   'r') as header_template:

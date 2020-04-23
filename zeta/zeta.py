@@ -491,6 +491,8 @@ class ZetaCLI(object):
         else:
             print(" Zeta >> ERROR >> File does not exists!")
 
+def run():
+    ZetaCLI()
 
 if __name__ == "__main__":
     ZetaCLI()

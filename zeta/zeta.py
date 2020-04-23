@@ -389,7 +389,9 @@ int {validate_name}(u8_t *data, size_t size);
 class ZetaCLI(object):
     def __init__(self):
         parser = argparse.ArgumentParser(description='ZETA cli tool',
-                                         usage='zeta <command> [<args>]')
+                                         usage='''zeta <command> [<args>]
+    init - for creating the need files.
+    gen - for generating the zeta code based on the zeta.yaml file.''')
         parser.add_argument('command', help='Subcommand to run')
         args = parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):

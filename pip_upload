@@ -1,0 +1,44 @@
+#!/usr/bin/python3
+import os
+import argparse
+import sys
+import subprocess
+
+class ShellResult:
+    def __init__(self, cmd, return_code, stdout):
+        self.cmd = cmd
+        self.return_code = return_code
+        self.stdout = stdout
+
+    def show(self):
+        print(f"ShellResult [{' '.join(self.cmd)}] -> {self.return_code}:\n{self.stdout}")
+
+def sh(args):
+    args = args.split()
+    process = subprocess.Popen(args,
+                               stdout=subprocess.PIPE,
+                               universal_newlines=True)
+    result_stdout = ""
+    while True:
+        result_stdout += process.stdout.read()
+        return_code = process.poll()
+        if return_code is not None:
+            break
+        
+    return ShellResult(args, return_code, result_stdout)
+
+if __name__ == "__main__":
+    sh("ls -lah")
+    # clear old data 
+    sh("rm -rf dist").show()
+    #  Generate pip package
+    sh("python3 setup.py sdist bdist_wheel").show()
+    #  Upload pip package
+    sh("python3 -m twine upload --repository testpypi dist/*").show()
+    #  Clea nup the mess
+    sh("rm -rf build").show()
+    sh("rm -rf dist").show()
+    sh("rm -rf zeta_cli.egg-info").show()
+
+
+

@@ -389,7 +389,9 @@ int {validate_name}(u8_t *data, size_t size);
 class ZetaCLI(object):
     def __init__(self):
         parser = argparse.ArgumentParser(description='ZETA cli tool',
-                                         usage='zeta <command> [<args>]')
+                                         usage='''zeta <command> [<args>]
+    init - for creating the need files.
+    gen - for generating the zeta code based on the zeta.yaml file.''')
         parser.add_argument('command', help='Subcommand to run')
         args = parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):
@@ -419,9 +421,9 @@ class ZetaCLI(object):
         print("Zeta >> Generating cmake file on", args.project_dir)
         with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
                   'r') as header_template:
-            t = Template(header_template.read())
+            t = header_template.read()
             with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
-                cmake.write(t.substitute(zeta_dir=__file__))
+                cmake.write(t)
         print("Zeta >> Generating conf file on", args.project_dir)
         with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.conf',
                   'r') as header_template:
@@ -491,6 +493,8 @@ class ZetaCLI(object):
         else:
             print(" Zeta >> ERROR >> File does not exists!")
 
+def run():
+    ZetaCLI()
 
 if __name__ == "__main__":
     ZetaCLI()

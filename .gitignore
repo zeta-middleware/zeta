@@ -32,3 +32,8 @@ flash.bin
 generated/*
 tags.lock
 .zeta-project.org
+
+dist/
+zeta_cli.egg-info/
+venv/
+__pycache__/

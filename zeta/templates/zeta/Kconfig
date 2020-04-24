@@ -1,0 +1,19 @@
+menuconfig ZETA
+    bool "Zeta"
+    select FLASH
+    select FLASH_PAGE_LAYOUT
+    select NVS
+    help
+        This option enables Zeta support.
+
+if ZETA
+
+module = ZETA
+module-str = zt
+source "subsys/logging/Kconfig.template.log_config"
+
+config ZT_MEM_SIZE
+    int "Size of the Gateway TX cache buffer"
+    default 384
+#
+endif # ZETA

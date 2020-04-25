@@ -10,7 +10,6 @@ integration.*/
 .vscode
 .nul.old
 
-zephyr/
 net-tools/
 .west/
 modules/

@@ -28,7 +28,7 @@
 LOG_MODULE_REGISTER(ZETA, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define NVS_SECTOR_SIZE $nvs_sector_size
-#define NVS_SECTOR_COUNT $nvs_sector_count
+#define NVS_SECTOR_COUNT CONFIG_ZETA_SECTOR_COUNT  // $nvs_sector_count
 #define NVS_STORAGE_OFFSET $nvs_storage_offset
 
 //$channels_sems
@@ -97,21 +97,21 @@ int zeta_channel_get(zeta_channel_e id, u8_t *channel_value, size_t size)
         zeta_channel_t *channel = &__zeta_channels[id];
         ZETA_CHECK_VAL(channel_value, NULL, -EFAULT,
                        "get function was called with channel_value parameter as NULL!");
-        ZETA_CHECK_VAL(channel->get, NULL, -EPERM, "channel #%d does not have get implementation!",
-                       id);
-        ZETA_CHECK(size != channel->size, -EINVAL, "channel #%d has a different size!(%d)(%d)", id,
-                   size, channel->size);
+        ZETA_CHECK_VAL(channel->get, NULL, -EPERM,
+                       "channel #%d does not have get implementation!", id);
+        ZETA_CHECK(size != channel->size, -EINVAL,
+                   "channel #%d has a different size!(%d)(%d)", id, size, channel->size);
         if (channel->pre_get) {
             error = channel->pre_get(id, channel_value, size);
-            ZETA_CHECK(error, error, "Error(code %d) in pre-get function of channel #%d", error,
-                       id);
+            ZETA_CHECK(error, error, "Error(code %d) in pre-get function of channel #%d",
+                       error, id);
         }
         error = channel->get(id, channel_value, size);
         ZETA_CHECK(error, error, "Current channel #%d, error code: %d", id, error);
         if (channel->pos_get) {
             error = channel->pos_get(id, channel_value, size);
-            ZETA_CHECK(error, error, "Error(code %d) in pos-get function of channel #%d!", error,
-                       id);
+            ZETA_CHECK(error, error, "Error(code %d) in pos-get function of channel #%d!",
+                       error, id);
         }
         return error;
     } else {
@@ -148,15 +148,18 @@ int zeta_channel_set(zeta_channel_e id, u8_t *channel_value, size_t size)
             }
         }
         ZETA_CHECK_VAL(*pub_id, NULL, -EPERM,
-                       "The current thread has not the permission to change channel #%d!", id);
+                       "The current thread has not the permission to change channel #%d!",
+                       id);
         ZETA_CHECK_VAL(channel_value, NULL, -EFAULT,
                        "set function was called with channel_value paramater as NULL!");
         ZETA_CHECK_VAL(channel->set, NULL, -EPERM, "The channel #%d is read only!", id);
-        ZETA_CHECK(size != channel->size, -EINVAL, "The channel #%d has a different size!", id);
+        ZETA_CHECK(size != channel->size, -EINVAL,
+                   "The channel #%d has a different size!", id);
         if (channel->validate) {
             valid = channel->validate(channel_value, size);
         }
-        ZETA_CHECK(!valid, -EAGAIN, "The value doesn't satisfy valid function of channel #%d!", id);
+        ZETA_CHECK(!valid, -EAGAIN,
+                   "The value doesn't satisfy valid function of channel #%d!", id);
         if (channel->pre_set) {
             error = channel->pre_set(id, channel_value, size);
         }
@@ -186,7 +189,9 @@ static int zeta_channel_set_private(zeta_channel_e id, u8_t *channel_value, size
             memcpy(channel->data, channel_value, channel->size);
             channel->opt.field.pend_callback = 1;
             if (k_msgq_put(&zeta_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                LOG_INF("[Channel #%d] Error sending channels change message to ZETA thread!", id);
+                LOG_INF(
+                    "[Channel #%d] Error sending channels change message to ZETA thread!",
+                    id);
             }
             channel->opt.field.pend_persistent = (channel->persistent) ? 1 : 0;
             k_sem_give(channel->sem);
@@ -258,9 +263,9 @@ void zeta_thread(void)
                 }
                 __zeta_channels[id].opt.field.pend_callback = 0;
             } else {
-                LOG_INF(
-                    "[ZETA-THREAD]: Received pend_callback from a channel(#%d) without changes!",
-                    id);
+                LOG_INF("[ZETA-THREAD]: Received pend_callback from a channel(#%d) "
+                        "without changes!",
+                        id);
             }
         } else {
             LOG_INF("[ZETA-THREAD]: Received an invalid ID channel #%d", id);

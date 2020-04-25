@@ -6,6 +6,7 @@ import argparse
 import sys
 from os import getcwd
 from string import Template
+import shutil
 
 ZETA_DIR = "."
 ZETA_TEMPLATES_DIR = "."
@@ -424,12 +425,6 @@ class ZetaCLI(object):
             t = header_template.read()
             with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
                 cmake.write(t)
-        print("Zeta >> Generating conf file on", args.project_dir)
-        with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.conf',
-                  'r') as header_template:
-            t = Template(header_template.read())
-            with open(f'{PROJECT_DIR}/zeta.conf', 'w') as cmake:
-                cmake.write(t.substitute(zeta_dir=__file__))
         if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
             print("Zeta >> Generating yaml file on", args.project_dir)
             with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.yaml',
@@ -474,21 +469,29 @@ class ZetaCLI(object):
             print(ZETA_TEMPLATES_DIR)
 
             try:
-                os.makedirs(ZETA_SRC_DIR)
+                os.makedirs(PROJECT_DIR)
             except FileExistsError as fe_error:
-                print("[ZETA]: Source folder already exists")
+                pass
+
             try:
-                os.makedirs(ZETA_INCLUDE_DIR)
+                print("[ZETA]: creating Zeta project folder")
+                shutil.copytree(f"{ZETA_TEMPLATES_DIR}/zeta", f"{PROJECT_DIR}/zeta")
             except FileExistsError as fe_error:
-                print("[ZETA]: Include folder already exists")
+                pass
 
             with open(args.yamlfile, 'r') as f:
                 yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
+                print("[ZETA]: generating zeta.h...[OK]")
                 ZetaHeader(yaml_dict).run()
+                print("[ZETA]: generating zeta.c...[OK]")
                 ZetaSource(yaml_dict).run()
+                print("[ZETA]: generating zeta_callbacks.c...[OK]")
                 ZetaCallbacks(yaml_dict).run()
+                print("[ZETA]: generating zeta_threads.h...[OK]")
                 ZetaThreadHeader(yaml_dict).run()
+                print("[ZETA]: generating zeta_threads.c...[OK]")
                 ZetaThreadSource(yaml_dict).run()
+                print("[ZETA]: generating zeta_custom_functions.c...[OK]")
                 ZetaCustomFunctions(yaml_dict).run()
         else:
             print(" Zeta >> ERROR >> File does not exists!")

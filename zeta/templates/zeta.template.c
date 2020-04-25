@@ -25,10 +25,10 @@
 #include "zeta_threads.h"
 
 
-LOG_MODULE_REGISTER(ZETA, CONFIG_LOG_DEFAULT_LEVEL);
+LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 #define NVS_SECTOR_SIZE $nvs_sector_size
-#define NVS_SECTOR_COUNT CONFIG_ZETA_SECTOR_COUNT  // $nvs_sector_count
+#define NVS_SECTOR_COUNT $nvs_sector_count
 #define NVS_STORAGE_OFFSET $nvs_storage_offset
 
 //$channels_sems

@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.13.1)
 
 set(BOARD_ROOT ${CMAKE_SOURCE_DIR})
 
+include(zeta.cmake NO_POLICY_SCOPE)
 
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(Zeta)
 
-include(zeta.cmake NO_POLICY_SCOPE)
 
 # Generate version file
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

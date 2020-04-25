@@ -12,24 +12,4 @@ module = ZETA
 module-str = zt
 source "subsys/logging/Kconfig.template.log_config"
 
-config ZETA_TASK_STACK_SIZE
-    int "Zeta task stack size"
-    default 512
-
-config ZETA_STORAGE_TASK_STACK_SIZE
-    int "Zeta storage task stack size"
-    default 512 
-
-# config ZETA_SECTOR_SIZE
-    # int "Sector size used by NVS"
-    # default DT_FLASH_ERASE_BLOCK_SIZE
-
-config ZETA_SECTOR_COUNT
-    int "Sector count used by NVS"
-    default 4
-
-# config ZETA_NVS_STORAGE_OFFSET
-    # int "Storage offset used by NVS"
-    # default DT_FLASH_AREA_STORAGE_OFFSET
-
 endif # ZETA

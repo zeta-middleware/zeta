@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="zeta-cli",  # Replace with your own username
-    version="0.1.32",
+    version="0.1.33",
     author="Rodrigo Peixoto",
     author_email="rodrigopex@gmail.com",
     description=

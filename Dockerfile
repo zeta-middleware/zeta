@@ -87,4 +87,3 @@ RUN python3 setup.py sdist bdist_wheel
 RUN cd dist/ && pip3 install *.whl && cd ../
 
 CMD ["/docker-entrypoint.sh"]
-

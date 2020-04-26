@@ -1,0 +1,6 @@
+# action.yml
+name: 'Docker test'
+description: 'Run project tests in docker via github action.'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

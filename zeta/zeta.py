@@ -20,8 +20,6 @@ class ZetaHeader:
         self.channels = yaml_dict['Channels']
         self.configs = yaml_dict['Config']
         self.channels_enum = f''
-        self.zeta_stack_size = f''
-        self.storage_stack_size = f''
 
     def gen_enum(self):
         channels_names_list = list()
@@ -35,25 +33,16 @@ typedef enum {{
     ZETA_CHANNEL_COUNT
 }} __attribute__((packed)) zeta_channel_e;'''
 
-    def gen_configs(self):
-        zeta_stack_size = self.configs['zeta_stack_size']
-        storage_stack_size = self.configs['storage_stack_size']
-        self.zeta_stack_size += f'''{zeta_stack_size}'''
-        self.storage_stack_size += f'''{storage_stack_size}'''
-
     def gen_file(self):
         with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.h',
                   'r') as header_template:
             t = Template(header_template.read())
             with open(f'{ZETA_INCLUDE_DIR}/zeta.h', 'w') as header:
                 header.write(
-                    t.substitute(channels_enum=self.channels_enum,
-                                 storage_stack_size=self.storage_stack_size,
-                                 zeta_stack_size=self.zeta_stack_size))
+                    t.substitute(channels_enum=self.channels_enum))
 
     def run(self):
         self.gen_enum()
-        self.gen_configs()
         self.gen_file()
 
 

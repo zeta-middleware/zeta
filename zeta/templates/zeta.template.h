@@ -5,12 +5,12 @@
 
 /**
  * @file   zeta.template.h
- * @author Rodrigo Peixoto 
+ * @author Rodrigo Peixoto
  * @author Lucas Peixoto <lucaspeixotoac@gmail.com>
- * 
+ *
  * @brief Zeta header file
- * 
- * 
+ *
+ *
  */
 
 
@@ -21,22 +21,22 @@
 #include <zephyr.h>
 #include <zephyr/types.h>
 
-#define ZETA_THREAD_NVS_STACK_SIZE $storage_stack_size
-#define ZETA_THREAD_STACK_SIZE $zeta_stack_size
+#define ZETA_THREAD_NVS_STACK_SIZE 512
+#define ZETA_THREAD_STACK_SIZE 512
 #define ZETA_THREAD_PRIORITY 0
 
 #define ZETA_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
 
 #define ZETA_CHECK_VAL(_p, _e, _err, ...) \
-    if (_p == _e) {                      \
+    if (_p == _e) {                       \
         LOG_INF(__VA_ARGS__);             \
-        return _err;                     \
+        return _err;                      \
     }
 
 #define ZETA_CHECK(_p, _err, ...) \
-    if (_p) {                    \
+    if (_p) {                     \
         LOG_INF(__VA_ARGS__);     \
-        return _err;             \
+        return _err;              \
     }
 
 //$channels_enum

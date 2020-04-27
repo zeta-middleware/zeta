@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 # TODO: Criar os warnings nos arquivos gerados
+
+from ._version import __version__
 import yaml
 import os
 import argparse
@@ -38,8 +40,7 @@ typedef enum {{
                   'r') as header_template:
             t = Template(header_template.read())
             with open(f'{ZETA_INCLUDE_DIR}/zeta.h', 'w') as header:
-                header.write(
-                    t.substitute(channels_enum=self.channels_enum))
+                header.write(t.substitute(channels_enum=self.channels_enum))
 
     def run(self):
         self.gen_enum()
@@ -464,7 +465,8 @@ class ZetaCLI(object):
 
             try:
                 print("[ZETA]: creating Zeta project folder")
-                shutil.copytree(f"{ZETA_TEMPLATES_DIR}/zeta", f"{PROJECT_DIR}/zeta")
+                shutil.copytree(f"{ZETA_TEMPLATES_DIR}/zeta",
+                                f"{PROJECT_DIR}/zeta")
             except FileExistsError as fe_error:
                 pass
 
@@ -485,8 +487,10 @@ class ZetaCLI(object):
         else:
             print(" Zeta >> ERROR >> File does not exists!")
 
+
 def run():
     ZetaCLI()
+
 
 if __name__ == "__main__":
     ZetaCLI()

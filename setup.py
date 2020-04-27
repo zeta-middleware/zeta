@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import setuptools
+from zeta import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="zeta-cli",  # Replace with your own username
-    version="0.1.33",
+    version=__version__,
     author="Rodrigo Peixoto",
     author_email="rodrigopex@gmail.com",
     description=
@@ -25,5 +26,4 @@ setuptools.setup(
     python_requires='>=3.6',
     entry_points={"console_scripts": ["zeta = zeta.zeta:run"]},
     include_package_data=True,
-    install_requires=["pyyaml"]
-)
+    install_requires=["pyyaml"])

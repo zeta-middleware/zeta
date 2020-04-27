@@ -1,0 +1,15 @@
+menuconfig ZETA
+    bool "Zeta"
+    select FLASH
+    select FLASH_PAGE_LAYOUT
+    select NVS
+    help
+        This option enables Zeta support.
+
+if ZETA
+
+module = ZETA
+module-str = zt
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # ZETA

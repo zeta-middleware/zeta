@@ -10,7 +10,6 @@ integration.*/
 .vscode
 .nul.old
 
-zephyr/
 net-tools/
 .west/
 modules/
@@ -32,3 +31,8 @@ flash.bin
 generated/*
 tags.lock
 .zeta-project.org
+
+dist/
+zeta_cli.egg-info/
+venv/
+__pycache__/

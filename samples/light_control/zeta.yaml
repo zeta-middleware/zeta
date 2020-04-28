@@ -1,0 +1,45 @@
+Config:
+  nvs_sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  nvs_sector_count: 4
+  nvs_storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+
+Services:
+  - CORE: &core
+      name: 'CORE'
+      priority: 4
+      stack_size: 512
+  - PERIPHERAL: &peripheral
+      name: 'PERIPHERAL'
+      priority: 3
+      stack_size: 1024
+  - NET: &net
+      name: 'NET'
+      priority: 5
+      stack_size: 512
+      
+Channels:
+  - FIRMWARE_VERSION:
+      size: 4
+      set: 'NULL'
+      initial_value: [0x01, 0x00, 0x07, 0x00]
+  - LIGHT_LEVEL:
+      size: 1
+      subscribers:
+          - *core
+      publishers:
+          - *peripheral
+  - LOAD:
+      size: 1
+      subscribers:
+          - *peripheral
+          - *net
+      publishers:
+          - *core
+  - MANUAL_LOAD_CONTROL:
+      size: 2
+      subscribers:
+          - *core
+      publishers:
+          - *net
+
+

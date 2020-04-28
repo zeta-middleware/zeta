@@ -1,2 +1,3 @@
+Sphinx==3.0.3
 breathe
-sphinx_hand_theme
+sphinx-rtd-theme

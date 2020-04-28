@@ -147,7 +147,7 @@ int zeta_channel_set(zeta_channel_e id, u8_t *channel_value, size_t size)
                 break;
             }
         }
-        ZETA_CHECK_VAL(*pub_id, NULL, -EPERM,
+        ZETA_CHECK_VAL(*pub_id, NULL, -EACCES,
                        "The current thread has not the permission to change channel #%d!",
                        id);
         ZETA_CHECK_VAL(channel_value, NULL, -EFAULT,
@@ -162,14 +162,14 @@ int zeta_channel_set(zeta_channel_e id, u8_t *channel_value, size_t size)
                    "The value doesn't satisfy valid function of channel #%d!", id);
         if (channel->pre_set) {
             error = channel->pre_set(id, channel_value, size);
+            ZETA_CHECK(error, error, "Error on pre_set function of channel #%d!", id);
         }
-        ZETA_CHECK(error, error, "Error on pre_set function of channel #%d!", id);
         error = channel->set(id, channel_value, size);
         ZETA_CHECK(error, error, "Current channel #%d, error code: %d!", id, error);
         if (channel->pos_set) {
             error = channel->pos_set(id, channel_value, size);
+            ZETA_CHECK(error, error, "Error on pos_set function of channel #%d!", id);
         }
-        ZETA_CHECK(error, error, "Error on pos_set function of channel #%d!", id);
         return error;
     } else {
         LOG_INF("The channel #%d was not found!", id);

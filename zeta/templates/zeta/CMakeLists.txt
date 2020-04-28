@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 if(CONFIG_ZETA)
-  message(" Zeta >> Configure cmake")
+  message("[ZETA]: Set Zeta as a zephyr module")
   zephyr_interface_library_named(ZETA)
 
   # This line is for compatibility and should be removed at some point of time.

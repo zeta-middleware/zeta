@@ -79,11 +79,7 @@ ENV LC_ALL en_US.UTF-8
 
 # Going to workdirectory
 WORKDIR ${APP}
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY zeta-run-tests.sh /zeta-run-tests.sh
 COPY . .
 
-# Building and installing zeta-cli
-RUN python3 setup.py sdist bdist_wheel 
-RUN cd dist/ && pip3 install *.whl && cd ../
-
-CMD ["/docker-entrypoint.sh"]
+CMD ["/zeta-run-tests.sh"]

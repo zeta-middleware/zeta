@@ -1,7 +1,8 @@
 #!/bin/sh -l
 
 # Removing old dist folder
-rm -rf dist/
+rm -rf dist/;
+rm -rf zeta_cli.egg-info/;
 
 # Installing current Zeta-cli and running tests
 python3 setup.py sdist bdist_wheel &&   \

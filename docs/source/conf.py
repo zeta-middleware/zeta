@@ -39,6 +39,7 @@ release = '0.1.0-alpha'
 # ones.
 extensions = [
     #  'sphinx.ext.autodoc',
+    'sphinxcontrib.plantuml',
     'breathe',
 ]
 

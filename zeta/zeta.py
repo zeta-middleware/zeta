@@ -58,13 +58,13 @@ class ZetaHeader(HeaderFileFactory):
         channels_names_list = list()
         for c in self.channels:
             name = list(c.keys())[0]
-            channels_names_list.append(f"ZETA_{name}_CHANNEL")
+            channels_names_list.append(f"ZT_{name}_CHANNEL")
         channel_names = ',\n    '.join([f'{x}' for x in channels_names_list])
         self.substitutions['channels_enum'] = f'''
 typedef enum {{
     {channel_names},
-    ZETA_CHANNEL_COUNT
-}} __attribute__((packed)) zeta_channel_e;
+    ZT_CHANNEL_COUNT
+}} __attribute__((packed)) zt_channel_e;
 '''
 
 
@@ -89,7 +89,7 @@ class ZetaSource(SourceFileFactory):
 '''
         for c in self.channels:
             for k, v in c.items():
-                sem = "zeta_" + k + "_channel_sem"
+                sem = "zt_" + k + "_channel_sem"
                 self.channels_sems += f'''
 K_SEM_DEFINE({sem}, 1, 1);
 '''
@@ -104,11 +104,11 @@ K_SEM_DEFINE({sem}, 1, 1);
             for k, v in c.items():
                 validate = "NULL"
                 pre_set = "NULL"
-                set = "zeta_channel_set_private"
+                set = "zt_channel_set_private"
                 pos_set = "NULL"
                 pre_get = "NULL"
                 pos_get = "NULL"
-                get = "zeta_channel_get_private"
+                get = "zt_channel_get_private"
                 size = v['size']
                 data_list = list()
                 data_list = ["0xFF" for i in range(0, size)]
@@ -124,9 +124,9 @@ K_SEM_DEFINE({sem}, 1, 1);
                 # Getting name
                 name = k
                 # Getting sem
-                sem = "zeta_" + k + "_channel_sem"
+                sem = "zt_" + k + "_channel_sem"
                 # Getting ID
-                id = "ZETA_" + k + "_CHANNEL"
+                id = "ZT_" + k + "_CHANNEL"
                 # Getting data
                 if 'initial_value' in v:
                     data_list = [
@@ -161,7 +161,7 @@ K_SEM_DEFINE({sem}, 1, 1);
                     for s in v['subscribers']:
                         subscribers_list.append(s['name'] +
                                                 "_service_callback")
-                    subscribers_init = "zeta_callback_f " + name_subscribers + "[] = { " + ", ".join(
+                    subscribers_init = "zt_callback_f " + name_subscribers + "[] = { " + ", ".join(
                         subscribers_list) + ", NULL };"
                     subscribers = name_subscribers
                 if 'publishers' in v:
@@ -197,13 +197,13 @@ K_SEM_DEFINE({sem}, 1, 1);
 
                 self.set_publishers += f'''
     const k_tid_t {name_publishers}[] = {publishers_init};
-    __zeta_channels[{id}].publishers_id = {name_publishers};
+    __zt_channels[{id}].publishers_id = {name_publishers};
 '''
         self.set_publishers += f'''
 /* END SET CHANNEL PUBLISHERS */
 '''
         self.channels_creation = f'''
-static zeta_channel_t __zeta_channels[ZETA_CHANNEL_COUNT] = {{
+static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
     {channels}
 }};                
 '''
@@ -238,7 +238,7 @@ class ZetaCallbacksHeader(HeaderFileFactory):
             for k, v in s.items():
                 name_function = k + "_service_callback"
                 self.services_callbacks += f'''
-void {name_function}(zeta_channel_e id);
+void {name_function}(zt_channel_e id);
 '''
         self.substitutions['services_callbacks'] = self.services_callbacks
 
@@ -313,22 +313,22 @@ class ZetaCustomFunctionsHeader(HeaderFileFactory):
                 if 'pre_get' in v:
                     pre_get_name = v['pre_get']
                     self.channels_functions += f'''
-int {pre_get_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
+int {pre_get_name}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
                 if 'pos_get' in v:
                     pos_get_name = v['pos_get']
                     self.channels_functions += f'''
-int {pos_get_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
+int {pos_get_name}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
                 if 'pre_set' in v:
                     pre_set_name = v['pre_set']
                     self.channels_functions += f'''
-int {pre_set_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
+int {pre_set_name}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
                 if 'pos_set' in v:
                     pos_set_name = v['pos_set']
                     self.channels_functions += f'''
-int {pos_set_name}(zeta_channel_e id, u8_t *channel_value, size_t size);
+int {pos_set_name}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
                 if 'validate' in v:
                     validate_name = v['validate']

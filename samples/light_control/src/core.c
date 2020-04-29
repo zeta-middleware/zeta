@@ -23,7 +23,7 @@ K_SEM_DEFINE(core_event_sem, 0, 1);
  *
  * @param id
  */
-void CORE_service_callback(zeta_channel_e id)
+void CORE_service_callback(zt_channel_e id)
 {
     k_sem_give(&core_event_sem);
 }
@@ -42,7 +42,7 @@ void CORE_task()
 {
     printk("Hello CORE!\n");
     u8_t version[4] = {0};
-    zeta_channel_get(ZETA_FIRMWARE_VERSION_CHANNEL, ZT_REF(version));
+    zt_channel_get(ZT_FIRMWARE_VERSION_CHANNEL, ZT_REF(version));
     struct version *v = (struct version *) version;
     printk("Firmware version: %d.%d.%d\n", v->major, v->minor, v->build);
     u8_t light_level = 0;
@@ -50,16 +50,16 @@ void CORE_task()
     u8_t mc[2]       = {0};
     while (1) {
         k_sem_take(&core_event_sem, K_FOREVER);
-        zeta_channel_get(ZETA_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(mc));
+        zt_channel_get(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(mc));
         if (mc[0] == 1) {
             load = mc[1];
             printk("[CORE]: Manual load control -> Load = %s\n", load ? "on" : "off");
         } else {
-            zeta_channel_get(ZETA_LIGHT_LEVEL_CHANNEL, ZT_REF(light_level));
+            zt_channel_get(ZT_LIGHT_LEVEL_CHANNEL, ZT_REF(light_level));
             load = light_level < 96;
             printk("[CORE]: Light level is %03u -> Load = %s\n", light_level,
                    load ? "on" : "off");
         }
-        zeta_channel_set(ZETA_LOAD_CHANNEL, ZT_REF(load));
+        zt_channel_set(ZT_LOAD_CHANNEL, ZT_REF(load));
     }
 }

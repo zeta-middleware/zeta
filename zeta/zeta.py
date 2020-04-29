@@ -404,7 +404,6 @@ class ZetaCLI(object):
             key = list(s.keys())[0]
             map_services_names_to_array[key] = id
             id += 1
-        print(map_services_names_to_array)
         for c in channels :
             for k, v in c.items() :
                 if 'subscribers' in v :
@@ -417,7 +416,6 @@ class ZetaCLI(object):
                     for p in v['publishers'] :
                         publishers_mounted.append(services[map_services_names_to_array[p]])
                         v['publishers'] = publishers_mounted
-            print(c)
 
     def construct_yaml(self, f) :
         yaml_dict = yaml.load(f, Loader=YamlRefLoader)

@@ -27,20 +27,20 @@
  * persistent data.
  *
  */
-#define ZETA_THREAD_NVS_STACK_SIZE 512
+#define ZT_THREAD_NVS_STACK_SIZE 512
 
 /**
  * @brief Stack size that is used in Zeta thread that manages
  * callback calls.
  *
  */
-#define ZETA_THREAD_STACK_SIZE 512
+#define ZT_THREAD_STACK_SIZE 512
 
 /**
  * @brief Priority that is used for all Zeta threads.
  *
  */
-#define ZETA_THREAD_PRIORITY 0
+#define ZT_THREAD_PRIORITY 0
 
 /**
  * @brief Get variable reference and size easily to use in
@@ -49,7 +49,7 @@
  * @param x variable name
  *
  */
-#define ZETA_VARIABLE_REF_SIZE(x) (u8_t *) (&x), sizeof(x)
+#define ZT_VARIABLE_REF_SIZE(x) (u8_t *) (&x), sizeof(x)
 
 /**
  * @brief Check if _v value is equal to _c, otherwise _err will be
@@ -60,10 +60,10 @@
  * @param _err Error code
  *
  */
-#define ZETA_CHECK_VAL(_p, _e, _err, ...) \
-    if (_p == _e) {                       \
-        LOG_INF(__VA_ARGS__);             \
-        return _err;                      \
+#define ZT_CHECK_VAL(_p, _e, _err, ...) \
+    if (_p == _e) {                     \
+        LOG_INF(__VA_ARGS__);           \
+        return _err;                    \
     }
 
 /**
@@ -75,10 +75,10 @@
  *
  * @return
  */
-#define ZETA_CHECK(_p, _err, ...) \
-    if (_p) {                     \
-        LOG_INF(__VA_ARGS__);     \
-        return _err;              \
+#define ZT_CHECK(_p, _err, ...) \
+    if (_p) {                   \
+        LOG_INF(__VA_ARGS__);   \
+        return _err;            \
     }
 
 //$channels_enum
@@ -89,7 +89,7 @@
  * @param id Channel Id.
  *
  */
-typedef void (*zeta_callback_f)(zeta_channel_e id);
+typedef void (*zt_callback_f)(zt_channel_e id);
 
 /**
  * @brief Define pendent options that a channel can have.
@@ -107,29 +107,29 @@ union opt_data {
 /**
  * @brief Define Zeta channel type
  */
-struct zeta_channel {
+struct zt_channel {
     const char *name;                         /**< Channel name */
     u8_t *data;                               /**< Channel raw data */
     int (*validate)(u8_t *data, size_t size); /**< Valid data sent to be set to channel */
-    int (*pre_get)(zeta_channel_e id, u8_t *channel_value,
+    int (*pre_get)(zt_channel_e id, u8_t *channel_value,
                    size_t size); /**< Called before some get call */
-    int (*get)(zeta_channel_e id, u8_t *channel_value, size_t size); /**< Get call */
-    int (*pos_get)(zeta_channel_e id, u8_t *channel_value,
+    int (*get)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Get call */
+    int (*pos_get)(zt_channel_e id, u8_t *channel_value,
                    size_t size); /**< Called after some get call */
-    int (*pre_set)(zeta_channel_e id, u8_t *channel_value,
+    int (*pre_set)(zt_channel_e id, u8_t *channel_value,
                    size_t size); /**< Called before some set call */
-    int (*set)(zeta_channel_e id, u8_t *channel_value, size_t size); /**< Set call */
-    int (*pos_set)(zeta_channel_e id, u8_t *channel_value,
-                   size_t size);      /**< Called after some set call */
-    u8_t size;                        /**< Channel size */
-    u8_t persistent;                  /**< Persistent type */
-    union opt_data opt;               /**< Pendent options */
-    struct k_sem *sem;                /**< Preserve shared-memory */
-    const k_tid_t *publishers_id;     /**< Publishers Ids */
-    zeta_callback_f *subscribers_cbs; /**< Subscribers callbacks */
-    zeta_channel_e id;                /**< Channel Id */
+    int (*set)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Set call */
+    int (*pos_set)(zt_channel_e id, u8_t *channel_value,
+                   size_t size);    /**< Called after some set call */
+    u8_t size;                      /**< Channel size */
+    u8_t persistent;                /**< Persistent type */
+    union opt_data opt;             /**< Pendent options */
+    struct k_sem *sem;              /**< Preserve shared-memory */
+    const k_tid_t *publishers_id;   /**< Publishers Ids */
+    zt_callback_f *subscribers_cbs; /**< Subscribers callbacks */
+    zt_channel_e id;                /**< Channel Id */
 };
-typedef struct zeta_channel zeta_channel_t;
+typedef struct zt_channel zt_channel_t;
 
 /**
  * @brief Return the channel size.
@@ -139,7 +139,7 @@ typedef struct zeta_channel zeta_channel_t;
  *
  * @return Channel size
  */
-size_t zeta_channel_size(zeta_channel_e id, int *error);
+size_t zt_channel_size(zt_channel_e id, int *error);
 
 /**
  * @brief Return the channel name.
@@ -149,7 +149,7 @@ size_t zeta_channel_size(zeta_channel_e id, int *error);
  *
  * @return Channel name
  */
-const char *zeta_channel_name(zeta_channel_e id, int *error);
+const char *zt_channel_name(zt_channel_e id, int *error);
 
 /**
  * @brief Get channel value.
@@ -164,7 +164,7 @@ const char *zeta_channel_name(zeta_channel_e id, int *error);
  * @retval -EPERM  Channel hasn't get function implemented
  * @retval -EINVAL Size passed is different to channel size
  */
-int zeta_channel_get(zeta_channel_e id, u8_t *channel_value, size_t size);
+int zt_channel_get(zt_channel_e id, u8_t *channel_value, size_t size);
 
 /**
  * @brief Set channel value.
@@ -181,6 +181,6 @@ int zeta_channel_get(zeta_channel_e id, u8_t *channel_value, size_t size);
  * @retval -EINVAL Size passed is different to channel size
  * @retval -EAGAIN Valid function returns false
  */
-int zeta_channel_set(zeta_channel_e id, u8_t *channel_value, size_t size);
+int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size);
 
 #endif

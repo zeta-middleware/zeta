@@ -22,12 +22,12 @@ u8_t light_level_sensor_fetch()
  *
  * @param id
  */
-void PERIPHERAL_service_callback(zeta_channel_e id)
+void PERIPHERAL_service_callback(zt_channel_e id)
 {
     switch (id) {
-    case ZETA_LOAD_CHANNEL: {
+    case ZT_LOAD_CHANNEL: {
         u8_t load = 0;
-        zeta_channel_get(ZETA_LOAD_CHANNEL, ZT_REF(load));
+        zt_channel_get(ZT_LOAD_CHANNEL, ZT_REF(load));
         printk("[PERIPHERAL]: The load is turning %s\n", load ? "on" : "off");
     } break;
     default:
@@ -44,7 +44,7 @@ void PERIPHERAL_task()
     u8_t light_level = 0;
     while (1) {
         light_level = light_level_sensor_fetch();
-        zeta_channel_set(ZETA_LIGHT_LEVEL_CHANNEL, ZT_REF(light_level));
+        zt_channel_set(ZT_LIGHT_LEVEL_CHANNEL, ZT_REF(light_level));
         k_sleep(K_SECONDS(2));
     }
 }

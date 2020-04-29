@@ -18,10 +18,10 @@
  *
  * @param id
  */
-void NET_service_callback(zeta_channel_e id)
+void NET_service_callback(zt_channel_e id)
 {
     switch (id) {
-    case ZETA_LOAD_CHANNEL: {
+    case ZT_LOAD_CHANNEL: {
         printk("[NET]: Schedule to send status to the cloud\n");
     } break;
     default:
@@ -37,10 +37,10 @@ void NET_task()
     u8_t manual_load_control[2] = {0x00, 0x01};
     while (1) {
         manual_load_control[0] = 1;
-        zeta_channel_set(ZETA_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
+        zt_channel_set(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
         k_sleep(K_SECONDS(5));
         manual_load_control[0] = 0;
-        zeta_channel_set(ZETA_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
+        zt_channel_set(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
         k_sleep(K_SECONDS(10));
     }
 }

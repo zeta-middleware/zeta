@@ -81,6 +81,144 @@
         return _err;            \
     }
 
+
+#define ZT_DATA_S8(data)               \
+    (zt_data_t *) (zt_data_s8_t[])     \
+    {                                  \
+        {                              \
+            sizeof(s8_t), (s8_t)(data) \
+        }                              \
+    }
+
+#define ZT_DATA_U8(data)               \
+    (zt_data_t *) (zt_data_u8_t[])     \
+    {                                  \
+        {                              \
+            sizeof(u8_t), (u8_t)(data) \
+        }                              \
+    }
+
+#define ZT_DATA_S16(data)                \
+    (zt_data_t *) (zt_data_s16_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s16_t), (s16_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_U16(data)                \
+    (zt_data_t *) (zt_data_u16_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u16_t), (u16_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_S32(data)                \
+    (zt_data_t *) (zt_data_s32_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s32_t), (s32_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_U32(data)                \
+    (zt_data_t *) (zt_data_u32_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u32_t), (u32_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_S64(data)                \
+    (zt_data_t *) (zt_data_s64_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s64_t), (s64_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_U64(data)                \
+    (zt_data_t *) (zt_data_u64_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u64_t), (u64_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_BYTES(_size, data, ...) \
+    (zt_data_t *) (struct {             \
+        size_t size;                    \
+        u8_t value[_size];              \
+    }[])                                \
+    {                                   \
+        {                               \
+            _size,                      \
+            {                           \
+                data, ##__VA_ARGS__     \
+            }                           \
+        }                               \
+    }
+
+typedef struct {
+    size_t size;
+    s8_t value;
+} zt_data_s8_t;
+
+typedef struct {
+    size_t size;
+    u8_t value;
+} zt_data_u8_t;
+
+typedef struct {
+    size_t size;
+    s16_t value;
+} zt_data_s16_t;
+
+typedef struct {
+    size_t size;
+    u16_t value;
+} zt_data_u16_t;
+
+typedef struct {
+    size_t size;
+    s32_t value;
+} zt_data_s32_t;
+
+typedef struct {
+    size_t size;
+    u32_t value;
+} zt_data_u32_t;
+
+typedef struct {
+    size_t size;
+    s64_t value;
+} zt_data_s64_t;
+
+typedef struct {
+    size_t size;
+    u64_t value;
+} zt_data_u64_t;
+
+typedef struct {
+    size_t size;
+    u8_t value[];
+} zt_data_bytes_t;
+
+union data {
+    zt_data_s8_t s8;
+    zt_data_u8_t u8;
+    zt_data_s16_t s16;
+    zt_data_u16_t u16;
+    zt_data_s32_t s32;
+    zt_data_u32_t u32;
+    zt_data_s64_t s64;
+    zt_data_u64_t u64;
+    zt_data_bytes_t bytes;
+};
+
+typedef union data zt_data_t;
+
 //$channels_enum
 
 /**
@@ -155,6 +293,20 @@ const char *zt_channel_name(zt_channel_e id, int *error);
  * @brief Get channel value.
  *
  * @param id Channel Id
+ * @param channel_data pointer to a zt_data_t where the data will be retrieved.
+ *
+ * @return Error code
+ * @retval -ENODATA The channel was not found
+ * @retval -EFAULT Channel value is NULL
+ * @retval -EPERM  Channel hasn't get function implemented
+ * @retval -EINVAL Size passed is different to channel size
+ */
+int zt_channel_data_get(zt_channel_e id, zt_data_t *channel_data);
+
+/**
+ * @brief Get channel value.
+ *
+ * @param id Channel Id
  * @param channel_value Handle channel value
  * @param size Channel size
  *
@@ -165,6 +317,22 @@ const char *zt_channel_name(zt_channel_e id, int *error);
  * @retval -EINVAL Size passed is different to channel size
  */
 int zt_channel_get(zt_channel_e id, u8_t *channel_value, size_t size);
+
+/**
+ * @brief Set channel value.
+ *
+ * @param id Channel Id
+ * @param channel_data pointer to a zt_data_t where the data is.
+ *
+ * @return Error code
+ * @retval -ENODATA The channel was not found
+ * @retval -EACCESS Current thread hasn't permission to set this channel
+ * @retval -EFAULT Channel value is NULL
+ * @retval -EPERM Channel is read only
+ * @retval -EINVAL Size passed is different to channel size
+ * @retval -EAGAIN Valid function returns false
+ */
+int zt_channel_data_set(zt_channel_e id, zt_data_t *channel_data);
 
 /**
  * @brief Set channel value.

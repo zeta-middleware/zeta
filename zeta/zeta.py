@@ -122,22 +122,22 @@ K_SEM_DEFINE({sem}, 1, 1);
                 data_init = ""
                 subscribers_init = ""
                 publishers_init = "{NULL}"
-                name_data = k + "_data"
-                name_subscribers = k + "_subscribers"
-                name_publishers = k + "_publishers"
+                name_data = f"{k}_data"
+                name_subscribers = f"{k}_subscribers"
+                name_publishers = f"{k}_publishers"
 
                 # Getting name
                 name = k
                 # Getting sem
-                sem = "zt_" + k + "_channel_sem"
+                sem = f"zt_{k}_channel_sem"
                 # Getting ID
-                id = "ZT_" + k + "_CHANNEL"
+                id = f"ZT_{k}_CHANNEL"
                 # Getting data
                 if 'initial_value' in v:
                     data_list = [
                         "0x{:02X}".format(x) for x in v['initial_value']
                     ]
-                data_init = "u8_t " + name_data + "[] = {" + ", ".join(
+                data_init = f"u8_t {name_data}[] = {{" + ", ".join(
                     data_list) + "};"
                 data = name_data
                 # Getting validate
@@ -165,17 +165,16 @@ K_SEM_DEFINE({sem}, 1, 1);
                 if 'subscribers' in v:
                     subscribers_list = list()
                     for s in v['subscribers']:
-                        for s_k, s_v in s.items() :
-                            subscribers_list.append(s_k +
-                                                    "_service_callback")
-                    subscribers_init = "zt_callback_f " + name_subscribers + "[] = { " + ", ".join(
+                        s_k = list(s.keys())[0]
+                        subscribers_list.append(f"{s_k}_service_callback")
+                    subscribers_init = f"zt_callback_f {name_subscribers}[] = {{ " + f", ".join(
                         subscribers_list) + ", NULL };"
                     subscribers = name_subscribers
                 if 'publishers' in v:
                     publishers_list = list()
                     for p in v['publishers']:
-                        for p_k, p_v in p.items() :
-                            publishers_list.append(p_k + "_thread_id")
+                        p_k = list(p.keys())[0]
+                        publishers_list.append(f"{p_k}_thread_id")
                     publishers_init = "{ " + ", ".join(
                         publishers_list) + ", NULL }"
                 self.arrays_init += f'''
@@ -244,7 +243,7 @@ class ZetaCallbacksHeader(HeaderFileFactory):
         callbacks = f''''''
         for s in self.services:
             for k, v in s.items():
-                name_function = k + "_service_callback"
+                name_function = f"{k}_service_callback"
                 self.services_callbacks += f'''
 void {name_function}(zt_channel_e id);
 '''
@@ -261,8 +260,8 @@ class ZetaThreadHeader(HeaderFileFactory):
         for s in self.services:
             for k, v in s.items():
                 name = k
-                name_tid = k + "_thread_id"
-                name_thread = k + "_task"
+                name_tid = f"{k}_thread_id"
+                name_thread = f"{k}_task"
                 priority = v['priority']
                 stack_size = v['stack_size']
                 self.services_sections += f'''
@@ -286,8 +285,8 @@ class ZetaThreadSource(SourceFileFactory):
         for s in self.services:
             for k, v in s.items():
                 name = k
-                name_tid = k + "_thread_id"
-                name_thread = k + "_task"
+                name_tid = f"{k}_thread_id"
+                name_thread = f"{k}_task"
                 priority = v['priority']
                 stack_size = v['stack_size']
                 self.services_threads += f'''

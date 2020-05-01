@@ -16,15 +16,25 @@ PROJECT_DIR = "."
 ZETA_SRC_DIR = "."
 ZETA_INCLUDE_DIR = "."
 
-class YamlRefLoader(yaml.SafeLoader) :
-    def __init__(self, stream) :
+
+class YamlRefLoader(yaml.SafeLoader):
+    def __init__(self, stream):
         super(YamlRefLoader, self).__init__(stream)
+
     def ref(self, node):
         return self.construct_scalar(node)
 
+
 class FileFactory(object):
-    def __init__(self, destination_dir, template_file, yaml_dict):
-        self.destination_file = f'{destination_dir}/{template_file.replace(".template", "")}'
+    def __init__(self,
+                 destination_dir,
+                 template_file,
+                 yaml_dict,
+                 destination_file_name=""):
+        if destination_file_name:
+            self.destination_file = f'{destination_dir}/{destination_file_name}'
+        else:
+            self.destination_file = f'{destination_dir}/{template_file.replace(".template", "")}'
         self.template_file = f'{ZETA_TEMPLATES_DIR}/{template_file}'
         self.yaml_dict = yaml_dict
         self.substitutions = {}
@@ -369,18 +379,23 @@ class ZetaCLI(object):
             usage='zeta init <project dir>')
         # prefixing the argument with -- means it's optional
         parser.add_argument(
-            'project_dir',
+            '-s',
+            '--gen_services',
+            nargs='?',
+            const="./src",
             type=str,
-            help='The project root folder where the files will be generated',
-            default=".")
+            help=
+            'Generate services minimal implementation on the directory pass as arg',
+        )
+        project_dir = "."
         args = parser.parse_args(sys.argv[2:])
         global ZETA_DIR
         ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
         global PROJECT_DIR
-        PROJECT_DIR = args.project_dir
+        PROJECT_DIR = project_dir
         global ZETA_TEMPLATES_DIR
         ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
-        print("[ZETA]: Generating cmake file on", args.project_dir)
+        print("[ZETA]: Generating cmake file on", project_dir)
         with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
                   'r') as header_template:
             t = header_template.read()
@@ -392,35 +407,62 @@ class ZetaCLI(object):
                       'r') as header_template:
                 with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
                     cmake.write(header_template.read())
+        if args.gen_services:
+            with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
+                YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
+                yaml_dict = yaml.load(f, Loader=YamlRefLoader)
+                for s in yaml_dict['Services']:
+                    for service in s.keys():
+                        service = service.strip().lower()
+                        if not os.path.exists(
+                                f'{args.gen_services}/{service}.c'):
+                            try:
+                                service_file = FileFactory(
+                                    args.gen_services,
+                                    "zeta_service.template.c", yaml_dict,
+                                    f"{service}.c")
+                                service_file.substitutions[
+                                    'service_name'] = service
+                                service_file.run()
+                                print(
+                                    f"[ZETA]: Generating service {service}.c file on the folder {args.gen_services}"
+                                )
+                            except FileNotFoundError:
+                                print(
+                                    f"[ZETA ERROR]: Failed to generate service files. Destination folder {args.gen_services} does not exists."
+                                )
+                                return
 
-    def mount_subscribers_publishers(self, dic) :
+    def mount_subscribers_publishers(self, dic):
         channels = dic['Channels']
         services = dic['Services']
         services_names_set = set()
         map_services_names_to_array = dict()
         id = 0
-        for s in services :
+        for s in services:
             key = list(s.keys())[0]
             map_services_names_to_array[key] = id
             id += 1
-        for c in channels :
-            for k, v in c.items() :
-                if 'subscribers' in v :
+        for c in channels:
+            for k, v in c.items():
+                if 'subscribers' in v:
                     subscribers_mounted = list()
-                    for s in v['subscribers'] :
-                        subscribers_mounted.append(services[map_services_names_to_array[s]])
+                    for s in v['subscribers']:
+                        subscribers_mounted.append(
+                            services[map_services_names_to_array[s]])
                         v['subscribers'] = subscribers_mounted
-                if 'publishers' in v :
+                if 'publishers' in v:
                     publishers_mounted = list()
-                    for p in v['publishers'] :
-                        publishers_mounted.append(services[map_services_names_to_array[p]])
+                    for p in v['publishers']:
+                        publishers_mounted.append(
+                            services[map_services_names_to_array[p]])
                         v['publishers'] = publishers_mounted
 
-    def construct_yaml(self, f) :
+    def construct_yaml(self, f):
         yaml_dict = yaml.load(f, Loader=YamlRefLoader)
         self.mount_subscribers_publishers(yaml_dict)
         return yaml_dict
-        
+
     def gen(self):
         parser = argparse.ArgumentParser(
             description='Generate zeta files on the build folder',

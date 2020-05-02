@@ -417,7 +417,7 @@ class ZetaCLI(object):
             with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
                 cmake.write(t)
         if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
-            print("[ZETA]: Generating yaml file on", args.project_dir)
+            print("[ZETA]: Generating yaml file on", project_dir)
             with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.yaml',
                       'r') as header_template:
                 with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:

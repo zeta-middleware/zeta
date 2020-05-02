@@ -25,18 +25,145 @@ class YamlRefLoader(yaml.SafeLoader):
         return self.construct_scalar(node)
 
 
+class Channel(object):
+    def __init__(self,
+                 name,
+                 initial_value=None,
+                 validate='NULL',
+                 pre_get='NULL',
+                 get='zt_channel_get_private',
+                 pos_get='NULL',
+                 pre_set='NULL',
+                 set='zt_channel_set_private',
+                 pos_set='NULL',
+                 size=1,
+                 persistent=0):
+        self.name = name.strip()
+        self.validate = validate
+        self.pre_get = pre_get
+        self.get = get
+        self.pos_get = pos_get
+        self.pre_set = pre_set
+        self.set = set
+        self.pos_set = pos_set
+        self.size = size
+        self.persistent = 1 if persistent else 0
+        self.sem = f"zt_{name.lower()}_channel_sem"
+        self.id = f"ZT_{name.upper()}_CHANNEL"
+        self.initial_value = initial_value
+        if initial_value is None:
+            self.initial_value = [hex(x) for x in [0] * self.size]
+        else:
+            self.initial_value = [hex(x) for x in initial_value]
+
+        self.pub_services_obj = []
+        self.sub_services_obj = []
+
+    #  def definition(self):
+    #  self.data = f"(u8_t []){{{initial_value}}}"
+    #  self.subscribers_cbs = "NULL"
+    #  if self.pub_services_obj is not []:
+    #  self.subscribers_cbs = [f"{service.name}_service_callback" for service in self.sub_services_obj]
+    #  self.subscribers_cbs.append('NULL')
+    #  self.subscribers_cbs = f"(zt_callback_f[]){{{', '.join(self.subscribers_cbs)}}}"
+
+
+#
+#  return '''
+#  {{
+#  .name = "{name}",
+#  .validate = {validate},
+#  .pre_get = {pre_get},
+#  .get = {get},
+#  .pos_get = {pos_get},
+#  .pre_set = {pre_set},
+#  .set = {set},
+#  .pos_set = {pos_set},
+#  .size = {size},
+#  .persistent = {persistent},
+#  .sem = &{sem},
+#  .subscribers_cbs = {subscribers_cbs},
+#  .id = {id},
+#  .data = {data}
+#  }},\n'''.format(**vars(self))
+
+
+class Service(object):
+    def __init__(self,
+                 name,
+                 priority=10,
+                 stack_size=512,
+                 sub_channels=[],
+                 pub_channels=[]):
+        self.name = name
+        self.priority = priority
+        self.stack_size = stack_size
+        self.pub_channels_names = pub_channels
+        self.sub_channels_names = sub_channels
+        self.pub_channels_obj = []
+        self.sub_channels_obj = []
+
+
+class Config(object):
+    def __init__(self,
+                 nvs_sector_size='DT_FLASH_ERASE_BLOCK_SIZE',
+                 nvs_sector_count=4,
+                 nvs_storage_offset='DT_FLASH_AREA_STORAGE_OFFSET'):
+        self.nvs_sector_size = nvs_sector_size
+        self.nvs_sector_count = nvs_sector_count
+        self.nvs_storage_offset = nvs_storage_offset
+
+
+class Zeta(object):
+    def __init__(self, yamlfile):
+        YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
+        yaml_dict = yaml.load(yamlfile, Loader=YamlRefLoader)
+        self.config = Config(**yaml_dict['Config'])
+        self.channels = []
+        for channel_description in yaml_dict['Channels']:
+            for name, fields in  channel_description.items():
+                self.channels.append(Channel(name, **fields))
+        self.services = []
+        for service_description in yaml_dict['Services']:
+            for name, fields in service_description.items():
+                self.services.append(Service(name, **fields))
+        self.__check_service_channel_relation()
+
+    def __check_service_channel_relation(self):
+        for service in self.services:
+            for channel_name in service.pub_channels_names:
+                for channel in self.channels:
+                    if channel.name == channel_name:
+                        channel.pub_services_obj.append(service)
+                        service.pub_channels_obj.append(channel)
+                        break
+                else:
+                    raise ValueError("Channel {channel_name} does not exists")
+            for channel_name in service.sub_channels_names:
+                for channel in self.channels:
+                    if channel.name == channel_name:
+                        channel.sub_services_obj.append(service)
+                        service.sub_channels_obj.append(channel)
+                        break
+                else:
+                    raise ValueError("Channel {channel_name} does not exists")
+
+    def __process_file(self, yaml_dict):
+        pass
+
+
 class FileFactory(object):
     def __init__(self,
                  destination_dir,
                  template_file,
-                 yaml_dict,
+                 zeta,
                  destination_file_name=""):
         if destination_file_name:
             self.destination_file = f'{destination_dir}/{destination_file_name}'
         else:
             self.destination_file = f'{destination_dir}/{template_file.replace(".template", "")}'
         self.template_file = f'{ZETA_TEMPLATES_DIR}/{template_file}'
-        self.yaml_dict = yaml_dict
+        self.zeta = zeta
         self.substitutions = {}
 
     def create_substitutions(self):
@@ -54,27 +181,24 @@ class FileFactory(object):
 
 
 class HeaderFileFactory(FileFactory):
-    def __init__(self, template_file, yaml_dict):
-        super().__init__(ZETA_INCLUDE_DIR, template_file, yaml_dict)
+    def __init__(self, template_file, zeta):
+        super().__init__(ZETA_INCLUDE_DIR, template_file, zeta)
 
 
 class SourceFileFactory(FileFactory):
-    def __init__(self, template_file, yaml_dict):
-        super().__init__(ZETA_SRC_DIR, template_file, yaml_dict)
+    def __init__(self, template_file, zeta):
+        super().__init__(ZETA_SRC_DIR, template_file, zeta)
 
 
 class ZetaHeader(HeaderFileFactory):
-    def __init__(self, yaml_dict):
-        super().__init__('zeta.template.h', yaml_dict)
+    def __init__(self, zeta):
+        super().__init__('zeta.template.h', zeta)
 
     def create_substitutions(self):
-        self.channels = self.yaml_dict['Channels']
-        self.configs = self.yaml_dict['Config']
-        channels_names_list = list()
-        for c in self.channels:
-            name = list(c.keys())[0]
-            channels_names_list.append(f"ZT_{name}_CHANNEL")
-        channel_names = ',\n    '.join([f'{x}' for x in channels_names_list])
+        channel_names = ',\n    '.join([
+            f"ZT_{channel.name.upper()}_CHANNEL"
+            for channel in self.zeta.channels
+        ])
         self.substitutions['channels_enum'] = f'''
 typedef enum {{
     {channel_names},
@@ -84,29 +208,23 @@ typedef enum {{
 
 
 class ZetaSource(SourceFileFactory):
-    def __init__(self, yaml_dict):
-        super().__init__('zeta.template.c', yaml_dict)
-        self.channels = yaml_dict['Channels']
-        self.config = yaml_dict['Config']
-        self.channels_creation = f''''''
-        self.channels_sems = f''''''
-        self.sector_size = f''''''
-        self.sector_count = f''''''
-        self.storage_offset = f''''''
-        self.arrays_init = f''''''
-        self.set_publishers = f'''
-/* BEGIN SET CHANNEL PUBLISHERS */
-'''
+    def __init__(self, zeta):
+        super().__init__('zeta.template.c', zeta)
+        self.channels_creation = ''
+        self.channels_sems = ''
+        self.sector_size = ''
+        self.sector_count = ''
+        self.storage_offset = ''
+        self.arrays_init = ''
+        self.set_publishers = ''
 
     def gen_sems(self):
         self.channels_sems += f'''
 /* BEGIN INITIALIZING CHANNEL SEMAPHORES */
 '''
-        for c in self.channels:
-            for k, v in c.items():
-                sem = "zt_" + k + "_channel_sem"
-                self.channels_sems += f'''
-K_SEM_DEFINE({sem}, 1, 1);
+        for channel in self.zeta.channels:
+            self.channels_sems += f'''
+K_SEM_DEFINE({channel.sem}, 1, 1);
 '''
 
         self.channels_sems += f'''
@@ -114,87 +232,35 @@ K_SEM_DEFINE({sem}, 1, 1);
 '''
 
     def gen_creation(self):
-        channels = f''''''
-        for c in self.channels:
-            for k, v in c.items():
-                validate = "NULL"
-                pre_set = "NULL"
-                set = "zt_channel_set_private"
-                pos_set = "NULL"
-                pre_get = "NULL"
-                pos_get = "NULL"
-                get = "zt_channel_get_private"
-                size = v['size']
-                data_list = list()
-                data_list = ["0xFF" for i in range(0, size)]
-                persistent = "0"
-                subscribers = "NULL"
-                data_init = ""
-                subscribers_init = ""
-                publishers_init = "{NULL}"
-                name_data = f"{k}_data"
-                name_subscribers = f"{k}_subscribers"
-                name_publishers = f"{k}_publishers"
+        channels = ''
+        for channel in self.zeta.channels:
+            channel.data = f"(u8_t []){{{', '.join(channel.initial_value)}}}"
+            channel.subscribers_cbs = "NULL"
+            if len(channel.sub_services_obj) > 0:
+                channel.subscribers_cbs = [
+                    f"{service.name}_service_callback"
+                    for service in channel.sub_services_obj
+                ]
+                channel.subscribers_cbs.append('NULL')
+                channel.subscribers_cbs = ', '.join(channel.subscribers_cbs)
+            channel.subscribers_cbs = f"(zt_callback_f[]){{{channel.subscribers_cbs}}}"
 
-                # Getting name
-                name = k
-                # Getting sem
-                sem = f"zt_{k}_channel_sem"
-                # Getting ID
-                id = f"ZT_{k}_CHANNEL"
-                # Getting data
-                if 'initial_value' in v:
-                    data_list = [
-                        "0x{:02X}".format(x) for x in v['initial_value']
-                    ]
-                data_init = f"u8_t {name_data}[] = {{" + ", ".join(
-                    data_list) + "};"
-                data = name_data
-                # Getting validate
-                if 'validate' in v:
-                    validate = v['validate']
-                # Getting set functions
-                if 'set' in v and v['set'] == 'NULL':
-                    set = 'NULL'
-                if 'pre_set' in v:
-                    pre_set = v['pre_set']
-                if 'pos_set' in v:
-                    pos_set = v['pos_set']
-                # Getting get function
-                if 'get' in v and v['get'] == 'NULL':
-                    get = 'NULL'
-                if 'pre_get' in v:
-                    pre_get = v['pre_get']
-                if 'pos_get' in v:
-                    pos_get = v['pos_get']
-                # Getting persistent
-                if 'persistent' in v and v['persistent']:
-                    persistent = "1"
+            channel.publishers_id = "NULL"
+            if len(channel.pub_services_obj) > 0:
+                channel.publishers_id = [
+                    f"{service.name}_thread_id"
+                    for service in channel.pub_services_obj
+                ]
+                channel.publishers_id.append("NULL")
+                channel.publishers_id = ', '.join(channel.publishers_id)
+            channel.publishers_id = f"{{{channel.publishers_id}}}"
 
-                # Getting callbacks
-                if 'subscribers' in v:
-                    subscribers_list = list()
-                    for s in v['subscribers']:
-                        s_k = list(s.keys())[0]
-                        subscribers_list.append(f"{s_k}_service_callback")
-                    subscribers_init = f"zt_callback_f {name_subscribers}[] = {{ " + f", ".join(
-                        subscribers_list) + ", NULL };"
-                    subscribers = name_subscribers
-                if 'publishers' in v:
-                    publishers_list = list()
-                    for p in v['publishers']:
-                        p_k = list(p.keys())[0]
-                        publishers_list.append(f"{p_k}_thread_id")
-                    publishers_init = "{ " + ", ".join(
-                        publishers_list) + ", NULL }"
-                self.arrays_init += f'''
-/* BEGIN {name} INIT ARRAYS */
-{data_init}
-{subscribers_init}
-/* END {name} INIT ARRAYS */
+            name_publishers = f"{channel.name.lower()}_publishers"
+            self.set_publishers += f'''
+    const k_tid_t {name_publishers}[] = {channel.publishers_id};
+    __zt_channels[{channel.id}].publishers_id = {name_publishers};
 '''
-
-                channels += f'''
+            channels += '''
     {{
         .name = "{name}",       
         .validate = {validate},
@@ -207,28 +273,20 @@ K_SEM_DEFINE({sem}, 1, 1);
         .size = {size},
         .persistent = {persistent},
         .sem = &{sem},
-        .subscribers_cbs = {subscribers},
+        .subscribers_cbs = {subscribers_cbs},
         .id = {id},
         .data = {data}
-    }},\n'''
+    }},\n'''.format(**vars(channel))
 
-                self.set_publishers += f'''
-    const k_tid_t {name_publishers}[] = {publishers_init};
-    __zt_channels[{id}].publishers_id = {name_publishers};
-'''
-        self.set_publishers += f'''
-/* END SET CHANNEL PUBLISHERS */
-'''
         self.channels_creation = f'''
 static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
     {channels}
 }};                
 '''
-
     def gen_nvs_config(self):
-        self.sector_size = self.config['nvs_sector_size']
-        self.sector_count = self.config['nvs_sector_count']
-        self.storage_offset = self.config['nvs_storage_offset']
+        self.sector_size = self.zeta.config.nvs_sector_size
+        self.sector_count = self.zeta.config.nvs_sector_count
+        self.storage_offset = self.zeta.config.nvs_storage_offset
 
     def create_substitutions(self):
         self.gen_nvs_config()
@@ -239,42 +297,36 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.substitutions['nvs_sector_size'] = self.sector_size
         self.substitutions['nvs_sector_count'] = self.sector_count
         self.substitutions['nvs_storage_offset'] = self.storage_offset
-        self.substitutions['arrays_init'] = self.arrays_init
         self.substitutions['set_publishers'] = self.set_publishers
 
 
 class ZetaCallbacksHeader(HeaderFileFactory):
-    def __init__(self, yaml_dict):
-        super().__init__('zeta_callbacks.template.h', yaml_dict)
-        self.services = yaml_dict['Services']
-        self.services_callbacks = f''''''
+    def __init__(self, zeta):
+        super().__init__('zeta_callbacks.template.h', zeta)
+        self.services_callbacks = ''
 
     def create_substitutions(self):
-        callbacks = f''''''
-        for s in self.services:
-            for k, v in s.items():
-                name_function = f"{k}_service_callback"
-                self.services_callbacks += f'''
-void {name_function}(zt_channel_e id);
+        callbacks = ''
+        for service in self.zeta.services:
+            self.services_callbacks += f'''
+void {service.name}_service_callback(zt_channel_e id);
 '''
         self.substitutions['services_callbacks'] = self.services_callbacks
 
 
 class ZetaThreadHeader(HeaderFileFactory):
-    def __init__(self, yaml_dict):
-        super().__init__('zeta_threads.template.h', yaml_dict)
-        self.services = yaml_dict['Services']
-        self.services_sections = f''''''
+    def __init__(self, zeta):
+        super().__init__('zeta_threads.template.h', zeta)
+        self.services_sections = ''
 
     def create_substitutions(self):
-        for s in self.services:
-            for k, v in s.items():
-                name = k
-                name_tid = f"{k}_thread_id"
-                name_thread = f"{k}_task"
-                priority = v['priority']
-                stack_size = v['stack_size']
-                self.services_sections += f'''
+        for service in self.zeta.services:
+            name = service.name
+            name_tid = f"{name}_thread_id"
+            name_thread = f"{name}_task"
+            priority = service.priority
+            stack_size = service.stack_size
+            self.services_sections += f'''
 /* BEGIN {name} SECTION */
 void {name_thread}(void);
 extern const k_tid_t {name_tid};
@@ -286,20 +338,18 @@ extern const k_tid_t {name_tid};
 
 
 class ZetaThreadSource(SourceFileFactory):
-    def __init__(self, yaml_dict):
-        super().__init__('zeta_threads.template.c', yaml_dict)
-        self.services = yaml_dict['Services']
-        self.services_threads = f''''''
+    def __init__(self, zeta):
+        super().__init__('zeta_threads.template.c', zeta)
+        self.services_threads = ''
 
     def create_substitutions(self):
-        for s in self.services:
-            for k, v in s.items():
-                name = k
-                name_tid = f"{k}_thread_id"
-                name_thread = f"{k}_task"
-                priority = v['priority']
-                stack_size = v['stack_size']
-                self.services_threads += f'''
+        for service in self.zeta.services:
+            name = service.name
+            name_tid = f"{name}_thread_id"
+            name_thread = f"{name}_task"
+            priority = service.priority
+            stack_size = service.stack_size
+            self.services_threads += f'''
 /* BEGIN {name} THREAD DEFINE */
 K_THREAD_DEFINE({name_tid},
                 {stack_size},
@@ -315,44 +365,37 @@ K_THREAD_DEFINE({name_tid},
 
 
 class ZetaCustomFunctionsHeader(HeaderFileFactory):
-    def __init__(self, yaml_dict):
-        super().__init__('zeta_custom_functions.template.h', yaml_dict)
-        self.channels = yaml_dict['Channels']
-        self.channels_functions = f''''''
+    def __init__(self, zeta):
+        super().__init__('zeta_custom_functions.template.h', zeta)
+        self.channels_functions = ''
 
     def create_substitutions(self):
-        for c in self.channels:
-            for k, v in c.items():
-                name = k
-                self.channels_functions += f'''
+        for channel in self.zeta.channels:
+            name = channel.name
+            self.channels_functions += f'''
 /* BEGIN {name} CHANNEL FUNCTIONS */
 '''
-                if 'pre_get' in v:
-                    pre_get_name = v['pre_get']
-                    self.channels_functions += f'''
-int {pre_get_name}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-                if 'pos_get' in v:
-                    pos_get_name = v['pos_get']
-                    self.channels_functions += f'''
-int {pos_get_name}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-                if 'pre_set' in v:
-                    pre_set_name = v['pre_set']
-                    self.channels_functions += f'''
-int {pre_set_name}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-                if 'pos_set' in v:
-                    pos_set_name = v['pos_set']
-                    self.channels_functions += f'''
-int {pos_set_name}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-                if 'validate' in v:
-                    validate_name = v['validate']
-                    self.channels_functions += f'''
-int {validate_name}(u8_t *data, size_t size);
-'''
+            if channel.pre_get is not 'NULL':
                 self.channels_functions += f'''
+int {channel.pre_get}(zt_channel_e id, u8_t *channel_value, size_t size);
+'''
+            if channel.pos_get is not 'NULL':
+                self.channels_functions += f'''
+int {channel.pos_get}(zt_channel_e id, u8_t *channel_value, size_t size);
+'''
+            if channel.pre_set is not 'NULL':
+                self.channels_functions += f'''
+int {channel.pre_set}(zt_channel_e id, u8_t *channel_value, size_t size);
+'''
+            if channel.pos_set is not 'NULL':
+                self.channels_functions += f'''
+int {channel.pos_set}(zt_channel_e id, u8_t *channel_value, size_t size);
+'''
+            if channel.validate is not 'NULL':
+                self.channels_functions += f'''
+int {channel.validate}(u8_t *data, size_t size);
+'''
+            self.channels_functions += f'''
 /* END {name} CHANNEL FUNCTIONS */
 '''
         self.substitutions['custom_functions'] = self.channels_functions
@@ -422,7 +465,7 @@ class ZetaCLI(object):
                                     "zeta_service.template.c", yaml_dict,
                                     f"{service}.c")
                                 service_file.substitutions[
-                                    'service_name'] = service
+                                    'service_name'] = service.upper()
                                 service_file.run()
                                 print(
                                     f"[ZETA]: Generating service {service}.c file on the folder {args.gen_services}"
@@ -433,35 +476,35 @@ class ZetaCLI(object):
                                 )
                                 return
 
-    def mount_subscribers_publishers(self, dic):
-        channels = dic['Channels']
-        services = dic['Services']
-        services_names_set = set()
-        map_services_names_to_array = dict()
-        id = 0
-        for s in services:
-            key = list(s.keys())[0]
-            map_services_names_to_array[key] = id
-            id += 1
-        for c in channels:
-            for k, v in c.items():
-                if 'subscribers' in v:
-                    subscribers_mounted = list()
-                    for s in v['subscribers']:
-                        subscribers_mounted.append(
-                            services[map_services_names_to_array[s]])
-                        v['subscribers'] = subscribers_mounted
-                if 'publishers' in v:
-                    publishers_mounted = list()
-                    for p in v['publishers']:
-                        publishers_mounted.append(
-                            services[map_services_names_to_array[p]])
-                        v['publishers'] = publishers_mounted
+    #  def mount_subscribers_publishers(self, dic):
+    #  channels = dic['Channels']
+    #  services = dic['Services']
+    #  services_names_set = set()
+    #  map_services_names_to_array = dict()
+    #  id = 0
+    #  for s in services:
+    #  key = list(s.keys())[0]
+    #  map_services_names_to_array[key] = id
+    #  id += 1
+    #  for c in channels:
+    #  for k, v in c.items():
+    #  if 'subscribers' in v:
+    #  subscribers_mounted = list()
+    #  for s in v['subscribers']:
+    #  subscribers_mounted.append(
+    #  services[map_services_names_to_array[s]])
+    #  v['subscribers'] = subscribers_mounted
+    #  if 'publishers' in v:
+    #  publishers_mounted = list()
+    #  for p in v['publishers']:
+    #  publishers_mounted.append(
+    #  services[map_services_names_to_array[p]])
+    #  v['publishers'] = publishers_mounted
 
-    def construct_yaml(self, f):
-        yaml_dict = yaml.load(f, Loader=YamlRefLoader)
-        self.mount_subscribers_publishers(yaml_dict)
-        return yaml_dict
+    #  def construct_yaml(self, f):
+    #  yaml_dict = yaml.load(f, Loader=YamlRefLoader)
+    #  self.mount_subscribers_publishers(yaml_dict)
+    #  return yaml_dict
 
     def gen(self):
         parser = argparse.ArgumentParser(
@@ -510,24 +553,25 @@ class ZetaCLI(object):
 
             YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
             with open(args.yamlfile, 'r') as f:
-                yaml_dict = self.construct_yaml(f)
+                zeta = Zeta(f)
+                #  yaml_dict = self.construct_yaml(f)
                 print("[ZETA]: Generating zeta.h...", end="")
-                ZetaHeader(yaml_dict).run()
+                ZetaHeader(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta.c...", end="")
-                ZetaSource(yaml_dict).run()
+                ZetaSource(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta_callbacks.c...", end="")
-                ZetaCallbacksHeader(yaml_dict).run()
+                ZetaCallbacksHeader(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta_threads.h...", end="")
-                ZetaThreadHeader(yaml_dict).run()
+                ZetaThreadHeader(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta_threads.c...", end="")
-                ZetaThreadSource(yaml_dict).run()
+                ZetaThreadSource(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta_custom_functions.c...", end="")
-                ZetaCustomFunctionsHeader(yaml_dict).run()
+                ZetaCustomFunctionsHeader(zeta).run()
                 print("[OK]")
         else:
             print("[ZETA]: Error. Zeta YAML file does not exist!")

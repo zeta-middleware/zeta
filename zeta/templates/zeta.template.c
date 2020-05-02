@@ -46,7 +46,6 @@ K_THREAD_DEFINE(zt_thread_nvs_id, ZT_THREAD_NVS_STACK_SIZE, zt_thread_nvs, NULL,
                 NULL, ZT_THREAD_PRIORITY, 0, K_NO_WAIT);
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
-//$arrays_init
 
 static struct nvs_fs zt_fs = {
     .sector_size  = NVS_SECTOR_SIZE,
@@ -258,9 +257,7 @@ static void __zt_persist_data_on_flash(void)
 
 void zt_thread(void)
 {
-    $set_publishers
-
-        u8_t id = 0;
+    u8_t id = 0;
     while (1) {
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
         if (id < ZT_CHANNEL_COUNT) {
@@ -283,6 +280,7 @@ void zt_thread(void)
 
 void zt_thread_nvs(void)
 {
+    //$set_publishers
     int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
     if (error) {
         LOG_INF("Flash Init failed");

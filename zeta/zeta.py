@@ -59,34 +59,6 @@ class Channel(object):
         self.pub_services_obj = []
         self.sub_services_obj = []
 
-    #  def definition(self):
-    #  self.data = f"(u8_t []){{{initial_value}}}"
-    #  self.subscribers_cbs = "NULL"
-    #  if self.pub_services_obj is not []:
-    #  self.subscribers_cbs = [f"{service.name}_service_callback" for service in self.sub_services_obj]
-    #  self.subscribers_cbs.append('NULL')
-    #  self.subscribers_cbs = f"(zt_callback_f[]){{{', '.join(self.subscribers_cbs)}}}"
-
-
-#
-#  return '''
-#  {{
-#  .name = "{name}",
-#  .validate = {validate},
-#  .pre_get = {pre_get},
-#  .get = {get},
-#  .pos_get = {pos_get},
-#  .pre_set = {pre_set},
-#  .set = {set},
-#  .pos_set = {pos_set},
-#  .size = {size},
-#  .persistent = {persistent},
-#  .sem = &{sem},
-#  .subscribers_cbs = {subscribers_cbs},
-#  .id = {id},
-#  .data = {data}
-#  }},\n'''.format(**vars(self))
-
 
 class Service(object):
     def __init__(self,
@@ -217,6 +189,7 @@ class ZetaSource(SourceFileFactory):
         self.storage_offset = ''
         self.arrays_init = ''
         self.set_publishers = ''
+        self.arrays_init = ''
 
     def gen_sems(self):
         self.channels_sems += f'''
@@ -234,16 +207,24 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
     def gen_creation(self):
         channels = ''
         for channel in self.zeta.channels:
-            channel.data = f"(u8_t []){{{', '.join(channel.initial_value)}}}"
-            channel.subscribers_cbs = "NULL"
+            data_alloc = f"static u8_t __{channel.name.lower()}_data[] = {{{', '.join(channel.initial_value)}}};"
+            channel.data = f"__{channel.name.lower()}_data"
+            subscribers_cbs_alloc = "NULL"
             if len(channel.sub_services_obj) > 0:
-                channel.subscribers_cbs = [
+                subscribers_cbs_alloc = [
                     f"{service.name}_service_callback"
                     for service in channel.sub_services_obj
                 ]
-                channel.subscribers_cbs.append('NULL')
-                channel.subscribers_cbs = ', '.join(channel.subscribers_cbs)
-            channel.subscribers_cbs = f"(zt_callback_f[]){{{channel.subscribers_cbs}}}"
+                subscribers_cbs_alloc.append('NULL')
+                subscribers_cbs_alloc = ', '.join(subscribers_cbs_alloc)
+            subscribers_cbs_alloc = f"static zt_callback_f __{channel.name.lower()}_subcribers_callbacks[] = {{{subscribers_cbs_alloc}}};"
+            channel.subscribers_cbs = f"__{channel.name.lower()}_subcribers_callbacks"
+            self.arrays_init += f'''
+/* BEGIN {channel.name} CHANNEL INIT ARRAYS */
+{data_alloc}
+{subscribers_cbs_alloc}
+/* END {channel.name} INIT ARRAYS */
+'''
 
             channel.publishers_id = "NULL"
             if len(channel.pub_services_obj) > 0:
@@ -257,8 +238,10 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
 
             name_publishers = f"{channel.name.lower()}_publishers"
             self.set_publishers += f'''
+/* BEGIN {channel.name} PUBLISHERS INIT ARRAYS */
     const k_tid_t {name_publishers}[] = {channel.publishers_id};
     __zt_channels[{channel.id}].publishers_id = {name_publishers};
+/* END {channel.name} PUBLISHERS INIT ARRAYS */
 '''
             channels += '''
     {{
@@ -279,9 +262,11 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
     }},\n'''.format(**vars(channel))
 
         self.channels_creation = f'''
+/* BEGIN INITIALIZING CHANNELS */
 static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
     {channels}
 }};                
+/* END INITIALIZING CHANNELS */
 '''
     def gen_nvs_config(self):
         self.sector_size = self.zeta.config.nvs_sector_size
@@ -298,6 +283,7 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.substitutions['nvs_sector_count'] = self.sector_count
         self.substitutions['nvs_storage_offset'] = self.storage_offset
         self.substitutions['set_publishers'] = self.set_publishers
+        self.substitutions['arrays_init'] = self.arrays_init
 
 
 class ZetaCallbacksHeader(HeaderFileFactory):
@@ -476,35 +462,6 @@ class ZetaCLI(object):
                                 )
                                 return
 
-    #  def mount_subscribers_publishers(self, dic):
-    #  channels = dic['Channels']
-    #  services = dic['Services']
-    #  services_names_set = set()
-    #  map_services_names_to_array = dict()
-    #  id = 0
-    #  for s in services:
-    #  key = list(s.keys())[0]
-    #  map_services_names_to_array[key] = id
-    #  id += 1
-    #  for c in channels:
-    #  for k, v in c.items():
-    #  if 'subscribers' in v:
-    #  subscribers_mounted = list()
-    #  for s in v['subscribers']:
-    #  subscribers_mounted.append(
-    #  services[map_services_names_to_array[s]])
-    #  v['subscribers'] = subscribers_mounted
-    #  if 'publishers' in v:
-    #  publishers_mounted = list()
-    #  for p in v['publishers']:
-    #  publishers_mounted.append(
-    #  services[map_services_names_to_array[p]])
-    #  v['publishers'] = publishers_mounted
-
-    #  def construct_yaml(self, f):
-    #  yaml_dict = yaml.load(f, Loader=YamlRefLoader)
-    #  self.mount_subscribers_publishers(yaml_dict)
-    #  return yaml_dict
 
     def gen(self):
         parser = argparse.ArgumentParser(

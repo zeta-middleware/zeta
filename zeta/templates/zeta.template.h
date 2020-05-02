@@ -219,7 +219,7 @@ union data {
 
 typedef union data zt_data_t;
 
-//$channels_enum
+// <ZT_CODE_INJECTION>$channels_enum// </ZT_CODE_INJECTION>
 
 /**
  * @brief zeta_callback_f define the callback function type of Zeta.

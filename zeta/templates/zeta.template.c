@@ -27,12 +27,13 @@
 
 LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
+// <ZT_CODE_INJECTION>$arrays_init// </ZT_CODE_INJECTION>
+
 #define NVS_SECTOR_SIZE $nvs_sector_size
 #define NVS_SECTOR_COUNT $nvs_sector_count
 #define NVS_STORAGE_OFFSET $nvs_storage_offset
 
-//$channels_sems
-
+// <ZT_CODE_INJECTION>$channels_sems// </ZT_CODE_INJECTION>
 
 void zt_thread(void);
 void zt_thread_nvs(void);
@@ -53,7 +54,7 @@ static struct nvs_fs zt_fs = {
     .offset       = NVS_STORAGE_OFFSET,
 };
 
-//$channels_creation
+// <ZT_CODE_INJECTION>$channels_creation// </ZT_CODE_INJECTION>
 
 const char *zt_channel_name(zt_channel_e id, int *error)
 {
@@ -280,7 +281,8 @@ void zt_thread(void)
 
 void zt_thread_nvs(void)
 {
-    //$set_publishers
+    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
+
     int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
     if (error) {
         LOG_INF("Flash Init failed");

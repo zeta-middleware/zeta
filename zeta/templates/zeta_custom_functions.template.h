@@ -17,6 +17,6 @@
 
 #include "zeta.h"
 
-//$custom_functions
+// <ZT_CODE_INJECTION>$custom_functions// </ZT_CODE_INJECTION>
 
 #endif

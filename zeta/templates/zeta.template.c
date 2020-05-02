@@ -90,6 +90,11 @@ size_t zt_channel_size(zt_channel_e id, int *error)
     }
 }
 
+int zt_channel_data_get(zt_channel_e id, zt_data_t *channel_data)
+{
+    return zt_channel_get(id, channel_data->bytes.value, channel_data->bytes.size);
+}
+
 int zt_channel_get(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     if (id < ZT_CHANNEL_COUNT) {
@@ -132,6 +137,11 @@ static int zt_channel_get_private(zt_channel_e id, u8_t *channel_value, size_t s
         k_sem_give(channel->sem);
     }
     return ret;
+}
+
+int zt_channel_data_set(zt_channel_e id, zt_data_t *channel_data)
+{
+    return zt_channel_set(id, channel_data->bytes.value, channel_data->bytes.size);
 }
 
 int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size)

@@ -6,16 +6,13 @@ Config:
   storage_stack_size: 512
 
 Services:
-  - CORE: &core
-      name: 'CORE'
+  - CORE: 
       priority: 5
       stack_size: 512
-  - HAL: &hal
-      name: 'HAL'
+  - HAL:
       priority: 2
       stack_size: 1024
-  - APP: &app
-      name: 'APP'
+  - APP:
       priority: 1
       stack_size: 2048
       
@@ -32,9 +29,9 @@ Channels:
       pre_set: 'pre_set_power'
       pos_set: 'pos_set_power'
       subscribers:
-        - *core
+        - !ref CORE
       publishers:
-        - *hal
+        - !ref HAL
         
   - DATA_VAL:
       size: 1

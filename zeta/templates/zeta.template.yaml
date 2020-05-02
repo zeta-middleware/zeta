@@ -4,12 +4,10 @@ Config:
   nvs_storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
 
 Services:
-  - CORE: &core
-      name: 'CORE'
+  - CORE:
       priority: 5
       stack_size: 512
-  - HAL: &hal
-      name: 'HAL'
+  - HAL:
       priority: 2
       stack_size: 1024
       

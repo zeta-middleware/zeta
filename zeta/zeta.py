@@ -58,7 +58,7 @@ class Channel(object):
 
         self.pub_services_obj = []
         self.sub_services_obj = []
-
+  
 
 class Service(object):
     def __init__(self,
@@ -189,7 +189,6 @@ class ZetaSource(SourceFileFactory):
         self.storage_offset = ''
         self.arrays_init = ''
         self.set_publishers = ''
-        self.arrays_init = ''
 
     def gen_sems(self):
         self.channels_sems += f'''
@@ -207,24 +206,16 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
     def gen_creation(self):
         channels = ''
         for channel in self.zeta.channels:
-            data_alloc = f"static u8_t __{channel.name.lower()}_data[] = {{{', '.join(channel.initial_value)}}};"
-            channel.data = f"__{channel.name.lower()}_data"
-            subscribers_cbs_alloc = "NULL"
+            channel.data = f"(u8_t []){{{', '.join(channel.initial_value)}}}"
+            channel.subscribers_cbs = "NULL"
             if len(channel.sub_services_obj) > 0:
-                subscribers_cbs_alloc = [
+                channel.subscribers_cbs = [
                     f"{service.name}_service_callback"
                     for service in channel.sub_services_obj
                 ]
-                subscribers_cbs_alloc.append('NULL')
-                subscribers_cbs_alloc = ', '.join(subscribers_cbs_alloc)
-            subscribers_cbs_alloc = f"static zt_callback_f __{channel.name.lower()}_subcribers_callbacks[] = {{{subscribers_cbs_alloc}}};"
-            channel.subscribers_cbs = f"__{channel.name.lower()}_subcribers_callbacks"
-            self.arrays_init += f'''
-/* BEGIN {channel.name} CHANNEL INIT ARRAYS */
-{data_alloc}
-{subscribers_cbs_alloc}
-/* END {channel.name} INIT ARRAYS */
-'''
+                channel.subscribers_cbs.append('NULL')
+                channel.subscribers_cbs = ', '.join(channel.subscribers_cbs)
+            channel.subscribers_cbs = f"(zt_callback_f[]){{{channel.subscribers_cbs}}}"
 
             channel.publishers_id = "NULL"
             if len(channel.pub_services_obj) > 0:
@@ -238,10 +229,8 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
 
             name_publishers = f"{channel.name.lower()}_publishers"
             self.set_publishers += f'''
-/* BEGIN {channel.name} PUBLISHERS INIT ARRAYS */
     const k_tid_t {name_publishers}[] = {channel.publishers_id};
     __zt_channels[{channel.id}].publishers_id = {name_publishers};
-/* END {channel.name} PUBLISHERS INIT ARRAYS */
 '''
             channels += '''
     {{
@@ -262,11 +251,9 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
     }},\n'''.format(**vars(channel))
 
         self.channels_creation = f'''
-/* BEGIN INITIALIZING CHANNELS */
 static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
     {channels}
 }};                
-/* END INITIALIZING CHANNELS */
 '''
     def gen_nvs_config(self):
         self.sector_size = self.zeta.config.nvs_sector_size
@@ -283,7 +270,6 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.substitutions['nvs_sector_count'] = self.sector_count
         self.substitutions['nvs_storage_offset'] = self.storage_offset
         self.substitutions['set_publishers'] = self.set_publishers
-        self.substitutions['arrays_init'] = self.arrays_init
 
 
 class ZetaCallbacksHeader(HeaderFileFactory):

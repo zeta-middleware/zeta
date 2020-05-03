@@ -29,7 +29,7 @@ RUN sudo apt-get install -y tzdata
 RUN sudo apt-get install -y --no-install-recommends git ninja-build gperf \
   ccache dfu-util wget \
   python3-pip python3-setuptools python3-tk python3-wheel xz-utils file \
-  make gcc gcc-multilib g++-multilib libsdl2-dev build-essential
+  make gcc gcc-multilib g++-multilib libsdl2-dev build-essential python3-dev
 
 ## Changing workspace to tmp
 RUN mkdir -p ${USER_HOME}/tmp

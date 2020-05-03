@@ -58,7 +58,7 @@ class Channel(object):
 
         self.pub_services_obj = []
         self.sub_services_obj = []
-  
+
 
 class Service(object):
     def __init__(self,
@@ -93,7 +93,7 @@ class Zeta(object):
         self.config = Config(**yaml_dict['Config'])
         self.channels = []
         for channel_description in yaml_dict['Channels']:
-            for name, fields in  channel_description.items():
+            for name, fields in channel_description.items():
                 self.channels.append(Channel(name, **fields))
         self.services = []
         for service_description in yaml_dict['Services']:
@@ -187,8 +187,8 @@ class ZetaSource(SourceFileFactory):
         self.sector_size = ''
         self.sector_count = ''
         self.storage_offset = ''
-        self.arrays_init = ''
         self.set_publishers = ''
+        self.arrays_init = ''
 
     def gen_sems(self):
         self.channels_sems += f'''
@@ -206,17 +206,24 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
     def gen_creation(self):
         channels = ''
         for channel in self.zeta.channels:
-            channel.data = f"(u8_t []){{{', '.join(channel.initial_value)}}}"
-            channel.subscribers_cbs = "NULL"
+            data_alloc = f"static u8_t __{channel.name.lower()}_data[] = {{{', '.join(channel.initial_value)}}};"
+            channel.data = f"__{channel.name.lower()}_data"
+            subscribers_cbs_alloc = "NULL"
             if len(channel.sub_services_obj) > 0:
-                channel.subscribers_cbs = [
+                subscribers_cbs_alloc = [
                     f"{service.name}_service_callback"
                     for service in channel.sub_services_obj
                 ]
-                channel.subscribers_cbs.append('NULL')
-                channel.subscribers_cbs = ', '.join(channel.subscribers_cbs)
-            channel.subscribers_cbs = f"(zt_callback_f[]){{{channel.subscribers_cbs}}}"
-
+                subscribers_cbs_alloc.append('NULL')
+                subscribers_cbs_alloc = ', '.join(subscribers_cbs_alloc)
+            subscribers_cbs_alloc = f"static zt_callback_f __{channel.name.lower()}_subcribers_callbacks[] = {{{subscribers_cbs_alloc}}};"
+            channel.subscribers_cbs = f"__{channel.name.lower()}_subcribers_callbacks"
+            self.arrays_init += f'''	
+/* BEGIN {channel.name} CHANNEL INIT ARRAYS */	
+{data_alloc}
+{subscribers_cbs_alloc}	
+/* END {channel.name} INIT ARRAYS */
+'''
             channel.publishers_id = "NULL"
             if len(channel.pub_services_obj) > 0:
                 channel.publishers_id = [
@@ -229,8 +236,10 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
 
             name_publishers = f"{channel.name.lower()}_publishers"
             self.set_publishers += f'''
+/* BEGIN {channel.name} PUBLISHERS INIT */
     const k_tid_t {name_publishers}[] = {channel.publishers_id};
     __zt_channels[{channel.id}].publishers_id = {name_publishers};
+/* END {channel.name} PUBLISHERS INIT */
 '''
             channels += '''
     {{
@@ -251,10 +260,13 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
     }},\n'''.format(**vars(channel))
 
         self.channels_creation = f'''
+/* BEGIN INITIALIZING CHANNELS */
 static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
     {channels}
-}};                
+}};
+/* END INITIALIZING CHANNELS */
 '''
+
     def gen_nvs_config(self):
         self.sector_size = self.zeta.config.nvs_sector_size
         self.sector_count = self.zeta.config.nvs_sector_count
@@ -270,6 +282,7 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.substitutions['nvs_sector_count'] = self.sector_count
         self.substitutions['nvs_storage_offset'] = self.storage_offset
         self.substitutions['set_publishers'] = self.set_publishers
+        self.substitutions['arrays_init'] = self.arrays_init
 
 
 class ZetaCallbacksHeader(HeaderFileFactory):
@@ -390,18 +403,10 @@ class ZetaCLI(object):
 
     def init(self):
         parser = argparse.ArgumentParser(
-            description='Create zeta.cmake file on the project folder',
-            usage='zeta init <project dir>')
-        # prefixing the argument with -- means it's optional
-        parser.add_argument(
-            '-s',
-            '--gen_services',
-            nargs='?',
-            const="./src",
-            type=str,
-            help=
-            'Generate services minimal implementation on the directory pass as arg',
-        )
+            description=
+            '''Run this command on the project root directory. 
+It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
+            usage='zeta init')
         project_dir = "."
         args = parser.parse_args(sys.argv[2:])
         global ZETA_DIR
@@ -422,32 +427,58 @@ class ZetaCLI(object):
                       'r') as header_template:
                 with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
                     cmake.write(header_template.read())
-        if args.gen_services:
-            with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
-                YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
-                yaml_dict = yaml.load(f, Loader=YamlRefLoader)
-                for s in yaml_dict['Services']:
-                    for service in s.keys():
-                        service = service.strip().lower()
-                        if not os.path.exists(
-                                f'{args.gen_services}/{service}.c'):
-                            try:
-                                service_file = FileFactory(
-                                    args.gen_services,
-                                    "zeta_service.template.c", yaml_dict,
-                                    f"{service}.c")
-                                service_file.substitutions[
-                                    'service_name'] = service.upper()
-                                service_file.run()
-                                print(
-                                    f"[ZETA]: Generating service {service}.c file on the folder {args.gen_services}"
-                                )
-                            except FileNotFoundError:
-                                print(
-                                    f"[ZETA ERROR]: Failed to generate service files. Destination folder {args.gen_services} does not exists."
-                                )
-                                return
 
+    def services(self):
+        parser = argparse.ArgumentParser(
+            description='Verify or create services files on the src folder',
+            usage='zeta services [-g] <src dir>')
+        parser.add_argument(
+            '-g',
+            '--generate',
+            action='store_true',
+            help=
+            'Generate services minimal implementation on the [src_dir] directory',
+        )
+        parser.add_argument(
+            '-s',
+            '--src_dir',
+            type=str,
+            default="./src/",
+            help='Services source directory',
+        )
+        project_dir = "."
+        args = parser.parse_args(sys.argv[2:])
+        global ZETA_DIR
+        ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+        global PROJECT_DIR
+        PROJECT_DIR = project_dir
+        global ZETA_TEMPLATES_DIR
+        ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        zeta = None
+        with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
+            zeta = Zeta(f)
+        for service in zeta.services:
+            service_name = service.name.strip().lower()
+            if args.generate:
+                if not os.path.exists(f'{args.src_dir}/{service_name}.c'):
+                    try:
+                        service_file = FileFactory(args.src_dir,
+                                                   "zeta_service.template.c",
+                                                   zeta, f"{service_name}.c")
+                        service_file.substitutions[
+                            'service_name'] = service.name.upper()
+                        service_file.run()
+                        print(
+                            f"[ZETA]: Generating service {service_name}.c file on the folder {args.src_dir}"
+                        )
+                    except FileNotFoundError:
+                        print(
+                            f"[ZETA ERROR]: Failed to generate service files. Destination folder {args.src_dir} does not exists."
+                        )
+                        return
+            else:
+                """@todo: check implementations on the src folder (maybe in the future)"""
+                pass
 
     def gen(self):
         parser = argparse.ArgumentParser(

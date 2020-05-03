@@ -27,12 +27,13 @@
 
 LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
+// <ZT_CODE_INJECTION>$arrays_init// </ZT_CODE_INJECTION>
+
 #define NVS_SECTOR_SIZE $nvs_sector_size
 #define NVS_SECTOR_COUNT $nvs_sector_count
 #define NVS_STORAGE_OFFSET $nvs_storage_offset
 
-//$channels_sems
-
+// <ZT_CODE_INJECTION>$channels_sems// </ZT_CODE_INJECTION>
 
 void zt_thread(void);
 void zt_thread_nvs(void);
@@ -46,7 +47,6 @@ K_THREAD_DEFINE(zt_thread_nvs_id, ZT_THREAD_NVS_STACK_SIZE, zt_thread_nvs, NULL,
                 NULL, ZT_THREAD_PRIORITY, 0, K_NO_WAIT);
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
-//$arrays_init
 
 static struct nvs_fs zt_fs = {
     .sector_size  = NVS_SECTOR_SIZE,
@@ -54,7 +54,7 @@ static struct nvs_fs zt_fs = {
     .offset       = NVS_STORAGE_OFFSET,
 };
 
-//$channels_creation
+// <ZT_CODE_INJECTION>$channels_creation// </ZT_CODE_INJECTION>
 
 const char *zt_channel_name(zt_channel_e id, int *error)
 {
@@ -258,9 +258,7 @@ static void __zt_persist_data_on_flash(void)
 
 void zt_thread(void)
 {
-    $set_publishers
-
-        u8_t id = 0;
+    u8_t id = 0;
     while (1) {
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
         if (id < ZT_CHANNEL_COUNT) {
@@ -283,6 +281,8 @@ void zt_thread(void)
 
 void zt_thread_nvs(void)
 {
+    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
+
     int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
     if (error) {
         LOG_INF("Flash Init failed");

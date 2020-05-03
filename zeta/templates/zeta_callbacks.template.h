@@ -17,6 +17,6 @@
 
 #include "zeta.h"
 
-//$services_callbacks
+// <ZT_CODE_INJECTION>$services_callbacks// </ZT_CODE_INJECTION>
 
 #endif

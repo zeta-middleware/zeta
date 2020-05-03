@@ -3,6 +3,12 @@ Config:
   nvs_sector_count: 4
   nvs_storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
 
+Channels:
+  - FIRMWARE_VERSION:
+      size: 4
+      set: 'NULL'
+      initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
+        
 Services:
   - CORE:
       priority: 5
@@ -10,10 +16,3 @@ Services:
   - HAL:
       priority: 2
       stack_size: 1024
-      
-Channels:
-  - FIRMWARE_VERSION:
-      size: 4
-      set: 'NULL'
-      initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
-        

@@ -35,10 +35,13 @@ void NET_service_callback(zt_channel_e id)
 void NET_task()
 {
     u8_t manual_load_control[2] = {0x00, 0x01};
+    printk("Hello NET\n");
     while (1) {
         manual_load_control[0] = 1;
+        printk("on\n");
         zt_channel_set(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
         k_sleep(K_SECONDS(5));
+        printk("off\n");
         manual_load_control[0] = 0;
         zt_channel_set(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
         k_sleep(K_SECONDS(10));

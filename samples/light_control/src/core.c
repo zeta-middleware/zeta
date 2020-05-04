@@ -9,7 +9,7 @@
 
 #include <zephyr.h>
 #include "zeta.h"
-#include "zeta_callbacks.h"
+#include "zeta_services.h"
 
 #define ZT_REF(x) (u8_t *) &x, sizeof(x)
 
@@ -63,3 +63,5 @@ void CORE_task()
         zt_channel_set(ZT_LOAD_CHANNEL, ZT_REF(load));
     }
 }
+
+ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);

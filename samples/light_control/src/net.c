@@ -8,6 +8,7 @@
  */
 #include <zephyr.h>
 #include "zeta.h"
+#include "zeta_services.h"
 
 #define ZT_REF(x) (u8_t *) &x, sizeof(x)
 
@@ -47,3 +48,5 @@ void NET_task()
         k_sleep(K_SECONDS(10));
     }
 }
+
+ZT_SERVICE_INIT(NET, NET_task, NET_service_callback);

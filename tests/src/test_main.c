@@ -4,7 +4,7 @@
 
 #include "autoconf.h"
 #include "zeta.h"
-#include "zeta_threads.h"
+#include "zeta_services.h"
 #include "zeta_unit_tests.h"
 
 void test_data()

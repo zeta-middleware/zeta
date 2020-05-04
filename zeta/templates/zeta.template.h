@@ -54,7 +54,7 @@
     K_THREAD_DEFINE(_name##_thread_id, _name##_STACK_SIZE, _task, NULL, NULL, NULL, \
                     _name##_TASK_PRIORITY, 0, K_NO_WAIT);                           \
     zt_service_t _name##_service = {                                                \
-        .name = #_name, .cb = _cb, .thread_id = _name##_thread_id}
+        .name = #_name, .cb = _cb, .thread_id = &_name##_thread_id}
 
 
 /**
@@ -248,9 +248,9 @@ typedef void (*zt_callback_f)(zt_channel_e id);
  * @brief Define Zeta service type
  */
 struct zt_service {
-    const char *name;        /**< Service name */
-    const k_tid_t thread_id; /**< Service thread id */
-    zt_callback_f cb;        /**< Service callback */
+    const char *name;         /**< Service name */
+    const k_tid_t *thread_id; /**< Service thread id */
+    zt_callback_f cb;         /**< Service callback */
 };
 typedef struct zt_service zt_service_t;
 

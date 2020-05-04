@@ -152,7 +152,7 @@ int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size)
         zt_service_t **pub;
 
         for (pub = channel->publishers; *pub != NULL; ++pub) {
-            if ((*pub)->thread_id == k_current_get()) {
+            if ((*(*pub)->thread_id) == k_current_get()) {
                 break;
             }
         }

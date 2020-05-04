@@ -188,6 +188,7 @@ class ZetaSource(SourceFileFactory):
         self.sector_count = ''
         self.storage_offset = ''
         self.set_publishers = ''
+        self.set_subscribers = ''
         self.arrays_init = ''
 
     def gen_sems(self):
@@ -208,42 +209,47 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
         for channel in self.zeta.channels:
             data_alloc = f"static u8_t __{channel.name.lower()}_data[] = {{{', '.join(channel.initial_value)}}};"
             channel.data = f"__{channel.name.lower()}_data"
-            subscribers_cbs_alloc = "NULL"
+            subscribers_alloc = "NULL"
             if len(channel.sub_services_obj) > 0:
-                subscribers_cbs_alloc = [
-                    f"{service.name}_service_callback"
+                subscribers_alloc = [
+                    f"&{service.name}_service"
                     for service in channel.sub_services_obj
                 ]
-                subscribers_cbs_alloc.append('NULL')
-                subscribers_cbs_alloc = ', '.join(subscribers_cbs_alloc)
-            subscribers_cbs_alloc = f"static zt_callback_f __{channel.name.lower()}_subcribers_callbacks[] = {{{subscribers_cbs_alloc}}};"
-            channel.subscribers_cbs = f"__{channel.name.lower()}_subcribers_callbacks"
-            self.arrays_init += f'''	
-/* BEGIN {channel.name} CHANNEL INIT ARRAYS */	
+                subscribers_alloc.append('NULL')
+                subscribers_alloc = ', '.join(subscribers_alloc)
+            name_subscribers = f"{channel.name.lower()}_subscribers"
+            channel.subscribers = f"__{channel.name.lower()}_subcribers"
+            self.arrays_init += f'''
+/* BEGIN {channel.name} CHANNEL INIT ARRAYS */
 {data_alloc}
-{subscribers_cbs_alloc}	
 /* END {channel.name} INIT ARRAYS */
 '''
-            channel.publishers_id = "NULL"
+            self.set_subscribers += f'''
+/* BEGIN {channel.name} SUBSCRIBERS INIT */
+    zt_service_t *{name_subscribers}[] = {{{subscribers_alloc}}};
+    __zt_channels[{channel.id}].subscribers = {name_subscribers};
+/* END {channel.name} SUBSCRIBERS INIT */
+'''
+            channel.publishers = "NULL"
             if len(channel.pub_services_obj) > 0:
-                channel.publishers_id = [
-                    f"{service.name}_thread_id"
+                channel.publishers = [
+                    f"&{service.name}_service"
                     for service in channel.pub_services_obj
                 ]
-                channel.publishers_id.append("NULL")
-                channel.publishers_id = ', '.join(channel.publishers_id)
-            channel.publishers_id = f"{{{channel.publishers_id}}}"
+                channel.publishers.append("NULL")
+                channel.publishers = ', '.join(channel.publishers)
+            channel.publishers = f"{{{channel.publishers}}}"
 
             name_publishers = f"{channel.name.lower()}_publishers"
             self.set_publishers += f'''
 /* BEGIN {channel.name} PUBLISHERS INIT */
-    const k_tid_t {name_publishers}[] = {channel.publishers_id};
-    __zt_channels[{channel.id}].publishers_id = {name_publishers};
+    zt_service_t *{name_publishers}[] = {channel.publishers};
+    __zt_channels[{channel.id}].publishers = {name_publishers};
 /* END {channel.name} PUBLISHERS INIT */
 '''
             channels += '''
     {{
-        .name = "{name}",       
+        .name = "{name}",
         .validate = {validate},
         .pre_get = {pre_get},
         .get = {get},
@@ -254,7 +260,6 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
         .size = {size},
         .persistent = {persistent},
         .sem = &{sem},
-        .subscribers_cbs = {subscribers_cbs},
         .id = {id},
         .data = {data}
     }},\n'''.format(**vars(channel))
@@ -282,72 +287,28 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.substitutions['nvs_sector_count'] = self.sector_count
         self.substitutions['nvs_storage_offset'] = self.storage_offset
         self.substitutions['set_publishers'] = self.set_publishers
+        self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init
 
 
-class ZetaCallbacksHeader(HeaderFileFactory):
+class ZetaServiceHeader(HeaderFileFactory):
     def __init__(self, zeta):
-        super().__init__('zeta_callbacks.template.h', zeta)
-        self.services_callbacks = ''
-
-    def create_substitutions(self):
-        callbacks = ''
-        for service in self.zeta.services:
-            self.services_callbacks += f'''
-void {service.name}_service_callback(zt_channel_e id);
-'''
-        self.substitutions['services_callbacks'] = self.services_callbacks
-
-
-class ZetaThreadHeader(HeaderFileFactory):
-    def __init__(self, zeta):
-        super().__init__('zeta_threads.template.h', zeta)
-        self.services_sections = ''
+        super().__init__('zeta_services.template.h', zeta)
+        self.services_reference = ''
 
     def create_substitutions(self):
         for service in self.zeta.services:
             name = service.name
-            name_tid = f"{name}_thread_id"
-            name_thread = f"{name}_task"
             priority = service.priority
             stack_size = service.stack_size
-            self.services_sections += f'''
+            self.services_reference += f'''
 /* BEGIN {name} SECTION */
-void {name_thread}(void);
-extern const k_tid_t {name_tid};
+extern zt_service_t {name}_service;
 #define {name}_TASK_PRIORITY {priority}
 #define {name}_STACK_SIZE {stack_size}
 /* END {name} SECTION */
 '''
-        self.substitutions['services_sections'] = self.services_sections
-
-
-class ZetaThreadSource(SourceFileFactory):
-    def __init__(self, zeta):
-        super().__init__('zeta_threads.template.c', zeta)
-        self.services_threads = ''
-
-    def create_substitutions(self):
-        for service in self.zeta.services:
-            name = service.name
-            name_tid = f"{name}_thread_id"
-            name_thread = f"{name}_task"
-            priority = service.priority
-            stack_size = service.stack_size
-            self.services_threads += f'''
-/* BEGIN {name} THREAD DEFINE */
-K_THREAD_DEFINE({name_tid},
-                {stack_size},
-                {name_thread},
-                NULL, NULL, NULL,
-                {priority},
-                0,
-                K_NO_WAIT
-                );
-/* END {name} THREAD DEFINE */                
-'''
-        self.substitutions['services_threads'] = self.services_threads
-
+        self.substitutions['services_reference'] = self.services_reference
 
 class ZetaCustomFunctionsHeader(HeaderFileFactory):
     def __init__(self, zeta):
@@ -404,7 +365,7 @@ class ZetaCLI(object):
     def init(self):
         parser = argparse.ArgumentParser(
             description=
-            '''Run this command on the project root directory. 
+            '''Run this command on the project root directory.
 It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
             usage='zeta init')
         project_dir = "."
@@ -538,11 +499,8 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
                 print("[ZETA]: Generating zeta_callbacks.c...", end="")
                 ZetaCallbacksHeader(zeta).run()
                 print("[OK]")
-                print("[ZETA]: Generating zeta_threads.h...", end="")
-                ZetaThreadHeader(zeta).run()
-                print("[OK]")
-                print("[ZETA]: Generating zeta_threads.c...", end="")
-                ZetaThreadSource(zeta).run()
+                print("[ZETA]: Generating zeta_services.h...", end="")
+                ZetaServiceHeader(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta_custom_functions.c...", end="")
                 ZetaCustomFunctionsHeader(zeta).run()

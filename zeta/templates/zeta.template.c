@@ -20,7 +20,6 @@
 #include <zephyr.h>
 
 #include "devicetree_fixups.h"
-#include "zeta_callbacks.h"
 #include "zeta_custom_functions.h"
 #include "zeta_services.h"
 

@@ -10,7 +10,7 @@ if(CONFIG_ZETA)
   target_include_directories(ZETA INTERFACE "${CMAKE_CURRENT_LIST_DIR}/include")
 
   zephyr_library()
-  zephyr_library_sources(src/zeta.c src/zeta_threads.c)
+  zephyr_library_sources(src/zeta.c)
 
   zephyr_library_link_libraries(ZETA)
   target_link_libraries(ZETA INTERFACE zephyr_interface)

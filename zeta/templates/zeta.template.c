@@ -22,7 +22,7 @@
 #include "devicetree_fixups.h"
 #include "zeta_callbacks.h"
 #include "zeta_custom_functions.h"
-#include "zeta_threads.h"
+#include "zeta_services.h"
 
 
 LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
@@ -150,14 +150,14 @@ int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size)
         int error             = 0;
         int valid             = 1;
         zt_channel_t *channel = &__zt_channels[id];
-        const k_tid_t *pub_id;
+        zt_service_t **pub;
 
-        for (pub_id = channel->publishers_id; *pub_id != NULL; ++pub_id) {
-            if (*pub_id == k_current_get()) {
+        for (pub = channel->publishers; *pub != NULL; ++pub) {
+            if ((*pub)->thread_id == k_current_get()) {
                 break;
             }
         }
-        ZT_CHECK_VAL(*pub_id, NULL, -EACCES,
+        ZT_CHECK_VAL(*pub, NULL, -EACCES,
                      "The current thread has not the permission to change channel #%d!",
                      id);
         ZT_CHECK_VAL(channel_value, NULL, -EFAULT,
@@ -263,9 +263,8 @@ void zt_thread(void)
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
         if (id < ZT_CHANNEL_COUNT) {
             if (__zt_channels[id].opt.field.pend_callback) {
-                for (zt_callback_f *f = __zt_channels[id].subscribers_cbs; *f != NULL;
-                     ++f) {
-                    (*f)(id);
+                for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
+                    (*s)->cb(id);
                 }
                 __zt_channels[id].opt.field.pend_callback = 0;
             } else {
@@ -282,6 +281,8 @@ void zt_thread(void)
 void zt_thread_nvs(void)
 {
     // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
+
+    // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
 
     int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
     if (error) {

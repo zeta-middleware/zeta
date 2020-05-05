@@ -43,6 +43,21 @@
 #define ZT_THREAD_PRIORITY 0
 
 /**
+ * @brief Initialize a zeta service.
+ *
+ * @param _name Service name
+ * @param _task Task pointer function
+ * @param _cb Callback to be called when some subscribed channel change
+ *
+ */
+#define ZT_SERVICE_INIT(_name, _task, _cb)                                          \
+    K_THREAD_DEFINE(_name##_thread_id, _name##_STACK_SIZE, _task, NULL, NULL, NULL, \
+                    _name##_TASK_PRIORITY, 0, K_NO_WAIT);                           \
+    zt_service_t _name##_service = {                                                \
+        .name = #_name, .cb = _cb, .thread_id = &_name##_thread_id}
+
+
+/**
  * @brief Get variable reference and size easily to use in
  * Zeta API.
  *
@@ -230,6 +245,16 @@ typedef union data zt_data_t;
 typedef void (*zt_callback_f)(zt_channel_e id);
 
 /**
+ * @brief Define Zeta service type
+ */
+struct zt_service {
+    const char *name;         /**< Service name */
+    const k_tid_t *thread_id; /**< Service thread id */
+    zt_callback_f cb;         /**< Service callback */
+};
+typedef struct zt_service zt_service_t;
+
+/**
  * @brief Define pendent options that a channel can have.
  */
 union opt_data {
@@ -258,14 +283,14 @@ struct zt_channel {
                    size_t size); /**< Called before some set call */
     int (*set)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Set call */
     int (*pos_set)(zt_channel_e id, u8_t *channel_value,
-                   size_t size);    /**< Called after some set call */
-    u8_t size;                      /**< Channel size */
-    u8_t persistent;                /**< Persistent type */
-    union opt_data opt;             /**< Pendent options */
-    struct k_sem *sem;              /**< Preserve shared-memory */
-    const k_tid_t *publishers_id;   /**< Publishers Ids */
-    zt_callback_f *subscribers_cbs; /**< Subscribers callbacks */
-    zt_channel_e id;                /**< Channel Id */
+                   size_t size); /**< Called after some set call */
+    u8_t size;                   /**< Channel size */
+    u8_t persistent;             /**< Persistent type */
+    union opt_data opt;          /**< Pendent options */
+    struct k_sem *sem;           /**< Preserve shared-memory */
+    zt_service_t **publishers;   /**< Publishers */
+    zt_service_t **subscribers;  /**< Subscribers */
+    zt_channel_e id;             /**< Channel Id */
 };
 typedef struct zt_channel zt_channel_t;
 

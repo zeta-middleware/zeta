@@ -7,6 +7,7 @@
  */
 #include <zephyr.h>
 #include "zeta_callbacks.h"
+#include "zeta_services.h"
 
 #define ZT_REF(x) (u8_t *) &x, sizeof(x)
 
@@ -48,3 +49,5 @@ void PERIPHERAL_task()
         k_sleep(K_SECONDS(2));
     }
 }
+
+ZT_SERVICE_INIT(PERIPHERAL, PERIPHERAL_task, PERIPHERAL_service_callback);

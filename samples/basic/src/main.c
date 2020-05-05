@@ -8,7 +8,7 @@
 
 #include "autoconf.h"
 #include "zeta.h"
-#include "zeta_threads.h"
+#include "zeta_services.h"
 
 K_SEM_DEFINE(zt_core_pend_evt, 0, 1);
 K_SEM_DEFINE(zt_app_pend_evt, 0, 1);
@@ -95,3 +95,7 @@ void main(void)
 {
     printk("******** ZETA BASIC SAMPLE! *******\n");
 }
+
+ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);
+ZT_SERVICE_INIT(HAL, HAL_task, HAL_service_callback);
+ZT_SERVICE_INIT(APP, APP_task, APP_service_callback);

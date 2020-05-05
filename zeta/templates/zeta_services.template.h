@@ -4,7 +4,7 @@
 /* ***************************************************************** */
 
 /**
- * @file   zeta_threads.template.h
+ * @file   zeta_services.template.h
  * @author Lucas Peixoto <lucaspeixotoac@gmail.com>
  *
  *
@@ -12,12 +12,12 @@
  */
 
 
-#ifndef ZETA_THREADS_H_
-#define ZETA_THREADS_H_
+#ifndef ZETA_SERVICES_H_
+#define ZETA_SERVICES_H_
 
 #include "zeta.h"
 
-// <ZT_CODE_INJECTION>$services_sections// </ZT_CODE_INJECTION>
+// <ZT_CODE_INJECTION>$services_reference// </ZT_CODE_INJECTION>
 
 
 #endif

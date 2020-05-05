@@ -1,6 +1,7 @@
 #include <ztest.h>
 
 #include "zeta.h"
+#include "zeta_services.h"
 #include "zeta_unit_tests.h"
 
 K_SEM_DEFINE(ztest_sem, 0, 1);
@@ -192,3 +193,6 @@ void HAL_service_callback(zt_channel_e id)
 void APP_service_callback(zt_channel_e id)
 {
 }
+
+ZT_SERVICE_INIT(HAL, HAL_task, HAL_service_callback);
+ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);

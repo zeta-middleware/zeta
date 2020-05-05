@@ -9,6 +9,8 @@ import sys
 from os import getcwd
 from string import Template
 import shutil
+from pathlib import Path
+import re
 
 ZETA_DIR = "."
 ZETA_TEMPLATES_DIR = "."
@@ -364,8 +366,7 @@ class ZetaCLI(object):
 
     def init(self):
         parser = argparse.ArgumentParser(
-            description=
-            '''Run this command on the project root directory.
+            description='''Run this command on the project root directory.
 It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
             usage='zeta init')
         project_dir = "."
@@ -388,6 +389,114 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
                       'r') as header_template:
                 with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
                     cmake.write(header_template.read())
+
+    def check(self):
+        OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
+        FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
+        parser = argparse.ArgumentParser(
+            description=
+            '''Run this command to check all the zeta configuration''',
+            usage='zeta init')
+        parser.add_argument(
+            '-s',
+            '--src_dir',
+            type=str,
+            default="./src/",
+            help='Services source directory',
+        )
+        args = parser.parse_args(sys.argv[2:])
+        zeta_cmake = Path('./zeta.cmake')
+        zeta_cmake_path = zeta_cmake.resolve()
+        if zeta_cmake.exists():
+            zeta_cmake_output = f"{OK_COLORED}: zeta.cmake found ({zeta_cmake_path})"
+        else:
+            zeta_cmake_output = f"{FAIL_COLORED}: zeta.cmake not found"
+
+        zeta_yaml = Path('./zeta.yaml')
+        zeta_yaml_path = zeta_yaml.resolve()
+        if zeta_yaml.exists():
+            zeta_yaml_output = f"{OK_COLORED}: zeta.yaml found ({zeta_yaml_path})"
+        else:
+            zeta_yaml_output = f"{FAIL_COLORED}: zeta.yaml not found"
+
+        prj_conf = Path('./prj.conf')
+        prj_conf_path = prj_conf.resolve()
+        if prj_conf.exists():
+            with prj_conf.open() as prj_conf_file:
+                for line, line_content in enumerate(prj_conf_file.readlines()):
+                    # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
+                    if "CONFIG_ZETA=y" in line_content:
+                        prj_conf_output = f"{OK_COLORED}: CONFIG_ZETA=y added to the prj ({prj_conf_path}:{line + 1})"
+                        break
+                else:
+                    prj_conf_output = f"{FAIL_COLORED}: CONFIG_ZETA=y NOT added to the prj"
+
+        cmakelists = Path('./CMakeLists.txt')
+        cmakelists_path = cmakelists.resolve()
+        if cmakelists.exists():
+            with cmakelists.open() as cmakelists_file:
+                for line, line_content in enumerate(
+                        cmakelists_file.readlines()):
+                    # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
+                    if "include(zeta.cmake NO_POLICY_SCOPE)" in line_content:
+                        cmakelists_output = f"{OK_COLORED}: zeta.cmake included properly ({cmakelists_path}:{line + 1})"
+                        break
+                else:
+                    cmakelists_output = f"{FAIL_COLORED}: zeta.cmake NOT included properly into the CMakeLists.txt file"
+        services_output = ""
+
+        zeta = None
+        try:
+            with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
+                zeta = Zeta(f)
+        except FileNotFoundError:
+            #  print("[ZETA]: Could not found zeta.yaml file. Maybe it is not a zeta project.")
+            pass
+        if zeta:
+            services_output = "## \033[1;37mServices\033[0m "
+            for service_info in zeta.services:
+                service = Path(f'{args.src_dir}',
+                               f"{service_info.name.lower()}.c")
+                service_path = service.resolve()
+                service_init_output = f"        - {FAIL_COLORED}: Service {service_info.name} was NOT initialized properly into the {service_path.name} file"
+                service_included_output = f"\n        - {FAIL_COLORED}: Service {service_info.name} was NOT added to be compiled into the CMakeLists.txt file"
+                if service.exists():
+                    with service.open() as service_file:
+                        for line, line_content in enumerate(
+                                service_file.readlines()):
+                            # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
+                            if f"ZT_SERVICE_INIT({service_info.name}," in line_content:
+                                service_init_output = f"        - {OK_COLORED}: Service {service_info.name} was initialized properly ({service_path}:{line + 1})"
+                                break
+                    cmakelists = Path('./CMakeLists.txt')
+                    cmakelists_path = cmakelists.resolve()
+                    if cmakelists.exists():
+                        with cmakelists.open() as cmakelists_file:
+                            # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
+                            sources = re.search(
+                                'list\(APPEND SOURCES(\s*\n?\".*\"\s*\n?)+\)',
+                                cmakelists_file.read()).group()
+                            if sources and f"{service_info.name.lower()}.c" in sources:
+                                service_included_output = f"\n        - {OK_COLORED}: {service_info.name.lower()}.c added to be compiled at the CMakeLists.txt file"
+                            else:
+                                service_included_output = f"\n        - {FAIL_COLORED}: {service_info.name.lower()}.c was NOT added to be compiled at the CMakeLists.txt file"
+                else:
+                    service_init_output = f"        - {FAIL_COLORED}: Service {service_info.name} file was NOT found"
+                    service_included_output = ""
+                services_output += f"""
+    {service_info.name}
+{service_init_output}{service_included_output}"""
+        print(f'''
+ \033[1;37mZeta project configuration check\033[0m
+===================================================
+## \033[1;37mZeta files\033[0m
+    - {zeta_cmake_output}
+    - {zeta_yaml_output}
+## \033[1;37mZephyr setup\033[0m
+    - {prj_conf_output}
+    - {cmakelists_output}
+{services_output}
+''')
 
     def services(self):
         parser = argparse.ArgumentParser(

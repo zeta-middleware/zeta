@@ -1,7 +1,6 @@
 #include <ztest.h>
 
 #include "zeta.h"
-#include "zeta_services.h"
 #include "zeta_unit_tests.h"
 
 K_SEM_DEFINE(ztest_sem, 0, 1);

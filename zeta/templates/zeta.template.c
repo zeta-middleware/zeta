@@ -21,7 +21,6 @@
 
 #include "devicetree_fixups.h"
 #include "zeta_custom_functions.h"
-#include "zeta_services.h"
 
 
 LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
@@ -257,6 +256,10 @@ static void __zt_persist_data_on_flash(void)
 
 void zt_thread(void)
 {
+    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
+
+    // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
+
     u8_t id = 0;
     while (1) {
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
@@ -279,10 +282,6 @@ void zt_thread(void)
 
 void zt_thread_nvs(void)
 {
-    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
-
-    // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
-
     int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
     if (error) {
         LOG_INF("Flash Init failed");

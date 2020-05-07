@@ -13,6 +13,6 @@ Services:
   - CORE:
       priority: 5
       stack_size: 512
-  - HAL:
-      priority: 2
-      stack_size: 1024
+  - BOARD:
+      priority: 1
+      stack_size: 512

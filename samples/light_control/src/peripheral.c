@@ -6,8 +6,7 @@
  * @date 2020-04-28
  */
 #include <zephyr.h>
-#include "zeta_callbacks.h"
-#include "zeta_services.h"
+#include "zeta.h"
 
 #define ZT_REF(x) (u8_t *) &x, sizeof(x)
 

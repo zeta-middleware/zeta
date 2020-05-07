@@ -376,4 +376,6 @@ int zt_channel_data_set(zt_channel_e id, zt_data_t *channel_data);
  */
 int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size);
 
+// <ZT_CODE_INJECTION>$services_reference// </ZT_CODE_INJECTION>
+
 #endif

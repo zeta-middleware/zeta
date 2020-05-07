@@ -167,6 +167,7 @@ class SourceFileFactory(FileFactory):
 class ZetaHeader(HeaderFileFactory):
     def __init__(self, zeta):
         super().__init__('zeta.template.h', zeta)
+        self.services_reference = ""
 
     def create_substitutions(self):
         channel_names = ',\n    '.join([
@@ -179,6 +180,18 @@ typedef enum {{
     ZT_CHANNEL_COUNT
 }} __attribute__((packed)) zt_channel_e;
 '''
+        for service in self.zeta.services:
+            name = service.name
+            priority = service.priority
+            stack_size = service.stack_size
+            self.services_reference += f'''
+/* BEGIN {name} SECTION */
+extern zt_service_t {name}_service;
+#define {name}_TASK_PRIORITY {priority}
+#define {name}_STACK_SIZE {stack_size}
+/* END {name} SECTION */
+'''
+        self.substitutions['services_reference'] = self.services_reference
 
 
 class ZetaSource(SourceFileFactory):
@@ -292,25 +305,6 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init
 
-
-class ZetaServiceHeader(HeaderFileFactory):
-    def __init__(self, zeta):
-        super().__init__('zeta_services.template.h', zeta)
-        self.services_reference = ''
-
-    def create_substitutions(self):
-        for service in self.zeta.services:
-            name = service.name
-            priority = service.priority
-            stack_size = service.stack_size
-            self.services_reference += f'''
-/* BEGIN {name} SECTION */
-extern zt_service_t {name}_service;
-#define {name}_TASK_PRIORITY {priority}
-#define {name}_STACK_SIZE {stack_size}
-/* END {name} SECTION */
-'''
-        self.substitutions['services_reference'] = self.services_reference
 
 class ZetaCustomFunctionsHeader(HeaderFileFactory):
     def __init__(self, zeta):
@@ -527,13 +521,17 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
         zeta = None
         with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
             zeta = Zeta(f)
+        services_sources = []
         for service in zeta.services:
             service_name = service.name.strip().lower()
+            services_sources.append(
+                f'"{str(Path("${CMAKE_CURRENT_LIST_DIR}/", f"{args.src_dir}", f"{service_name}.c"))}"'
+            )
             if args.generate:
                 if not os.path.exists(f'{args.src_dir}/{service_name}.c'):
                     try:
                         service_file = FileFactory(args.src_dir,
-                                                   "zeta_service.template.c",
+                                                   "zeta_service.template_c",
                                                    zeta, f"{service_name}.c")
                         service_file.substitutions[
                             'service_name'] = service.name.upper()
@@ -549,6 +547,13 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
             else:
                 """@todo: check implementations on the src folder (maybe in the future)"""
                 pass
+        if len(services_sources) > 0:
+            cmake_services_file = FileFactory(
+                ".", "zeta_with_services.template.cmake", zeta, f"zeta.cmake")
+            cmake_services_file.substitutions['services_sources'] = " ".join(
+                services_sources)
+            cmake_services_file.run()
+            print(f"[ZETA]: Inject services sources into the zeta.cmake file")
 
     def gen(self):
         parser = argparse.ArgumentParser(
@@ -598,15 +603,11 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
             YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
             with open(args.yamlfile, 'r') as f:
                 zeta = Zeta(f)
-                #  yaml_dict = self.construct_yaml(f)
                 print("[ZETA]: Generating zeta.h...", end="")
                 ZetaHeader(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta.c...", end="")
                 ZetaSource(zeta).run()
-                print("[OK]")
-                print("[ZETA]: Generating zeta_services.h...", end="")
-                ZetaServiceHeader(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta_custom_functions.c...", end="")
                 ZetaCustomFunctionsHeader(zeta).run()

@@ -306,26 +306,6 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.substitutions['arrays_init'] = self.arrays_init
 
 
-#  class ZetaServiceHeader(HeaderFileFactory):
-    #  def __init__(self, zeta):
-        #  super().__init__('zeta_services.template.h', zeta)
-        #  self.services_reference = ''
-#
-    #  def create_substitutions(self):
-        #  for service in self.zeta.services:
-            #  name = service.name
-            #  priority = service.priority
-            #  stack_size = service.stack_size
-            #  self.services_reference += f'''
-#  /* BEGIN {name} SECTION */
-#  extern zt_service_t {name}_service;
-#  #define {name}_TASK_PRIORITY {priority}
-#  #define {name}_STACK_SIZE {stack_size}
-#  /* END {name} SECTION */
-#  '''
-        #  self.substitutions['services_reference'] = self.services_reference
-
-
 class ZetaCustomFunctionsHeader(HeaderFileFactory):
     def __init__(self, zeta):
         super().__init__('zeta_custom_functions.template.h', zeta)
@@ -623,16 +603,12 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
             YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
             with open(args.yamlfile, 'r') as f:
                 zeta = Zeta(f)
-                #  yaml_dict = self.construct_yaml(f)
                 print("[ZETA]: Generating zeta.h...", end="")
                 ZetaHeader(zeta).run()
                 print("[OK]")
                 print("[ZETA]: Generating zeta.c...", end="")
                 ZetaSource(zeta).run()
                 print("[OK]")
-                #  print("[ZETA]: Generating zeta_services.h...", end="")
-                #  ZetaServiceHeader(zeta).run()
-                #  print("[OK]")
                 print("[ZETA]: Generating zeta_custom_functions.c...", end="")
                 ZetaCustomFunctionsHeader(zeta).run()
                 print("[OK]")

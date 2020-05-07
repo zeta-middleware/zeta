@@ -8,7 +8,6 @@
 
 #include "autoconf.h"
 #include "zeta.h"
-#include "zeta_services.h"
 
 K_SEM_DEFINE(zt_core_pend_evt, 0, 1);
 K_SEM_DEFINE(zt_app_pend_evt, 0, 1);

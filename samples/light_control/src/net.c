@@ -8,7 +8,6 @@
  */
 #include <zephyr.h>
 #include "zeta.h"
-#include "zeta_services.h"
 
 #define ZT_REF(x) (u8_t *) &x, sizeof(x)
 

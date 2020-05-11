@@ -1,7 +1,11 @@
+#include <logging/log.h>
 #include <zephyr.h>
-#include "zeta.h"
+#include <zeta.h>
 
-K_SEM_DEFINE(${service_name}_event_sem, 0, 1);
+LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
+
+K_SEM_DEFINE(${service_name}_callback_sem, 0, 1);
+
 
 /**
  * @brief This is the function used by Zeta to tell the ${service_name} that one(s) of the
@@ -12,7 +16,7 @@ K_SEM_DEFINE(${service_name}_event_sem, 0, 1);
  */
 void ${service_name}_service_callback(zt_channel_e id)
 {
-    k_sem_give(&${service_name}_event_sem);
+    k_sem_give(&${service_name}_callback_sem);
 }
 
 /**
@@ -21,12 +25,10 @@ void ${service_name}_service_callback(zt_channel_e id)
  */
 void ${service_name}_task()
 {
-    // setup code
+    LOG_DBG("${service_name} Service has started...[OK]");
     while (1) {
-        k_sem_take(&${service_name}_event_sem, K_FOREVER);
-        // Thread loop code
+        k_sem_take(&${service_name}_callback_sem, K_FOREVER);
     }
 }
 
-ZT_SERVICE_INIT(${service_name}, ${service_name}_task,
-                ${service_name}_service_callback);
+ZT_SERVICE_INIT(${service_name}, ${service_name}_task, ${service_name}_service_callback);

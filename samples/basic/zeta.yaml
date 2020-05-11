@@ -6,7 +6,7 @@ Config:
 Channels:
   - FIRMWARE_VERSION:
       size: 4
-      set: 'NULL'
+      publish: 'NULL'
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
       
   - POWER_VAL:

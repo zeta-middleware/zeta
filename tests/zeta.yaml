@@ -6,21 +6,21 @@ Config:
 Channels:
   - FIRMWARE_VERSION:
       size: 4
-      set: 'NULL'
+      publish: 'NULL'
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
 
   - POWER_VAL:
       size: 2
       persistent: True
       validate: 'power_validate_different_zero'
-      pre_set: 'pre_set_power'
-      pos_set: 'pos_set_power'
+      pre_publish: 'pre_publish_power'
+      pos_publish: 'pos_publish_power'
         
   - DATA_VAL:
       size: 1
-      pre_get: 'pre_get_data_val'
-      pos_get: 'pos_get_data_val'
-      set: 'NULL'
+      pre_read: 'pre_read_data_val'
+      pos_read: 'pos_read_data_val'
+      publish: 'NULL'
 
 Services:
   - CORE: 

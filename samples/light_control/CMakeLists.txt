@@ -10,8 +10,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/zeta/include/")
 
 list(APPEND SOURCES "${PROJECT_SOURCE_DIR}/src/peripheral.c"
-     "${PROJECT_SOURCE_DIR}/src/core.c"
-     "${PROJECT_SOURCE_DIR}/src/net.c""${PROJECT_SOURCE_DIR}/src/main.c")
+     "${PROJECT_SOURCE_DIR}/src/core.c" "${PROJECT_SOURCE_DIR}/src/net.c"
+     "${PROJECT_SOURCE_DIR}/src/main.c")
 
 message("Headers: ${HEADERS}")
 message("Soucers: ${SOURCES}")

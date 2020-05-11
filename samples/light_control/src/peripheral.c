@@ -7,9 +7,6 @@
  */
 #include <zephyr.h>
 #include "zeta.h"
-
-#define ZT_REF(x) (u8_t *) &x, sizeof(x)
-
 u8_t light_level_sensor_fetch()
 {
     return k_uptime_get();
@@ -26,9 +23,9 @@ void PERIPHERAL_service_callback(zt_channel_e id)
 {
     switch (id) {
     case ZT_LOAD_CHANNEL: {
-        u8_t load = 0;
-        zt_channel_get(ZT_LOAD_CHANNEL, ZT_REF(load));
-        printk("[PERIPHERAL]: The load is turning %s\n", load ? "on" : "off");
+        zt_data_t* load = ZT_DATA_U8(0);
+        zt_channel_data_read(ZT_LOAD_CHANNEL, load);
+        printk("[PERIPHERAL]: The load is turning %s\n", load->u8.value ? "on" : "off");
     } break;
     default:
         printk("Unknown id");
@@ -41,10 +38,10 @@ void PERIPHERAL_service_callback(zt_channel_e id)
 void PERIPHERAL_task()
 {
     printk("Hello PERIPHERAL!\n");
-    u8_t light_level = 0;
+    zt_data_t* light_level = ZT_DATA_U8(0);
     while (1) {
-        light_level = light_level_sensor_fetch();
-        zt_channel_set(ZT_LIGHT_LEVEL_CHANNEL, ZT_REF(light_level));
+        light_level->u8.value = light_level_sensor_fetch();
+        zt_channel_data_publish(ZT_LIGHT_LEVEL_CHANNEL, light_level);
         k_sleep(K_SECONDS(2));
     }
 }

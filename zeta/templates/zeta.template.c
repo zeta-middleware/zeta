@@ -35,8 +35,8 @@ LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 void zt_thread(void);
 void zt_thread_nvs(void);
-static int zt_channel_get_private(zt_channel_e id, u8_t *channel_value, size_t size);
-static int zt_channel_set_private(zt_channel_e id, u8_t *channel_value, size_t size);
+static int zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size);
+static int zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, size_t size);
 
 K_THREAD_DEFINE(zt_thread_id, ZT_THREAD_NVS_STACK_SIZE, zt_thread, NULL, NULL, NULL,
                 ZT_THREAD_PRIORITY, 0, K_NO_WAIT);
@@ -88,32 +88,32 @@ size_t zt_channel_size(zt_channel_e id, int *error)
     }
 }
 
-int zt_channel_data_get(zt_channel_e id, zt_data_t *channel_data)
+int zt_channel_data_read(zt_channel_e id, zt_data_t *channel_data)
 {
-    return zt_channel_get(id, channel_data->bytes.value, channel_data->bytes.size);
+    return zt_channel_read(id, channel_data->bytes.value, channel_data->bytes.size);
 }
 
-int zt_channel_get(zt_channel_e id, u8_t *channel_value, size_t size)
+int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     if (id < ZT_CHANNEL_COUNT) {
         int error             = 0;
         zt_channel_t *channel = &__zt_channels[id];
         ZT_CHECK_VAL(channel_value, NULL, -EFAULT,
-                     "get function was called with channel_value parameter as NULL!");
-        ZT_CHECK_VAL(channel->get, NULL, -EPERM,
-                     "channel #%d does not have get implementation!", id);
+                     "read function was called with channel_value parameter as NULL!");
+        ZT_CHECK_VAL(channel->read, NULL, -EPERM,
+                     "channel #%d does not have read implementation!", id);
         ZT_CHECK(size != channel->size, -EINVAL,
                  "channel #%d has a different size!(%d)(%d)", id, size, channel->size);
-        if (channel->pre_get) {
-            error = channel->pre_get(id, channel_value, size);
-            ZT_CHECK(error, error, "Error(code %d) in pre-get function of channel #%d",
+        if (channel->pre_read) {
+            error = channel->pre_read(id, channel_value, size);
+            ZT_CHECK(error, error, "Error(code %d) in pre-read function of channel #%d",
                      error, id);
         }
-        error = channel->get(id, channel_value, size);
+        error = channel->read(id, channel_value, size);
         ZT_CHECK(error, error, "Current channel #%d, error code: %d", id, error);
-        if (channel->pos_get) {
-            error = channel->pos_get(id, channel_value, size);
-            ZT_CHECK(error, error, "Error(code %d) in pos-get function of channel #%d!",
+        if (channel->pos_read) {
+            error = channel->pos_read(id, channel_value, size);
+            ZT_CHECK(error, error, "Error(code %d) in pos-read function of channel #%d!",
                      error, id);
         }
         return error;
@@ -123,12 +123,12 @@ int zt_channel_get(zt_channel_e id, u8_t *channel_value, size_t size)
     }
 }
 
-static int zt_channel_get_private(zt_channel_e id, u8_t *channel_value, size_t size)
+static int zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     int ret               = 0;
     zt_channel_t *channel = &__zt_channels[id];
     if (k_sem_take(channel->sem, K_MSEC(200))) {
-        LOG_INF("Could not get the channel. Channel is busy");
+        LOG_INF("Could not read the channel. Channel is busy");
         ret = -EBUSY;
     } else {
         memcpy(channel_value, channel->data, channel->size);
@@ -137,12 +137,12 @@ static int zt_channel_get_private(zt_channel_e id, u8_t *channel_value, size_t s
     return ret;
 }
 
-int zt_channel_data_set(zt_channel_e id, zt_data_t *channel_data)
+int zt_channel_data_publish(zt_channel_e id, zt_data_t *channel_data)
 {
-    return zt_channel_set(id, channel_data->bytes.value, channel_data->bytes.size);
+    return zt_channel_publish(id, channel_data->bytes.value, channel_data->bytes.size);
 }
 
-int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size)
+int zt_channel_publish(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     if (id < ZT_CHANNEL_COUNT) {
         int error             = 0;
@@ -159,8 +159,8 @@ int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size)
                      "The current thread has not the permission to change channel #%d!",
                      id);
         ZT_CHECK_VAL(channel_value, NULL, -EFAULT,
-                     "set function was called with channel_value paramater as NULL!");
-        ZT_CHECK_VAL(channel->set, NULL, -EPERM, "The channel #%d is read only!", id);
+                     "publish function was called with channel_value paramater as NULL!");
+        ZT_CHECK_VAL(channel->publish, NULL, -EPERM, "The channel #%d is read only!", id);
         ZT_CHECK(size != channel->size, -EINVAL, "The channel #%d has a different size!",
                  id);
         if (channel->validate) {
@@ -168,15 +168,15 @@ int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size)
         }
         ZT_CHECK(!valid, -EAGAIN,
                  "The value doesn't satisfy valid function of channel #%d!", id);
-        if (channel->pre_set) {
-            error = channel->pre_set(id, channel_value, size);
-            ZT_CHECK(error, error, "Error on pre_set function of channel #%d!", id);
+        if (channel->pre_publish) {
+            error = channel->pre_publish(id, channel_value, size);
+            ZT_CHECK(error, error, "Error on pre_publish function of channel #%d!", id);
         }
-        error = channel->set(id, channel_value, size);
+        error = channel->publish(id, channel_value, size);
         ZT_CHECK(error, error, "Current channel #%d, error code: %d!", id, error);
-        if (channel->pos_set) {
-            error = channel->pos_set(id, channel_value, size);
-            ZT_CHECK(error, error, "Error on pos_set function of channel #%d!", id);
+        if (channel->pos_publish) {
+            error = channel->pos_publish(id, channel_value, size);
+            ZT_CHECK(error, error, "Error on pos_publish function of channel #%d!", id);
         }
         return error;
     } else {
@@ -185,12 +185,12 @@ int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size)
     }
 }
 
-static int zt_channel_set_private(zt_channel_e id, u8_t *channel_value, size_t size)
+static int zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     int ret               = 0;
     zt_channel_t *channel = &__zt_channels[id];
     if (k_sem_take(channel->sem, K_MSEC(200))) {
-        LOG_INF("Could not set the channel. Channel is busy");
+        LOG_INF("Could not publish the channel. Channel is busy");
         ret = -EBUSY;
     } else {
         if (memcmp(channel->data, channel_value, size)) {

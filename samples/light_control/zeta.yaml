@@ -6,7 +6,7 @@ Config:
 Channels:
   - FIRMWARE_VERSION:
       size: 4
-      set: 'NULL'
+      publish: 'NULL'
       initial_value: [0x01, 0x00, 0x07, 0x00]
   - LIGHT_LEVEL:
       size: 1

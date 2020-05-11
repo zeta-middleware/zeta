@@ -32,22 +32,22 @@ class Channel(object):
                  name,
                  initial_value=None,
                  validate='NULL',
-                 pre_get='NULL',
-                 get='zt_channel_get_private',
-                 pos_get='NULL',
-                 pre_set='NULL',
-                 set='zt_channel_set_private',
-                 pos_set='NULL',
+                 pre_read='NULL',
+                 read='zt_channel_read_private',
+                 pos_read='NULL',
+                 pre_publish='NULL',
+                 publish='zt_channel_publish_private',
+                 pos_publish='NULL',
                  size=1,
                  persistent=0):
         self.name = name.strip()
         self.validate = validate
-        self.pre_get = pre_get
-        self.get = get
-        self.pos_get = pos_get
-        self.pre_set = pre_set
-        self.set = set
-        self.pos_set = pos_set
+        self.pre_read = pre_read
+        self.read = read
+        self.pos_read = pos_read
+        self.pre_publish = pre_publish
+        self.publish = publish
+        self.pos_publish = pos_publish
         self.size = size
         self.persistent = 1 if persistent else 0
         self.sem = f"zt_{name.lower()}_channel_sem"
@@ -266,12 +266,12 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
     {{
         .name = "{name}",
         .validate = {validate},
-        .pre_get = {pre_get},
-        .get = {get},
-        .pos_get = {pos_get},
-        .pre_set = {pre_set},
-        .set = {set},
-        .pos_set = {pos_set},
+        .pre_read = {pre_read},
+        .read = {read},
+        .pos_read = {pos_read},
+        .pre_publish = {pre_publish},
+        .publish = {publish},
+        .pos_publish = {pos_publish},
         .size = {size},
         .persistent = {persistent},
         .sem = &{sem},
@@ -317,21 +317,21 @@ class ZetaCustomFunctionsHeader(HeaderFileFactory):
             self.channels_functions += f'''
 /* BEGIN {name} CHANNEL FUNCTIONS */
 '''
-            if channel.pre_get is not 'NULL':
+            if channel.pre_read is not 'NULL':
                 self.channels_functions += f'''
-int {channel.pre_get}(zt_channel_e id, u8_t *channel_value, size_t size);
+int {channel.pre_read}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
-            if channel.pos_get is not 'NULL':
+            if channel.pos_read is not 'NULL':
                 self.channels_functions += f'''
-int {channel.pos_get}(zt_channel_e id, u8_t *channel_value, size_t size);
+int {channel.pos_read}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
-            if channel.pre_set is not 'NULL':
+            if channel.pre_publish is not 'NULL':
                 self.channels_functions += f'''
-int {channel.pre_set}(zt_channel_e id, u8_t *channel_value, size_t size);
+int {channel.pre_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
-            if channel.pos_set is not 'NULL':
+            if channel.pos_publish is not 'NULL':
                 self.channels_functions += f'''
-int {channel.pos_set}(zt_channel_e id, u8_t *channel_value, size_t size);
+int {channel.pos_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
 '''
             if channel.validate is not 'NULL':
                 self.channels_functions += f'''

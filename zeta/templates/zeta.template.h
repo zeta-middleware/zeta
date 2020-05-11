@@ -58,7 +58,7 @@
 
 
 /**
- * @brief Get variable reference and size easily to use in
+ * @brief Read variable reference and size easily to use in
  * Zeta API.
  *
  * @param x variable name
@@ -271,26 +271,28 @@ union opt_data {
  * @brief Define Zeta channel type
  */
 struct zt_channel {
-    const char *name;                         /**< Channel name */
-    u8_t *data;                               /**< Channel raw data */
-    int (*validate)(u8_t *data, size_t size); /**< Valid data sent to be set to channel */
-    int (*pre_get)(zt_channel_e id, u8_t *channel_value,
-                   size_t size); /**< Called before some get call */
-    int (*get)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Get call */
-    int (*pos_get)(zt_channel_e id, u8_t *channel_value,
-                   size_t size); /**< Called after some get call */
-    int (*pre_set)(zt_channel_e id, u8_t *channel_value,
-                   size_t size); /**< Called before some set call */
-    int (*set)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Set call */
-    int (*pos_set)(zt_channel_e id, u8_t *channel_value,
-                   size_t size); /**< Called after some set call */
-    u8_t size;                   /**< Channel size */
-    u8_t persistent;             /**< Persistent type */
-    union opt_data opt;          /**< Pendent options */
-    struct k_sem *sem;           /**< Preserve shared-memory */
-    zt_service_t **publishers;   /**< Publishers */
-    zt_service_t **subscribers;  /**< Subscribers */
-    zt_channel_e id;             /**< Channel Id */
+    const char *name; /**< Channel name */
+    u8_t *data;       /**< Channel raw data */
+    int (*validate)(u8_t *data,
+                    size_t size); /**< Valid data sent to be publish to channel */
+    int (*pre_read)(zt_channel_e id, u8_t *channel_value,
+                    size_t size); /**< Called before some read call */
+    int (*read)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Read call */
+    int (*pos_read)(zt_channel_e id, u8_t *channel_value,
+                    size_t size); /**< Called after some read call */
+    int (*pre_publish)(zt_channel_e id, u8_t *channel_value,
+                       size_t size); /**< Called before some publish call */
+    int (*publish)(zt_channel_e id, u8_t *channel_value,
+                   size_t size); /**< Publish call */
+    int (*pos_publish)(zt_channel_e id, u8_t *channel_value,
+                       size_t size); /**< Called after some publish call */
+    u8_t size;                       /**< Channel size */
+    u8_t persistent;                 /**< Persistent type */
+    union opt_data opt;              /**< Pendent options */
+    struct k_sem *sem;               /**< Preserve shared-memory */
+    zt_service_t **publishers;       /**< Publishers */
+    zt_service_t **subscribers;      /**< Subscribers */
+    zt_channel_e id;                 /**< Channel Id */
 };
 typedef struct zt_channel zt_channel_t;
 
@@ -315,7 +317,7 @@ size_t zt_channel_size(zt_channel_e id, int *error);
 const char *zt_channel_name(zt_channel_e id, int *error);
 
 /**
- * @brief Get channel value.
+ * @brief Read channel value.
  *
  * @param id Channel Id
  * @param channel_data pointer to a zt_data_t where the data will be retrieved.
@@ -323,13 +325,13 @@ const char *zt_channel_name(zt_channel_e id, int *error);
  * @return Error code
  * @retval -ENODATA The channel was not found
  * @retval -EFAULT Channel value is NULL
- * @retval -EPERM  Channel hasn't get function implemented
+ * @retval -EPERM  Channel hasn't read function implemented
  * @retval -EINVAL Size passed is different to channel size
  */
-int zt_channel_data_get(zt_channel_e id, zt_data_t *channel_data);
+int zt_channel_data_read(zt_channel_e id, zt_data_t *channel_data);
 
 /**
- * @brief Get channel value.
+ * @brief Read channel value.
  *
  * @param id Channel Id
  * @param channel_value Handle channel value
@@ -338,29 +340,29 @@ int zt_channel_data_get(zt_channel_e id, zt_data_t *channel_data);
  * @return Error code
  * @retval -ENODATA The channel was not found
  * @retval -EFAULT Channel value is NULL
- * @retval -EPERM  Channel hasn't get function implemented
+ * @retval -EPERM  Channel hasn't read function implemented
  * @retval -EINVAL Size passed is different to channel size
  */
-int zt_channel_get(zt_channel_e id, u8_t *channel_value, size_t size);
+int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size);
 
 /**
- * @brief Set channel value.
+ * @brief Publish channel value.
  *
  * @param id Channel Id
  * @param channel_data pointer to a zt_data_t where the data is.
  *
  * @return Error code
  * @retval -ENODATA The channel was not found
- * @retval -EACCESS Current thread hasn't permission to set this channel
+ * @retval -EACCESS Current thread hasn't permission to publish this channel
  * @retval -EFAULT Channel value is NULL
  * @retval -EPERM Channel is read only
  * @retval -EINVAL Size passed is different to channel size
  * @retval -EAGAIN Valid function returns false
  */
-int zt_channel_data_set(zt_channel_e id, zt_data_t *channel_data);
+int zt_channel_data_publish(zt_channel_e id, zt_data_t *channel_data);
 
 /**
- * @brief Set channel value.
+ * @brief Publish channel value.
  *
  * @param id Channel Id
  * @param channel_value New channel value
@@ -368,13 +370,13 @@ int zt_channel_data_set(zt_channel_e id, zt_data_t *channel_data);
  *
  * @return Error code
  * @retval -ENODATA The channel was not found
- * @retval -EACCESS Current thread hasn't permission to set this channel
+ * @retval -EACCESS Current thread hasn't permission to publish this channel
  * @retval -EFAULT Channel value is NULL
  * @retval -EPERM Channel is read only
  * @retval -EINVAL Size passed is different to channel size
  * @retval -EAGAIN Valid function returns false
  */
-int zt_channel_set(zt_channel_e id, u8_t *channel_value, size_t size);
+int zt_channel_publish(zt_channel_e id, u8_t *channel_value, size_t size);
 
 // <ZT_CODE_INJECTION>$services_reference// </ZT_CODE_INJECTION>
 

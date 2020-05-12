@@ -33,16 +33,18 @@ LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 // <ZT_CODE_INJECTION>$channels_sems// </ZT_CODE_INJECTION>
 
-void zt_thread(void);
-void zt_thread_nvs(void);
-static int zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size);
-static int zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, size_t size);
+static void __zt_channels_thread(void);
+static void __zt_storage_thread(void);
+static int __zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size);
+static int __zt_channel_publish_private(zt_channel_e id, u8_t *channel_value,
+                                        size_t size);
 
-K_THREAD_DEFINE(zt_thread_id, ZT_THREAD_NVS_STACK_SIZE, zt_thread, NULL, NULL, NULL,
-                ZT_THREAD_PRIORITY, 0, K_NO_WAIT);
+K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
+                __zt_channels_thread, NULL, NULL, NULL, ZT_THREADS_PRIORITY, 0,
+                K_NO_WAIT);
 
-K_THREAD_DEFINE(zt_thread_nvs_id, ZT_THREAD_NVS_STACK_SIZE, zt_thread_nvs, NULL, NULL,
-                NULL, ZT_THREAD_PRIORITY, 0, K_NO_WAIT);
+K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage_thread,
+                NULL, NULL, NULL, ZT_THREADS_PRIORITY, 0, K_NO_WAIT);
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
 
@@ -123,7 +125,7 @@ int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size)
     }
 }
 
-static int zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size)
+static int __zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     int ret               = 0;
     zt_channel_t *channel = &__zt_channels[id];
@@ -185,7 +187,7 @@ int zt_channel_publish(zt_channel_e id, u8_t *channel_value, size_t size)
     }
 }
 
-static int zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, size_t size)
+static int __zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     int ret               = 0;
     zt_channel_t *channel = &__zt_channels[id];
@@ -254,7 +256,7 @@ static void __zt_persist_data_on_flash(void)
     }
 }
 
-void zt_thread(void)
+void __zt_channels_thread(void)
 {
     // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
 
@@ -280,7 +282,7 @@ void zt_thread(void)
     }
 }
 
-void zt_thread_nvs(void)
+void __zt_storage_thread(void)
 {
     int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
     if (error) {

@@ -33,10 +33,10 @@ class Channel(object):
                  initial_value=None,
                  validate='NULL',
                  pre_read='NULL',
-                 read='zt_channel_read_private',
+                 read='__zt_channel_read_private',
                  pos_read='NULL',
                  pre_publish='NULL',
-                 publish='zt_channel_publish_private',
+                 publish='__zt_channel_publish_private',
                  pos_publish='NULL',
                  size=1,
                  persistent=0):

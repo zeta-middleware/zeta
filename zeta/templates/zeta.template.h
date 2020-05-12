@@ -27,20 +27,20 @@
  * persistent data.
  *
  */
-#define ZT_THREAD_NVS_STACK_SIZE 512
+#define ZT_STORAGE_THREAD_STACK_SIZE 512
 
 /**
  * @brief Stack size that is used in Zeta thread that manages
- * callback calls.
+ * channels callback calls.
  *
  */
-#define ZT_THREAD_STACK_SIZE 512
+#define ZT_CHANNELS_THREAD_STACK_SIZE 512
 
 /**
  * @brief Priority that is used for all Zeta threads.
  *
  */
-#define ZT_THREAD_PRIORITY 0
+#define ZT_THREADS_PRIORITY 0
 
 /**
  * @brief Initialize a zeta service.

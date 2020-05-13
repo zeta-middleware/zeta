@@ -195,19 +195,16 @@ static int __zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, si
         LOG_INF("Could not publish the channel. Channel is busy");
         ret = -EBUSY;
     } else {
-        if (memcmp(channel->data, channel_value, size)) {
+        if (memcmp(channel->data, channel_value, channel->size)) {
             memcpy(channel->data, channel_value, channel->size);
-            channel->opt.field.pend_callback = 1;
-            if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                LOG_INF(
-                    "[Channel #%d] Error sending channels change message to ZT thread!",
-                    id);
-            }
-            channel->opt.field.pend_persistent = (channel->persistent) ? 1 : 0;
-            k_sem_give(channel->sem);
-        } else {
-            k_sem_give(channel->sem);
         }
+        channel->opt.field.pend_callback = 1;
+        if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
+            LOG_INF("[Channel #%d] Error sending channels change message to ZT thread!",
+                    id);
+        }
+        channel->opt.field.pend_persistent = (channel->persistent) ? 1 : 0;
+        k_sem_give(channel->sem);
     }
     return ret;
 }

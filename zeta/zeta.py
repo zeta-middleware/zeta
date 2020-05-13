@@ -364,13 +364,20 @@ class ZetaCLI(object):
 It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
             usage='zeta init')
         project_dir = "."
-        args = parser.parse_args(sys.argv[2:])
+        print("###############")
+        print(sys.argv, sys.argv[2:])
+        print(parser.parse_args())
+        args = parser.parse_args()
+        print(args)
+        print("###############")
         global ZETA_DIR
         ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+        print("###############")
         global PROJECT_DIR
         PROJECT_DIR = project_dir
         global ZETA_TEMPLATES_DIR
         ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        print("###############")
         print("[ZETA]: Generating cmake file on", project_dir)
         with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
                   'r') as header_template:
@@ -390,7 +397,7 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
         parser = argparse.ArgumentParser(
             description=
             '''Run this command to check all the zeta configuration''',
-            usage='zeta init')
+            usage='zeta check')
         parser.add_argument(
             '-s',
             '--src_dir',

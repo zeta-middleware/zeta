@@ -14,7 +14,7 @@ Channels:
       size: 1
   - SENSOR_C:
       size: 4
-  - NET_ACCESS:
+  - NET_REQUEST:
       size: 1
   - NET_RESPONSE:
       size: 5
@@ -27,7 +27,7 @@ Services:
         - !ref SENSOR_A
         - !ref SENSOR_B
         - !ref SENSOR_C
-        - !ref NET_ACCESS
+        - !ref NET_REQUEST
       pub_channels:
         - !ref NET_RESPONSE
   - BOARD:
@@ -41,7 +41,7 @@ Services:
       priority: 3
       stack_size: 512
       pub_channels:
-        - !ref NET_ACCESS
+        - !ref NET_REQUEST
       sub_channels:
         - !ref NET_RESPONSE
       

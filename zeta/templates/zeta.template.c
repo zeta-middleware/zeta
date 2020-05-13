@@ -195,17 +195,26 @@ static int __zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, si
         LOG_INF("Could not publish the channel. Channel is busy");
         ret = -EBUSY;
     } else {
+        channel->flag.field.pend_callback = 1;
         if (memcmp(channel->data, channel_value, size)) {
             memcpy(channel->data, channel_value, channel->size);
-            channel->opt.field.pend_callback = 1;
             if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                LOG_INF(
-                    "[Channel #%d] Error sending channels change message to ZT thread!",
-                    id);
+                LOG_INF("[Channel #%d] Error sending channels change message to ZT "
+                        "thread!",
+                        id);
             }
-            channel->opt.field.pend_persistent = (channel->persistent) ? 1 : 0;
+            channel->flag.field.pend_persistent = (channel->persistent) ? 1 : 0;
             k_sem_give(channel->sem);
         } else {
+            if (!channel->flag.field.callback_behavior) {
+                if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
+                    LOG_INF("[Channel #%d] Error sending channels change message to ZT "
+                            "thread!",
+                            id);
+                }
+            } else {
+                channel->flag.field.pend_callback = 0;
+            }
             k_sem_give(channel->sem);
         }
     }
@@ -240,12 +249,13 @@ static void __zt_persist_data_on_flash(void)
 {
     int bytes_written = 0;
     for (u16_t id = 0; id < ZT_CHANNEL_COUNT; ++id) {
-        if (__zt_channels[id].persistent && __zt_channels[id].opt.field.pend_persistent) {
+        if (__zt_channels[id].persistent
+            && __zt_channels[id].flag.field.pend_persistent) {
             // LOG_INF("Store changes for channel #%d", id);
             bytes_written =
                 nvs_write(&zt_fs, id, __zt_channels[id].data, __zt_channels[id].size);
             if (bytes_written > 0) { /* item was found and updated*/
-                __zt_channels[id].opt.field.pend_persistent = 0;
+                __zt_channels[id].flag.field.pend_persistent = 0;
                 LOG_INF("channel #%d value updated on the flash", id);
             } else if (bytes_written == 0) {
                 /* LOG_INF("channel #%d value is already on the flash.", id); */
@@ -266,11 +276,11 @@ void __zt_channels_thread(void)
     while (1) {
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
         if (id < ZT_CHANNEL_COUNT) {
-            if (__zt_channels[id].opt.field.pend_callback) {
+            if (__zt_channels[id].flag.field.pend_callback) {
                 for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
                     (*s)->cb(id);
                 }
-                __zt_channels[id].opt.field.pend_callback = 0;
+                __zt_channels[id].flag.field.pend_callback = 0;
             } else {
                 LOG_INF("[ZT-THREAD]: Received pend_callback from a channel(#%d) "
                         "without changes!",

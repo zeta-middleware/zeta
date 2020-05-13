@@ -38,6 +38,7 @@ class Channel(object):
                  pre_publish='NULL',
                  publish='__zt_channel_publish_private',
                  pos_publish='NULL',
+                 callback_behavior='on_update',
                  size=1,
                  persistent=0):
         self.name = name.strip()
@@ -48,6 +49,7 @@ class Channel(object):
         self.pre_publish = pre_publish
         self.publish = publish
         self.pos_publish = pos_publish
+        self.callback_behavior = callback_behavior
         self.size = size
         self.persistent = 1 if persistent else 0
         self.sem = f"zt_{name.lower()}_channel_sem"
@@ -224,6 +226,12 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
         for channel in self.zeta.channels:
             data_alloc = f"static u8_t __{channel.name.lower()}_data[] = {{{', '.join(channel.initial_value)}}};"
             channel.data = f"__{channel.name.lower()}_data"
+            channel.flag = 0x00
+            if channel.callback_behavior == 'on_change' :
+                channel.flag = channel.flag | (1 << 2)
+            elif channel.callback_behavior != 'on_update' :
+                raise Exception(f"[ZETA ERROR]: Failed to generate zeta.c. The field callback_behavior has an invalid value: {channel.callback_behavior}.")
+
             subscribers_alloc = "NULL"
             if len(channel.sub_services_obj) > 0:
                 subscribers_alloc = [
@@ -272,6 +280,7 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
         .pre_publish = {pre_publish},
         .publish = {publish},
         .pos_publish = {pos_publish},
+        .flag = {{.data = {flag}}},
         .size = {size},
         .persistent = {persistent},
         .sem = &{sem},

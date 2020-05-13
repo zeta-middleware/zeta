@@ -257,12 +257,14 @@ typedef struct zt_service zt_service_t;
 /**
  * @brief Define pendent options that a channel can have.
  */
-union opt_data {
+union flag_data {
     struct {
-        u8_t pend_persistent : 1; /**< Active represent that channel must be saved in
-                                     flash by zeta_thread_nvs */
-        u8_t pend_callback : 1;   /**< Active represent that services callbacks from
-                                     subscribers must be called by zeta_thread */
+        u8_t pend_persistent : 1;   /**< Active represent that channel must be saved in
+                                       flash by zeta_thread_nvs */
+        u8_t pend_callback : 1;     /**< Active represent that services callbacks from
+                                       subscribers must be called by zeta_thread */
+        u8_t callback_behavior : 1; /**< Active represent that the service callback will
+                                       be called on change and not on update */
     } field;
     u8_t data; /**< Raw data */
 };
@@ -288,7 +290,7 @@ struct zt_channel {
                        size_t size); /**< Called after some publish call */
     u8_t size;                       /**< Channel size */
     u8_t persistent;                 /**< Persistent type */
-    union opt_data opt;              /**< Pendent options */
+    union flag_data flag;            /**< Options */
     struct k_sem *sem;               /**< Preserve shared-memory */
     zt_service_t **publishers;       /**< Publishers */
     zt_service_t **subscribers;      /**< Subscribers */

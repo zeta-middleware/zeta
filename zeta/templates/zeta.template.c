@@ -206,7 +206,7 @@ static int __zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, si
             channel->flag.field.pend_persistent = (channel->persistent) ? 1 : 0;
             k_sem_give(channel->sem);
         } else {
-            if (!channel->flag.field.callback_behavior) {
+            if (!channel->flag.field.react_on) {
                 if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
                     LOG_INF("[Channel #%d] Error sending channels change message to ZT "
                             "thread!",

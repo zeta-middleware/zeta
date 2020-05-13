@@ -259,12 +259,12 @@ typedef struct zt_service zt_service_t;
  */
 union flag_data {
     struct {
-        u8_t pend_persistent : 1;   /**< Active represent that channel must be saved in
-                                       flash by zeta_thread_nvs */
-        u8_t pend_callback : 1;     /**< Active represent that services callbacks from
-                                       subscribers must be called by zeta_thread */
-        u8_t callback_behavior : 1; /**< Active represent that the service callback will
-                                       be called on change and not on update */
+        u8_t pend_persistent : 1; /**< Active represent that channel must be saved in
+                                     flash by zeta_thread_nvs */
+        u8_t pend_callback : 1;   /**< Active represent that services callbacks from
+                                     subscribers must be called by zeta_thread */
+        u8_t react_on : 1;        /**< Active represent that the service callback will
+                                              be called on change and not on update */
     } field;
     u8_t data; /**< Raw data */
 };

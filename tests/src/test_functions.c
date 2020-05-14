@@ -5,7 +5,10 @@
 
 K_SEM_DEFINE(ztest_sem, 0, 1);
 K_SEM_DEFINE(zt_core_pend_evt, 0, 1);
+K_SEM_DEFINE(zt_app_pend_evt, 0, 1);
 
+u8_t sensor_a_hit           = 0;
+u8_t sensor_b_hit           = 0;
 u8_t count_data_read        = 0;
 u8_t running_urgent_routine = 0;
 k_tid_t read_data_last_thread;
@@ -61,7 +64,6 @@ void CORE_task(void)
                 zassert_equal(data, 29,
                               "POWER_VAL channel was not publish correctly %d!\n", data);
             }
-            k_sem_give(&ztest_sem);
             break;
         default:
             break;
@@ -181,6 +183,29 @@ void HAL_task(void)
     zassert_equal(error, 0, "Error executing a valid publish call!\n");
     zassert_equal(running_urgent_routine, 0,
                   "POWER_VAL pos publish function didn't run properly!\n");
+
+    /* Testing react_on field on SENSOR_A_CHANGE creation */
+    data  = 1;
+    error = zt_channel_publish(ZT_SENSOR_A_CHANGE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    zassert_equal(error, 0, "Error executing a valid publish call!\n");
+    zassert_equal(
+        sensor_a_hit, 1,
+        "APP callback was not called with a valid call(value different from existent)\n");
+    zt_channel_publish(ZT_SENSOR_A_CHANGE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    zassert_equal(sensor_a_hit, 1,
+                  "APP callback was called on a publish procedure without changes on "
+                  "channel value!\n");
+
+    /* Testing react_on field on SENSOR_B_UPDATE creation  */
+    error = zt_channel_publish(ZT_SENSOR_B_UPDATE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    zassert_equal(error, 0, "Error executing a valid publish call!\n");
+    zassert_equal(sensor_b_hit, 1, "APP callback was not called with a valid call\n");
+    zt_channel_publish(ZT_SENSOR_B_UPDATE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    zassert_equal(sensor_b_hit, 2,
+                  "APP callback was not called on a channel that react on update!\n");
+
+    k_sleep(K_MSEC(100));
+    k_sem_give(&ztest_sem);
 }
 
 void APP_task(void)
@@ -193,7 +218,13 @@ void HAL_service_callback(zt_channel_e id)
 
 void APP_service_callback(zt_channel_e id)
 {
+    if (id == ZT_SENSOR_A_CHANGE_CHANNEL) {
+        sensor_a_hit++;
+    } else if (id == ZT_SENSOR_B_UPDATE_CHANNEL) {
+        sensor_b_hit++;
+    }
 }
 
 ZT_SERVICE_INIT(HAL, HAL_task, HAL_service_callback);
 ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);
+ZT_SERVICE_INIT(APP, APP_task, APP_service_callback);

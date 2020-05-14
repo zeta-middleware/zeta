@@ -39,11 +39,11 @@ void NET_task()
     while (1) {
         manual_load_control[0] = 1;
         printk("on\n");
-        zt_channel_publish(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
+        zt_chan_raw_pub(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
         k_sleep(K_SECONDS(5));
         printk("off\n");
         manual_load_control[0] = 0;
-        zt_channel_publish(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
+        zt_chan_raw_pub(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
         k_sleep(K_SECONDS(10));
     }
 }

@@ -328,7 +328,7 @@ const char *zt_channel_name(zt_channel_e id, int *error);
  * @retval -EPERM  Channel hasn't read function implemented
  * @retval -EINVAL Size passed is different to channel size
  */
-int zt_channel_data_read(zt_channel_e id, zt_data_t *channel_data);
+int zt_chan_read(zt_channel_e id, zt_data_t *channel_data);
 
 /**
  * @brief Read channel value.
@@ -343,7 +343,7 @@ int zt_channel_data_read(zt_channel_e id, zt_data_t *channel_data);
  * @retval -EPERM  Channel hasn't read function implemented
  * @retval -EINVAL Size passed is different to channel size
  */
-int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size);
+int zt_chan_raw_read(zt_channel_e id, u8_t *channel_value, size_t size);
 
 /**
  * @brief Publish channel value.
@@ -359,7 +359,7 @@ int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size);
  * @retval -EINVAL Size passed is different to channel size
  * @retval -EAGAIN Valid function returns false
  */
-int zt_channel_data_publish(zt_channel_e id, zt_data_t *channel_data);
+int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data);
 
 /**
  * @brief Publish channel value.
@@ -376,7 +376,7 @@ int zt_channel_data_publish(zt_channel_e id, zt_data_t *channel_data);
  * @retval -EINVAL Size passed is different to channel size
  * @retval -EAGAIN Valid function returns false
  */
-int zt_channel_publish(zt_channel_e id, u8_t *channel_value, size_t size);
+int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size);
 
 // <ZT_CODE_INJECTION>$services_reference// </ZT_CODE_INJECTION>
 

@@ -35,9 +35,8 @@ LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 static void __zt_channels_thread(void);
 static void __zt_storage_thread(void);
-static int __zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size);
-static int __zt_channel_publish_private(zt_channel_e id, u8_t *channel_value,
-                                        size_t size);
+static int __zt_chan_raw_read_private(zt_channel_e id, u8_t *channel_value, size_t size);
+static int __zt_chan_raw_private(zt_channel_e id, u8_t *channel_value, size_t size);
 
 K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
                 __zt_channels_thread, NULL, NULL, NULL, ZT_THREADS_PRIORITY, 0,
@@ -90,12 +89,12 @@ size_t zt_channel_size(zt_channel_e id, int *error)
     }
 }
 
-int zt_channel_data_read(zt_channel_e id, zt_data_t *channel_data)
+int zt_chan_read(zt_channel_e id, zt_data_t *channel_data)
 {
-    return zt_channel_read(id, channel_data->bytes.value, channel_data->bytes.size);
+    return zt_chan_raw_read(id, channel_data->bytes.value, channel_data->bytes.size);
 }
 
-int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size)
+int zt_chan_raw_read(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     if (id < ZT_CHANNEL_COUNT) {
         int error             = 0;
@@ -125,7 +124,7 @@ int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size)
     }
 }
 
-static int __zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_t size)
+static int __zt_chan_raw_read_private(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     int ret               = 0;
     zt_channel_t *channel = &__zt_channels[id];
@@ -139,12 +138,12 @@ static int __zt_channel_read_private(zt_channel_e id, u8_t *channel_value, size_
     return ret;
 }
 
-int zt_channel_data_publish(zt_channel_e id, zt_data_t *channel_data)
+int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
 {
-    return zt_channel_publish(id, channel_data->bytes.value, channel_data->bytes.size);
+    return zt_chan_raw_pub(id, channel_data->bytes.value, channel_data->bytes.size);
 }
 
-int zt_channel_publish(zt_channel_e id, u8_t *channel_value, size_t size)
+int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     if (id < ZT_CHANNEL_COUNT) {
         int error             = 0;
@@ -187,7 +186,7 @@ int zt_channel_publish(zt_channel_e id, u8_t *channel_value, size_t size)
     }
 }
 
-static int __zt_channel_publish_private(zt_channel_e id, u8_t *channel_value, size_t size)
+static int __zt_chan_raw_private(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     int ret               = 0;
     zt_channel_t *channel = &__zt_channels[id];

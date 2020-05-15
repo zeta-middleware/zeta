@@ -370,7 +370,7 @@ class ZetaCLI(object):
     def init(self):
         parser = argparse.ArgumentParser(
             description='''Run this command on the project root directory.
-It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
+            It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
             usage='zeta init')
         project_dir = "."
         args = parser.parse_args(sys.argv[2:])
@@ -399,7 +399,7 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
         parser = argparse.ArgumentParser(
             description=
             '''Run this command to check all the zeta configuration''',
-            usage='zeta init')
+            usage='zeta check')
         parser.add_argument(
             '-s',
             '--src_dir',

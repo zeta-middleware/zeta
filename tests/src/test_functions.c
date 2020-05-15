@@ -185,21 +185,21 @@ void HAL_task(void)
 
     /* Testing react_on field on SENSOR_A_CHANGE creation */
     data  = 1;
-    error = zt_channel_publish(ZT_SENSOR_A_CHANGE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    error = zt_chan_raw_pub(ZT_SENSOR_A_CHANGE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
     zassert_equal(error, 0, "Error executing a valid publish call!\n");
     zassert_equal(
         sensor_a_hit, 1,
         "APP callback was not called with a valid call(value different from existent)\n");
-    zt_channel_publish(ZT_SENSOR_A_CHANGE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    zt_chan_raw_pub(ZT_SENSOR_A_CHANGE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
     zassert_equal(sensor_a_hit, 1,
                   "APP callback was called on a publish procedure without changes on "
                   "channel value!\n");
 
     /* Testing react_on field on SENSOR_B_UPDATE creation  */
-    error = zt_channel_publish(ZT_SENSOR_B_UPDATE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    error = zt_chan_raw_pub(ZT_SENSOR_B_UPDATE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
     zassert_equal(error, 0, "Error executing a valid publish call!\n");
     zassert_equal(sensor_b_hit, 1, "APP callback was not called with a valid call\n");
-    zt_channel_publish(ZT_SENSOR_B_UPDATE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
+    zt_chan_raw_pub(ZT_SENSOR_B_UPDATE_CHANNEL, (u8_t *) &data, sizeof(u8_t));
     zassert_equal(sensor_b_hit, 2,
                   "APP callback was not called on a channel that react on update!\n");
 

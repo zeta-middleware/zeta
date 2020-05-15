@@ -270,12 +270,14 @@ typedef struct zt_service zt_service_t;
 /**
  * @brief Define pendent options that a channel can have.
  */
-union opt_data {
+union flag_data {
     struct {
         u8_t pend_persistent : 1; /**< Active represent that channel must be saved in
                                      flash by zeta_thread_nvs */
         u8_t pend_callback : 1;   /**< Active represent that services callbacks from
                                      subscribers must be called by zeta_thread */
+        u8_t react_on : 1;        /**< Active represent that the service callback will
+                                              be called on change and not on update */
     } field;
     u8_t data; /**< Raw data */
 };
@@ -301,7 +303,7 @@ struct zt_channel {
                        size_t size); /**< Called after some publish call */
     u8_t size;                       /**< Channel size */
     u8_t persistent;                 /**< Persistent type */
-    union opt_data opt;              /**< Pendent options */
+    union flag_data flag;            /**< Options */
     struct k_sem *sem;               /**< Preserve shared-memory */
     zt_service_t **publishers;       /**< Publishers */
     zt_service_t **subscribers;      /**< Subscribers */
@@ -341,7 +343,7 @@ const char *zt_channel_name(zt_channel_e id, int *error);
  * @retval -EPERM  Channel hasn't read function implemented
  * @retval -EINVAL Size passed is different to channel size
  */
-int zt_channel_data_read(zt_channel_e id, zt_data_t *channel_data);
+int zt_chan_read(zt_channel_e id, zt_data_t *channel_data);
 
 /**
  * @brief Read channel value.
@@ -356,7 +358,7 @@ int zt_channel_data_read(zt_channel_e id, zt_data_t *channel_data);
  * @retval -EPERM  Channel hasn't read function implemented
  * @retval -EINVAL Size passed is different to channel size
  */
-int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size);
+int zt_chan_raw_read(zt_channel_e id, u8_t *channel_value, size_t size);
 
 /**
  * @brief Publish channel value.
@@ -372,7 +374,7 @@ int zt_channel_read(zt_channel_e id, u8_t *channel_value, size_t size);
  * @retval -EINVAL Size passed is different to channel size
  * @retval -EAGAIN Valid function returns false
  */
-int zt_channel_data_publish(zt_channel_e id, zt_data_t *channel_data);
+int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data);
 
 /**
  * @brief Publish channel value.
@@ -389,7 +391,7 @@ int zt_channel_data_publish(zt_channel_e id, zt_data_t *channel_data);
  * @retval -EINVAL Size passed is different to channel size
  * @retval -EAGAIN Valid function returns false
  */
-int zt_channel_publish(zt_channel_e id, u8_t *channel_value, size_t size);
+int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size);
 
 // <ZT_CODE_INJECTION>$services_reference// </ZT_CODE_INJECTION>
 

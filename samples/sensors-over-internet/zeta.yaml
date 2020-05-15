@@ -1,0 +1,48 @@
+Config:
+  nvs_sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  nvs_sector_count: 4
+  nvs_storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+
+Channels:
+  - FIRMWARE_VERSION:
+      size: 4
+      publish: 'NULL'
+      initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
+  - SENSOR_A:
+      size: 1
+  - SENSOR_B:
+      size: 1
+  - SENSOR_C:
+      size: 4
+  - NET_REQUEST:
+      size: 1
+  - NET_RESPONSE:
+      size: 5
+        
+Services:
+  - CORE:
+      priority: 2
+      stack_size: 512
+      sub_channels:
+        - !ref SENSOR_A
+        - !ref SENSOR_B
+        - !ref SENSOR_C
+        - !ref NET_REQUEST
+      pub_channels:
+        - !ref NET_RESPONSE
+  - BOARD:
+      priority: 1
+      stack_size: 512
+      pub_channels:
+        - !ref SENSOR_A
+        - !ref SENSOR_B
+        - !ref SENSOR_C
+  - NET:
+      priority: 3
+      stack_size: 512
+      pub_channels:
+        - !ref NET_REQUEST
+      sub_channels:
+        - !ref NET_RESPONSE
+      
+

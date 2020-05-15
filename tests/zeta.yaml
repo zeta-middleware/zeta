@@ -23,17 +23,31 @@ Channels:
       pos_read: 'pos_read_data_val'
       publish: 'NULL'
 
+  - SENSOR_A_CHANGE:
+      size: 1
+      react_on: change
+  - SENSOR_B_UPDATE:
+      size: 1
+      react_on: update
+
 Services:
   - CORE: 
       priority: 5
       stack_size: 512
       sub_channels:
-          - !ref POWER_VAL
+        - !ref POWER_VAL
   - HAL:
       priority: 2
       stack_size: 1024
       pub_channels:
-          - !ref POWER_VAL
+        - !ref POWER_VAL
+        - !ref SENSOR_A_CHANGE
+        - !ref SENSOR_B_UPDATE
+
   - APP:
       priority: 1
       stack_size: 2048
+      sub_channels:
+        - !ref SENSOR_A_CHANGE
+        - !ref SENSOR_B_UPDATE      
+        

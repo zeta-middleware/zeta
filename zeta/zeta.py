@@ -33,11 +33,12 @@ class Channel(object):
                  initial_value=None,
                  validate='NULL',
                  pre_read='NULL',
-                 read='__zt_channel_read_private',
+                 read='__zt_chan_raw_read_private',
                  pos_read='NULL',
                  pre_publish='NULL',
-                 publish='__zt_channel_publish_private',
+                 publish='__zt_chan_raw_private',
                  pos_publish='NULL',
+                 react_on='update',
                  size=1,
                  persistent=0):
         self.name = name.strip()
@@ -48,6 +49,7 @@ class Channel(object):
         self.pre_publish = pre_publish
         self.publish = publish
         self.pos_publish = pos_publish
+        self.react_on = react_on
         self.size = size
         self.persistent = 1 if persistent else 0
         self.sem = f"zt_{name.lower()}_channel_sem"
@@ -227,6 +229,12 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
         for channel in self.zeta.channels:
             data_alloc = f"static u8_t __{channel.name.lower()}_data[] = {{{', '.join(channel.initial_value)}}};"
             channel.data = f"__{channel.name.lower()}_data"
+            channel.flag = 0x00
+            if channel.react_on == 'change' :
+                channel.flag = channel.flag | (1 << 2)
+            elif channel.react_on != 'update' :
+                raise Exception(f"[ZETA ERROR]: Failed to generate zeta.c. The field react_on has an invalid value: {channel.react_on}.")
+
             subscribers_alloc = "NULL"
             if len(channel.sub_services_obj) > 0:
                 subscribers_alloc = [
@@ -275,6 +283,7 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
         .pre_publish = {pre_publish},
         .publish = {publish},
         .pos_publish = {pos_publish},
+        .flag = {{.data = {flag}}},
         .size = {size},
         .persistent = {persistent},
         .sem = &{sem},
@@ -364,7 +373,7 @@ class ZetaCLI(object):
     def init(self):
         parser = argparse.ArgumentParser(
             description='''Run this command on the project root directory.
-It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
+            It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
             usage='zeta init')
         project_dir = "."
         args = parser.parse_args(sys.argv[2:])
@@ -393,7 +402,7 @@ It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on t
         parser = argparse.ArgumentParser(
             description=
             '''Run this command to check all the zeta configuration''',
-            usage='zeta init')
+            usage='zeta check')
         parser.add_argument(
             '-s',
             '--src_dir',

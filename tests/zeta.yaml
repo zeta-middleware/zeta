@@ -1,7 +1,8 @@
 Config:
-  nvs_sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
-  nvs_sector_count: 4
-  nvs_storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  sector_count: 4
+  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+  storage_sleep_time: 17
       
 Channels:
   - FIRMWARE_VERSION:

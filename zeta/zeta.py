@@ -82,12 +82,14 @@ class Service(object):
 
 class Config(object):
     def __init__(self,
-                 nvs_sector_size='DT_FLASH_ERASE_BLOCK_SIZE',
-                 nvs_sector_count=4,
-                 nvs_storage_offset='DT_FLASH_AREA_STORAGE_OFFSET'):
-        self.nvs_sector_size = nvs_sector_size
-        self.nvs_sector_count = nvs_sector_count
-        self.nvs_storage_offset = nvs_storage_offset
+                 sector_size='DT_FLASH_ERASE_BLOCK_SIZE',
+                 sector_count=4,
+                 storage_offset='DT_FLASH_AREA_STORAGE_OFFSET',
+                 storage_sleep_time=30):
+        self.sector_size = sector_size
+        self.sector_count = sector_count
+        self.storage_offset = storage_offset
+        self.storage_sleep_time = storage_sleep_time
 
 
 class Zeta(object):
@@ -194,6 +196,7 @@ extern zt_service_t {name}_service;
 /* END {name} SECTION */
 '''
         self.substitutions['services_reference'] = self.services_reference
+        self.substitutions['storage_sleep_time'] = self.zeta.config.storage_sleep_time
 
 
 class ZetaSource(SourceFileFactory):
@@ -297,9 +300,9 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
 '''
 
     def gen_nvs_config(self):
-        self.sector_size = self.zeta.config.nvs_sector_size
-        self.sector_count = self.zeta.config.nvs_sector_count
-        self.storage_offset = self.zeta.config.nvs_storage_offset
+        self.sector_size = self.zeta.config.sector_size
+        self.sector_count = self.zeta.config.sector_count
+        self.storage_offset = self.zeta.config.storage_offset
 
     def create_substitutions(self):
         self.gen_nvs_config()
@@ -307,9 +310,9 @@ static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
         self.gen_creation()
         self.substitutions['channels_creation'] = self.channels_creation
         self.substitutions['channels_sems'] = self.channels_sems
-        self.substitutions['nvs_sector_size'] = self.sector_size
-        self.substitutions['nvs_sector_count'] = self.sector_count
-        self.substitutions['nvs_storage_offset'] = self.storage_offset
+        self.substitutions['sector_size'] = self.sector_size
+        self.substitutions['sector_count'] = self.sector_count
+        self.substitutions['storage_offset'] = self.storage_offset
         self.substitutions['set_publishers'] = self.set_publishers
         self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init

@@ -37,10 +37,23 @@
 #define ZT_CHANNELS_THREAD_STACK_SIZE 512
 
 /**
- * @brief Priority that is used for all Zeta threads.
+ * @brief Storage thread priority.
  *
  */
-#define ZT_THREADS_PRIORITY 0
+#define ZT_STORAGE_THREAD_PRIORITY 1
+
+/**
+ * @brief Storage sleep time.
+ *
+ */
+#define ZT_STORAGE_SLEEP_TIME $storage_sleep_time
+
+/**
+ * @brief Channels thread priority
+ *
+ */
+#define ZT_CHANNELS_THREAD_PRIORITY 0
+
 
 /**
  * @brief Initialize a zeta service.

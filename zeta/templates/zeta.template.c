@@ -27,9 +27,9 @@ LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 // <ZT_CODE_INJECTION>$arrays_init// </ZT_CODE_INJECTION>
 
-#define NVS_SECTOR_SIZE $nvs_sector_size
-#define NVS_SECTOR_COUNT $nvs_sector_count
-#define NVS_STORAGE_OFFSET $nvs_storage_offset
+#define NVS_SECTOR_SIZE $sector_size
+#define NVS_SECTOR_COUNT $sector_count
+#define NVS_STORAGE_OFFSET $storage_offset
 
 // <ZT_CODE_INJECTION>$channels_sems// </ZT_CODE_INJECTION>
 
@@ -39,11 +39,11 @@ static int __zt_chan_raw_read_private(zt_channel_e id, u8_t *channel_value, size
 static int __zt_chan_raw_private(zt_channel_e id, u8_t *channel_value, size_t size);
 
 K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
-                __zt_channels_thread, NULL, NULL, NULL, ZT_THREADS_PRIORITY, 0,
+                __zt_channels_thread, NULL, NULL, NULL, ZT_CHANNELS_THREAD_PRIORITY, 0,
                 K_NO_WAIT);
 
 K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage_thread,
-                NULL, NULL, NULL, ZT_THREADS_PRIORITY, 0, K_NO_WAIT);
+                NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, K_NO_WAIT);
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
 
@@ -302,7 +302,7 @@ void __zt_storage_thread(void)
     __zt_recover_data_from_flash();
 
     while (1) {
-        k_sleep(K_SECONDS(10));
+        k_sleep(K_SECONDS(ZT_STORAGE_SLEEP_TIME));
         __zt_persist_data_on_flash();
     }
 }

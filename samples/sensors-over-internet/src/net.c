@@ -33,7 +33,7 @@ static void handle_net_requests(void)
     LOG_DBG("Getting a virtual packet request from net with id: %02X",
             packet_request->u8.value);
     LOG_DBG("Sending a net packet request to NET_REQUEST channel...");
-    zt_channel_data_publish(ZT_NET_REQUEST_CHANNEL, packet_request);
+    zt_chan_pub(ZT_NET_REQUEST_CHANNEL, packet_request);
 }
 
 static void net_handle_channel_callback(u8_t channel_id)
@@ -41,7 +41,7 @@ static void net_handle_channel_callback(u8_t channel_id)
     zt_data_t *net_response = ZT_DATA_BYTES(5, 0);
     switch (channel_id) {
     case ZT_NET_RESPONSE_CHANNEL:
-        zt_channel_data_read(channel_id, net_response);
+        zt_chan_read(channel_id, net_response);
         LOG_DBG("Net response received: %02X", net_response->bytes.value[0]);
         if (net_response->bytes.value[0] == 0xA0) {  // Requesting last A data
             LOG_DBG("Last sensor A data saved: %d", net_response->bytes.value[1]);

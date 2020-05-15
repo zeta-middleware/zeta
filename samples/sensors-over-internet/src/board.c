@@ -49,13 +49,13 @@ void BOARD_task()
 
     while (1) {
         data_a->u8.value = get_sensor_a();
-        zt_channel_data_publish(ZT_SENSOR_A_CHANNEL, data_a);
+        zt_chan_pub(ZT_SENSOR_A_CHANNEL, data_a);
 
         data_b->u8.value = get_sensor_b();
-        zt_channel_data_publish(ZT_SENSOR_B_CHANNEL, data_b);
+        zt_chan_pub(ZT_SENSOR_B_CHANNEL, data_b);
 
         data_c->u32.value = get_sensor_c();
-        zt_channel_data_publish(ZT_SENSOR_C_CHANNEL, data_c);
+        zt_chan_pub(ZT_SENSOR_C_CHANNEL, data_c);
         k_sleep(K_SECONDS(10));
     }
 }

@@ -58,25 +58,25 @@ static void core_handle_channel_callback(u8_t channel_id)
     zt_data_t *net_response = ZT_DATA_BYTES(5, 0);
     switch (channel_id) {
     case ZT_SENSOR_A_CHANNEL:
-        zt_channel_data_read(channel_id, data_u8);
+        zt_chan_read(channel_id, data_u8);
         ring_data_a[id_a] = data_u8->u8.value;
         id_a              = (id_a + 1) % MAX_RING_SIZE;
         LOG_DBG("Data received from sensor A: %d", data_u8->u8.value);
         break;
     case ZT_SENSOR_B_CHANNEL:
-        zt_channel_data_read(channel_id, data_u8);
+        zt_chan_read(channel_id, data_u8);
         ring_data_b[id_b] = data_u8->u8.value;
         id_b              = (id_b + 1) % MAX_RING_SIZE;
         LOG_DBG("Data received from sensor B: %d", data_u8->u8.value);
         break;
     case ZT_SENSOR_C_CHANNEL:
-        zt_channel_data_read(channel_id, data_u32);
+        zt_chan_read(channel_id, data_u32);
         ring_data_c[id_c] = data_u32->u32.value;
         id_c              = (id_c + 1) % MAX_RING_SIZE;
         LOG_DBG("Data received from sensor C: %d", data_u32->u32.value);
         break;
     case ZT_NET_REQUEST_CHANNEL:
-        zt_channel_data_read(channel_id, data_u8);
+        zt_chan_read(channel_id, data_u8);
         net_response->bytes.value[0] = data_u8->u8.value;
         if (data_u8->u8.value == 0xA0) {  // Requesting last A data
             net_response->bytes.value[1] =
@@ -100,7 +100,7 @@ static void core_handle_channel_callback(u8_t channel_id)
             LOG_DBG("Net request sent is invalid!");
         }
         LOG_DBG("Net request received with ID: %02X", data_u8->u8.value);
-        zt_channel_data_publish(ZT_NET_RESPONSE_CHANNEL, net_response);
+        zt_chan_pub(ZT_NET_RESPONSE_CHANNEL, net_response);
         break;
     default:
         break;

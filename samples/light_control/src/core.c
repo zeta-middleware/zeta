@@ -39,7 +39,7 @@ void CORE_task()
 {
     printk("Hello CORE!\n");
     zt_data_t *version = ZT_DATA_BYTES(4, 0);
-    zt_channel_data_read(ZT_FIRMWARE_VERSION_CHANNEL, version);
+    zt_chan_read(ZT_FIRMWARE_VERSION_CHANNEL, version);
     struct version *v = (struct version *) version->bytes.value;
     printk("Firmware version: %d.%d.%d\n", v->major, v->minor, v->build);
     zt_data_t *load        = ZT_DATA_U8(0);
@@ -47,18 +47,18 @@ void CORE_task()
     zt_data_t *mc          = ZT_DATA_U16(0);
     while (1) {
         k_sem_take(&core_event_sem, K_FOREVER);
-        zt_channel_data_read(ZT_MANUAL_LOAD_CONTROL_CHANNEL, mc);
+        zt_chan_read(ZT_MANUAL_LOAD_CONTROL_CHANNEL, mc);
         if (mc->bytes.value[0] == 1) {
             load->u8.value = mc->bytes.value[1];
             printk("[CORE]: Manual load control -> Load = %s\n",
                    load->u8.value ? "on" : "off");
         } else {
-            zt_channel_data_read(ZT_LIGHT_LEVEL_CHANNEL, light_level);
+            zt_chan_read(ZT_LIGHT_LEVEL_CHANNEL, light_level);
             load->u8.value = light_level->u8.value < 96;
             printk("[CORE]: Light level is %03u -> Load = %s\n", light_level->u8.value,
                    load->u8.value ? "on" : "off");
         }
-        zt_channel_data_publish(ZT_LOAD_CHANNEL, load);
+        zt_chan_pub(ZT_LOAD_CHANNEL, load);
     }
 }
 

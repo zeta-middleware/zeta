@@ -24,7 +24,7 @@ void PERIPHERAL_service_callback(zt_channel_e id)
     switch (id) {
     case ZT_LOAD_CHANNEL: {
         zt_data_t* load = ZT_DATA_U8(0);
-        zt_channel_data_read(ZT_LOAD_CHANNEL, load);
+        zt_chan_read(ZT_LOAD_CHANNEL, load);
         printk("[PERIPHERAL]: The load is turning %s\n", load->u8.value ? "on" : "off");
     } break;
     default:
@@ -41,7 +41,7 @@ void PERIPHERAL_task()
     zt_data_t* light_level = ZT_DATA_U8(0);
     while (1) {
         light_level->u8.value = light_level_sensor_fetch();
-        zt_channel_data_publish(ZT_LIGHT_LEVEL_CHANNEL, light_level);
+        zt_chan_pub(ZT_LIGHT_LEVEL_CHANNEL, light_level);
         k_sleep(K_SECONDS(2));
     }
 }

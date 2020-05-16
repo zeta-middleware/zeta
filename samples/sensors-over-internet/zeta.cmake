@@ -8,5 +8,7 @@ execute_process(COMMAND zeta gen -b "${CMAKE_CURRENT_LIST_DIR}/build"
                         ${CMAKE_CURRENT_LIST_DIR}/zeta.yaml)
 
 list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/build/zeta/include/")
+list(APPEND SOURCES "${CMAKE_CURRENT_LIST_DIR}/src/core.c" "${CMAKE_CURRENT_LIST_DIR}/src/board.c" "${CMAKE_CURRENT_LIST_DIR}/src/net.c")
 
-set(ZEPHYR_EXTRA_MODULES "${CMAKE_CURRENT_LIST_DIR}/build/zeta")
+set(ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/build/zeta")
+

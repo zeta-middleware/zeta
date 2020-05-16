@@ -1,21 +1,18 @@
 Config:
-  nvs_sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
-  nvs_sector_count: 4
-  nvs_storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  sector_count: 4
+  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
 
-Services:
-  - CORE: &core
-      name: 'CORE'
-      priority: 5
-      stack_size: 512
-  - HAL: &hal
-      name: 'HAL'
-      priority: 2
-      stack_size: 1024
-      
 Channels:
   - FIRMWARE_VERSION:
       size: 4
-      set: 'NULL'
+      publish: 'NULL'
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
         
+Services:
+  - CORE:
+      priority: 5
+      stack_size: 512
+  - BOARD:
+      priority: 1
+      stack_size: 512

@@ -1,0 +1,42 @@
+Config:
+  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  sector_count: 4
+  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+      
+Channels:
+  - FIRMWARE_VERSION:
+      size: 4
+      publish: 'NULL'
+      initial_value: [0x01, 0x00, 0x07, 0x00]
+  - LIGHT_LEVEL:
+      size: 1
+  - LOAD:
+      size: 1
+  - MANUAL_LOAD_CONTROL:
+      size: 2
+
+Services:
+  - CORE: 
+      priority: 4
+      stack_size: 512
+      pub_channels:
+          - !ref LOAD
+      sub_channels:
+          - !ref LIGHT_LEVEL
+          - !ref MANUAL_LOAD_CONTROL
+
+  - PERIPHERAL: 
+      priority: 3
+      stack_size: 1024
+      pub_channels:
+          - !ref LIGHT_LEVEL
+      sub_channels:
+          - !ref LOAD
+
+  - NET: 
+      priority: 5
+      stack_size: 512
+      pub_channels:
+          - !ref MANUAL_LOAD_CONTROL
+      sub_channels:
+          - !ref LOAD

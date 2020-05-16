@@ -1,2 +1,1 @@
-''' Version of the Zeta package '''
-__version__ = '0.1.35'
+__version__ = '0.2.0rc1'

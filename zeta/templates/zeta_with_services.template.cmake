@@ -4,9 +4,11 @@
 # ################################################################# #
 message("[ZETA]: Running zeta.cmake")
 
-execute_process(COMMAND zeta gen -b "${CMAKE_CURRENT_LIST_DIR}/build"
-                        ${CMAKE_CURRENT_LIST_DIR}/zeta.yaml)
+execute_process(COMMAND zeta gen -b "$${CMAKE_CURRENT_LIST_DIR}/build"
+                        $${CMAKE_CURRENT_LIST_DIR}/zeta.yaml)
 
-list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/build/zeta/include/")
+list(APPEND HEADERS "$${CMAKE_CURRENT_LIST_DIR}/build/zeta/include/")
+list(APPEND SOURCES ${services_sources})
 
-set(ZEPHYR_EXTRA_MODULES "${CMAKE_CURRENT_LIST_DIR}/build/zeta")
+set(ZEPHYR_EXTRA_MODULES "$${CMAKE_CURRENT_LIST_DIR}/build/zeta")
+

@@ -17,128 +17,382 @@
 #ifndef ZETA_H_
 #define ZETA_H_
 
+
 #include <stddef.h>
 #include <zephyr.h>
 #include <zephyr/types.h>
 
-#define ZETA_THREAD_NVS_STACK_SIZE 512
-#define ZETA_THREAD_STACK_SIZE 512
-#define ZETA_THREAD_PRIORITY 0
+/**
+ * @brief Stack size that is used in Zeta thread that manages the
+ * persistent data.
+ *
+ */
+#define ZT_STORAGE_THREAD_STACK_SIZE 512
 
-#define ZETA_VALUE_REF(x) (u8_t *) (&x), sizeof(x)
+/**
+ * @brief Stack size that is used in Zeta thread that manages
+ * channels callback calls.
+ *
+ */
+#define ZT_CHANNELS_THREAD_STACK_SIZE 512
 
-#define ZETA_CHECK_VAL(_p, _e, _err, ...) \
-    if (_p == _e) {                       \
-        LOG_INF(__VA_ARGS__);             \
-        return _err;                      \
+/**
+ * @brief Storage thread priority.
+ *
+ */
+#define ZT_STORAGE_THREAD_PRIORITY 1
+
+/**
+ * @brief Storage sleep time.
+ *
+ */
+#define ZT_STORAGE_SLEEP_TIME $storage_sleep_time
+
+/**
+ * @brief Channels thread priority
+ *
+ */
+#define ZT_CHANNELS_THREAD_PRIORITY 0
+
+
+/**
+ * @brief Initialize a zeta service.
+ *
+ * @param _name Service name
+ * @param _task Task pointer function
+ * @param _cb Callback to be called when some subscribed channel change
+ *
+ */
+#define ZT_SERVICE_INIT(_name, _task, _cb)                                          \
+    K_THREAD_DEFINE(_name##_thread_id, _name##_STACK_SIZE, _task, NULL, NULL, NULL, \
+                    _name##_TASK_PRIORITY, 0, K_NO_WAIT);                           \
+    zt_service_t _name##_service = {                                                \
+        .name = #_name, .cb = _cb, .thread_id = &_name##_thread_id}
+
+
+/**
+ * @brief Read variable reference and size easily to use in
+ * Zeta API.
+ *
+ * @param x variable name
+ *
+ */
+#define ZT_VARIABLE_REF_SIZE(x) (u8_t *) (&x), sizeof(x)
+
+/**
+ * @brief Check if _v value is equal to _c, otherwise _err will be
+ * returned and a message will be sent to LOG.
+ *
+ * @param _v Value
+ * @param _c Condition
+ * @param _err Error code
+ *
+ */
+#define ZT_CHECK_VAL(_p, _e, _err, ...) \
+    if (_p == _e) {                     \
+        LOG_INF(__VA_ARGS__);           \
+        return _err;                    \
     }
 
-#define ZETA_CHECK(_p, _err, ...) \
-    if (_p) {                     \
-        LOG_INF(__VA_ARGS__);     \
-        return _err;              \
+/**
+ * @brief Check if _v is true, otherwise _err will be returned and a
+ * message will be sent to LOG.
+ *
+ * @param _v Value
+ * @param _err Error code
+ *
+ * @return
+ */
+#define ZT_CHECK(_p, _err, ...) \
+    if (_p) {                   \
+        LOG_INF(__VA_ARGS__);   \
+        return _err;            \
     }
 
-//$channels_enum
+
+#define ZT_DATA_S8(data)               \
+    (zt_data_t *) (zt_data_s8_t[])     \
+    {                                  \
+        {                              \
+            sizeof(s8_t), (s8_t)(data) \
+        }                              \
+    }
+
+#define ZT_DATA_U8(data)               \
+    (zt_data_t *) (zt_data_u8_t[])     \
+    {                                  \
+        {                              \
+            sizeof(u8_t), (u8_t)(data) \
+        }                              \
+    }
+
+#define ZT_DATA_S16(data)                \
+    (zt_data_t *) (zt_data_s16_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s16_t), (s16_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_U16(data)                \
+    (zt_data_t *) (zt_data_u16_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u16_t), (u16_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_S32(data)                \
+    (zt_data_t *) (zt_data_s32_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s32_t), (s32_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_U32(data)                \
+    (zt_data_t *) (zt_data_u32_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u32_t), (u32_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_S64(data)                \
+    (zt_data_t *) (zt_data_s64_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s64_t), (s64_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_U64(data)                \
+    (zt_data_t *) (zt_data_u64_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u64_t), (u64_t)(data) \
+        }                                \
+    }
+
+#define ZT_DATA_BYTES(_size, data, ...) \
+    (zt_data_t *) (struct {             \
+        size_t size;                    \
+        u8_t value[_size];              \
+    }[])                                \
+    {                                   \
+        {                               \
+            _size,                      \
+            {                           \
+                data, ##__VA_ARGS__     \
+            }                           \
+        }                               \
+    }
 
 typedef struct {
-    k_tid_t source_thread;
-    zeta_channel_e id;
-} zeta_event_t;
+    size_t size;
+    s8_t value;
+} zt_data_s8_t;
 
-typedef void (*zeta_callback_f)(zeta_channel_e id);
+typedef struct {
+    size_t size;
+    u8_t value;
+} zt_data_u8_t;
 
-union opt_data {
+typedef struct {
+    size_t size;
+    s16_t value;
+} zt_data_s16_t;
+
+typedef struct {
+    size_t size;
+    u16_t value;
+} zt_data_u16_t;
+
+typedef struct {
+    size_t size;
+    s32_t value;
+} zt_data_s32_t;
+
+typedef struct {
+    size_t size;
+    u32_t value;
+} zt_data_u32_t;
+
+typedef struct {
+    size_t size;
+    s64_t value;
+} zt_data_s64_t;
+
+typedef struct {
+    size_t size;
+    u64_t value;
+} zt_data_u64_t;
+
+typedef struct {
+    size_t size;
+    u8_t value[];
+} zt_data_bytes_t;
+
+union data {
+    zt_data_s8_t s8;
+    zt_data_u8_t u8;
+    zt_data_s16_t s16;
+    zt_data_u16_t u16;
+    zt_data_s32_t s32;
+    zt_data_u32_t u32;
+    zt_data_s64_t s64;
+    zt_data_u64_t u64;
+    zt_data_bytes_t bytes;
+};
+
+typedef union data zt_data_t;
+
+// <ZT_CODE_INJECTION>$channels_enum// </ZT_CODE_INJECTION>
+
+/**
+ * @brief zeta_callback_f define the callback function type of Zeta.
+ *
+ * @param id Channel Id.
+ *
+ */
+typedef void (*zt_callback_f)(zt_channel_e id);
+
+/**
+ * @brief Define Zeta service type
+ */
+struct zt_service {
+    const char *name;         /**< Service name */
+    const k_tid_t *thread_id; /**< Service thread id */
+    zt_callback_f cb;         /**< Service callback */
+};
+typedef struct zt_service zt_service_t;
+
+/**
+ * @brief Define pendent options that a channel can have.
+ */
+union flag_data {
     struct {
-        u8_t pend_persistent : 1;
-        u8_t pend_callback : 1;
+        u8_t pend_persistent : 1; /**< Active represent that channel must be saved in
+                                     flash by zeta_thread_nvs */
+        u8_t pend_callback : 1;   /**< Active represent that services callbacks from
+                                     subscribers must be called by zeta_thread */
+        u8_t react_on : 1;        /**< Active represent that the service callback will
+                                              be called on change and not on update */
     } field;
-    u8_t data;
+    u8_t data; /**< Raw data */
 };
 
-struct zeta_channel {
-    const char *name;
-    u8_t *data;
-    int (*validate)(u8_t *data, size_t size);
-    int (*pre_get)(zeta_channel_e id, u8_t *channel_value, size_t size);
-    int (*get)(zeta_channel_e id, u8_t *channel_value, size_t size);
-    int (*pos_get)(zeta_channel_e id, u8_t *channel_value, size_t size);
-    int (*pre_set)(zeta_channel_e id, u8_t *channel_value, size_t size);
-    int (*set)(zeta_channel_e id, u8_t *channel_value, size_t size);
-    int (*pos_set)(zeta_channel_e id, u8_t *channel_value, size_t size);
-    u8_t size;
-    u8_t persistent;
-    union opt_data opt;
-    struct k_sem *sem;
-    const k_tid_t *publishers_id;
-    zeta_callback_f *subscribers_cbs;
-    zeta_channel_e id;
+/**
+ * @brief Define Zeta channel type
+ */
+struct zt_channel {
+    const char *name; /**< Channel name */
+    u8_t *data;       /**< Channel raw data */
+    int (*validate)(u8_t *data,
+                    size_t size); /**< Valid data sent to be publish to channel */
+    int (*pre_read)(zt_channel_e id, u8_t *channel_value,
+                    size_t size); /**< Called before some read call */
+    int (*read)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Read call */
+    int (*pos_read)(zt_channel_e id, u8_t *channel_value,
+                    size_t size); /**< Called after some read call */
+    int (*pre_publish)(zt_channel_e id, u8_t *channel_value,
+                       size_t size); /**< Called before some publish call */
+    int (*publish)(zt_channel_e id, u8_t *channel_value,
+                   size_t size); /**< Publish call */
+    int (*pos_publish)(zt_channel_e id, u8_t *channel_value,
+                       size_t size); /**< Called after some publish call */
+    u8_t size;                       /**< Channel size */
+    u8_t persistent;                 /**< Persistent type */
+    union flag_data flag;            /**< Options */
+    struct k_sem *sem;               /**< Preserve shared-memory */
+    zt_service_t **publishers;       /**< Publishers */
+    zt_service_t **subscribers;      /**< Subscribers */
+    zt_channel_e id;                 /**< Channel Id */
 };
-typedef struct zeta_channel zeta_channel_t;
+typedef struct zt_channel zt_channel_t;
 
 /**
- * Returns the channel size.
+ * @brief Return the channel size.
  *
- * @param id channel ID.
- * @param error variable to handle possible errors.
+ * @param id Channel Id
+ * @param error Handle possible errors
  *
- * @return channel size.
+ * @return Channel size
  */
-size_t zeta_channel_size(zeta_channel_e id, int *error);
+size_t zt_channel_size(zt_channel_e id, int *error);
 
 /**
- * Returns the channel name
+ * @brief Return the channel name.
  *
- * @param id id channel id
+ * @param id Channel Id
+ * @param error Handle possible errors
  *
- * @return channel name
+ * @return Channel name
  */
-const char *zeta_channel_name(zeta_channel_e id, int *error);
+const char *zt_channel_name(zt_channel_e id, int *error);
 
 /**
- * Gets the channel value.
+ * @brief Read channel value.
  *
- * @param id channel ID.
- * @param channel_value handle the channel value.
- * @param size channel value size.
+ * @param id Channel Id
+ * @param channel_data pointer to a zt_data_t where the data will be retrieved.
  *
- * @return error code.
+ * @return Error code
+ * @retval -ENODATA The channel was not found
+ * @retval -EFAULT Channel value is NULL
+ * @retval -EPERM  Channel hasn't read function implemented
+ * @retval -EINVAL Size passed is different to channel size
  */
-int zeta_channel_get(zeta_channel_e id, u8_t *channel_value, size_t size);
+int zt_chan_read(zt_channel_e id, zt_data_t *channel_data);
 
 /**
- * Gets the channel value private.
+ * @brief Read channel value.
  *
- * @param id channel ID.
- * @param channel_value handle the channel value.
- * @param size channel value size.
+ * @param id Channel Id
+ * @param channel_value Handle channel value
+ * @param size Channel size
  *
- * @return error code.
+ * @return Error code
+ * @retval -ENODATA The channel was not found
+ * @retval -EFAULT Channel value is NULL
+ * @retval -EPERM  Channel hasn't read function implemented
+ * @retval -EINVAL Size passed is different to channel size
  */
-/* int zeta_channel_get_private(zeta_channel_e id, u8_t *channel_value, size_t size); */
+int zt_chan_raw_read(zt_channel_e id, u8_t *channel_value, size_t size);
 
 /**
- * Sets the channel value.
+ * @brief Publish channel value.
  *
- * @param id channel ID.
- * @param channel_value channel value that must to be setted.
- * @param size channel value size.
+ * @param id Channel Id
+ * @param channel_data pointer to a zt_data_t where the data is.
  *
- * @return error code.
+ * @return Error code
+ * @retval -ENODATA The channel was not found
+ * @retval -EACCESS Current thread hasn't permission to publish this channel
+ * @retval -EFAULT Channel value is NULL
+ * @retval -EPERM Channel is read only
+ * @retval -EINVAL Size passed is different to channel size
+ * @retval -EAGAIN Valid function returns false
  */
-int zeta_channel_set(zeta_channel_e id, u8_t *channel_value, size_t size);
-
+int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data);
 
 /**
- * Sets the channel value private.
+ * @brief Publish channel value.
  *
- * @param id channel ID.
- * @param channel_value channel value that must to be setted.
- * @param size channel value size.
+ * @param id Channel Id
+ * @param channel_value New channel value
+ * @param size Channel size
  *
- * @return error code.
+ * @return Error code
+ * @retval -ENODATA The channel was not found
+ * @retval -EACCESS Current thread hasn't permission to publish this channel
+ * @retval -EFAULT Channel value is NULL
+ * @retval -EPERM Channel is read only
+ * @retval -EINVAL Size passed is different to channel size
+ * @retval -EAGAIN Valid function returns false
  */
-/* int zeta_channel_set_private(zeta_channel_e id, u8_t *channel_value, size_t size); */
+int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size);
 
+// <ZT_CODE_INJECTION>$services_reference// </ZT_CODE_INJECTION>
 
 #endif

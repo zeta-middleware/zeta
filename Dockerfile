@@ -29,7 +29,7 @@ RUN sudo apt-get install -y tzdata
 RUN sudo apt-get install -y --no-install-recommends git ninja-build gperf \
   ccache dfu-util wget \
   python3-pip python3-setuptools python3-tk python3-wheel xz-utils file \
-  make gcc gcc-multilib g++-multilib libsdl2-dev build-essential
+  make gcc gcc-multilib g++-multilib libsdl2-dev build-essential python3-dev
 
 ## Changing workspace to tmp
 RUN mkdir -p ${USER_HOME}/tmp
@@ -58,7 +58,7 @@ RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/RC
 
 # Getting zephyr and creating the environment 
 #TODO: Ponto de falha por sempre utilizar o requirements do master. Isso foi feito pois em versões antigas do zephyr os requirements estavam quebrados.
-RUN git clone -q -b v2.2-branch --single-branch https://github.com/zephyrproject-rtos/zephyr ${ZEPHYR_BASE}
+RUN git clone -q -b zephyr-v2.2.0 --single-branch https://github.com/zephyrproject-rtos/zephyr ${ZEPHYR_BASE}
 RUN pip3 install wheel && \
         #wget -q https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/master/scripts/requirements.txt && \
 	pip3 install -r ${ZEPHYR_BASE}/scripts/requirements.txt && \
@@ -79,11 +79,7 @@ ENV LC_ALL en_US.UTF-8
 
 # Going to workdirectory
 WORKDIR ${APP}
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY zeta-run-tests.sh /zeta-run-tests.sh
 COPY . .
 
-# Building and installing zeta-cli
-RUN python3 setup.py sdist bdist_wheel 
-RUN cd dist/ && pip3 install *.whl && cd ../
-
-CMD ["/docker-entrypoint.sh"]
+CMD ["/zeta-run-tests.sh"]

@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import argparse
 import subprocess
-import re
-from zeta import __version__
+
+import yaml
 
 
 def sh(args, timeout=None, check_result=True):
@@ -13,18 +13,21 @@ def sh(args, timeout=None, check_result=True):
     return res
 
 
-def inc_version():
-    version_str = "''' Version of the Zeta package '''\n__version__ = '{0}.{1}.{2}'\n"
-    with open("zeta/_version.py", "r+") as pkg_version_file:
-        match_result = re.match(r".*\n?__version__ = '(\d+).(\d+).(\d+)'\n?",
-                                pkg_version_file.read())
-        assert match_result is not None, (-1, "Version file seems to be wrong")
-        major = int(match_result.group(1))
-        minor = int(match_result.group(2))
-        micro = int(match_result.group(3))
-        pkg_version_file.seek(0)
-        pkg_version_file.write(version_str.format(major, minor, micro + 1))
-        pkg_version_file.truncate()
+def generate_file_version(inc=True):
+    v = None
+    with open("version.yaml", "r+") as pkg_version_file:
+        v = yaml.load(pkg_version_file, Loader=yaml.CLoader)
+        if inc:
+            v['build'] += 1
+            pkg_version_file.seek(0)
+            pkg_version_file.write(yaml.dump(v))
+            pkg_version_file.truncate()
+    with open("zeta/_version.py", "w") as version_file:
+        release_candidate = ""
+        if v['release_candidate'] > 0:
+            release_candidate = f"rc{v['release_candidate']}"
+        version_file.write("__version__ = " +
+                           f"'{v['major']}.{v['minor']}.{v['build']}{release_candidate}'")
 
 
 if __name__ == "__main__":
@@ -51,14 +54,17 @@ if __name__ == "__main__":
                         action="store_true")
     args = parser.parse_args()
     if args.version:
+        generate_file_version(inc=False)
+        from zeta import __version__
         print(f"[PIP cli]: The current Zeta version is {__version__}")
 
     if args.dist_inc:
         print("[PIP cli]: increment build version for the package")
-        inc_version()
+        generate_file_version(inc=True)
 
     if args.dist or args.dist_inc:
         print("[PIP cli]: generating pip package")
+        generate_file_version(inc=False)
         sh("rm -rf dist", check_result=False)
         sh("python3 setup.py sdist bdist_wheel")
 

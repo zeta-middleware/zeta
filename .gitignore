@@ -36,5 +36,6 @@ dist/
 zeta_cli.egg-info/
 venv/
 __pycache__/
+.mypy_cache/
 .clangd/
 compile_commands.json

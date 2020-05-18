@@ -94,10 +94,10 @@ void NET_task()
     LOG_DBG("NET Service has started...[OK]");
     u8_t channel_id = 0;
     while (1) {
-        k_msgq_get(&NET_callback_msgq, &channel_id, K_SECONDS(1));
+        k_msgq_get(&NET_callback_msgq, &channel_id, K_NO_WAIT);
         net_handle_channel_callback(channel_id);
         handle_net_requests();
-        k_sleep(K_SECONDS(2));
+        k_sleep(K_SECONDS(10));
     }
 }
 

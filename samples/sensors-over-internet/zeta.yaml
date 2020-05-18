@@ -10,6 +10,7 @@ Channels:
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
   - SENSOR_A:
       size: 1
+      persistent: true
   - SENSOR_B:
       size: 1
   - SENSOR_C:
@@ -18,6 +19,7 @@ Channels:
       size: 1
   - NET_RESPONSE:
       size: 5
+      persistent: true
         
 Services:
   - CORE:

@@ -1,0 +1,92 @@
+Config:
+  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  sector_count: 4
+  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+
+Channels:
+  - FIRMWARE_VERSION:
+      size: 1
+  - PING_DATA_1:
+      size: 1
+  - PONG_DATA_1:
+      size: 1
+  - PING_DATA_2:
+      size: 2
+  - PONG_DATA_2:
+      size: 2
+  - PING_DATA_4:
+      size: 4
+  - PONG_DATA_4:
+      size: 4
+  - PING_DATA_8:
+      size: 8
+  - PONG_DATA_8:
+      size: 8
+  - PING_DATA_16:
+      size: 16
+  - PONG_DATA_16:
+      size: 16
+  - PING_DATA_32:
+      size: 32
+  - PONG_DATA_32:
+      size: 32
+  - PING_DATA_64:
+      size: 64
+  - PONG_DATA_64:
+      size: 64
+  - PING_DATA_128:
+      size: 128
+  - PONG_DATA_128:
+      size: 128
+  - PING_DATA_255:
+      size: 255
+  - PONG_DATA_255:
+      size: 255
+Services:
+  - PING:
+      priority: 5
+      stack_size: 4512
+      pub_channels:
+          - !ref PING_DATA_1
+          - !ref PING_DATA_2
+          - !ref PING_DATA_4
+          - !ref PING_DATA_8
+          - !ref PING_DATA_16
+          - !ref PING_DATA_32
+          - !ref PING_DATA_64
+          - !ref PING_DATA_128
+          - !ref PING_DATA_255
+      sub_channels:
+          - !ref PONG_DATA_1
+          - !ref PONG_DATA_2
+          - !ref PONG_DATA_4
+          - !ref PONG_DATA_8
+          - !ref PONG_DATA_16
+          - !ref PONG_DATA_32
+          - !ref PONG_DATA_64
+          - !ref PONG_DATA_128
+          - !ref PONG_DATA_255
+
+  - PONG:
+      priority: 5
+      stack_size: 4512
+      sub_channels:
+          - !ref PING_DATA_1
+          - !ref PING_DATA_2
+          - !ref PING_DATA_4
+          - !ref PING_DATA_8
+          - !ref PING_DATA_16
+          - !ref PING_DATA_32
+          - !ref PING_DATA_64
+          - !ref PING_DATA_128
+          - !ref PING_DATA_255
+      pub_channels:
+          - !ref PONG_DATA_1
+          - !ref PONG_DATA_2
+          - !ref PONG_DATA_4
+          - !ref PONG_DATA_8
+          - !ref PONG_DATA_16
+          - !ref PONG_DATA_32
+          - !ref PONG_DATA_64
+          - !ref PONG_DATA_128
+          - !ref PONG_DATA_255

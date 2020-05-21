@@ -1,0 +1,157 @@
+Config:
+  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
+  sector_count: 4
+  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
+
+Channels:
+  - FIRMWARE_VERSION:
+      size: 1
+  - PING:
+      size: 4
+  - PONG:
+      size: 4
+  - C01:
+      size: 4
+  - C02:
+      size: 4
+  - C03:
+      size: 4
+  - C04:
+      size: 4
+  - C05:
+      size: 4
+  - C06:
+      size: 4
+  - C07:
+      size: 4
+  - C08:
+      size: 4
+  - C09:
+      size: 4
+  - C10:
+      size: 4
+Services:
+  - PING:
+      priority: 5
+      stack_size: 512
+      pub_channels:
+          - !ref PING
+          - !ref C01
+          - !ref C02
+          - !ref C03
+          - !ref C04
+          - !ref C05
+          - !ref C06
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+      sub_channels:
+          - !ref PONG
+  - S02:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C02
+          - !ref C03
+          - !ref C04
+          - !ref C05
+          - !ref C06
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+  - S03:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C03
+          - !ref C04
+          - !ref C05
+          - !ref C06
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+  - S04:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C04
+          - !ref C05
+          - !ref C06
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+  - S05:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C05
+          - !ref C06
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+  - S06:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C06
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+  - S07:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+  - S08:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C08
+          - !ref C09
+          - !ref C10
+
+  - S09:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C09
+          - !ref C10
+
+  - S10:
+      priority: 5
+      stack_size: 512
+      sub_channels:
+          - !ref C10
+
+  - PONG:
+      priority: 5
+      stack_size: 512
+      pub_channels:
+          - !ref PONG
+      sub_channels:
+          - !ref C01
+          - !ref C02
+          - !ref C03
+          - !ref C04
+          - !ref C05
+          - !ref C06
+          - !ref C07
+          - !ref C08
+          - !ref C09
+          - !ref C10

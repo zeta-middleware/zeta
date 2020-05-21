@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def plot():
     xs = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
-    ys = [13, 17, 22, 26, 31, 35, 40, 45, 49, 55]
+    ys = [14, 19, 23, 28, 33, 38, 42, 47, 52, 57]
     plt.bar(xs, ys)  #, color=(0.4, 0.4, 0.4, 1.0))
     for x, y in zip(xs, ys):
         plt.text(x, y + 1, r"{0}".format(y), horizontalalignment='center')

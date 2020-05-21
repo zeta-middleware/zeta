@@ -65,7 +65,7 @@
  */
 #define ZT_SERVICE_INIT(_name, _task, _cb)                                          \
     K_THREAD_DEFINE(_name##_thread_id, _name##_STACK_SIZE, _task, NULL, NULL, NULL, \
-                    _name##_TASK_PRIORITY, 0, K_NO_WAIT);                           \
+                    _name##_TASK_PRIORITY, 0, 0);                                   \
     zt_service_t _name##_service = {                                                \
         .name = #_name, .cb = _cb, .thread_id = &_name##_thread_id}
 

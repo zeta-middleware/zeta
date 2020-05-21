@@ -40,10 +40,10 @@ static int __zt_chan_raw_private(zt_channel_e id, u8_t *channel_value, size_t si
 
 K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
                 __zt_channels_thread, NULL, NULL, NULL, ZT_CHANNELS_THREAD_PRIORITY, 0,
-                K_NO_WAIT);
+                0);
 
 K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage_thread,
-                NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, K_NO_WAIT);
+                NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, 0);
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
 
@@ -293,7 +293,7 @@ void __zt_channels_thread(void)
 
 void __zt_storage_thread(void)
 {
-    int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
+    int error = nvs_init(&zt_fs, DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
     if (error) {
         LOG_INF("Flash Init failed");
     } else {

@@ -1,4 +1,0 @@
-Memory region         Used Size  Region Size  %age Used
-           FLASH:       49738 B      1020 KB      4.76%
-            SRAM:       19076 B       256 KB      7.28%
-        IDT_LIST:          88 B         2 KB      4.30%

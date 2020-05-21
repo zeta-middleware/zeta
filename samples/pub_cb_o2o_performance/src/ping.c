@@ -58,6 +58,7 @@ void PING_task()
                    k_cyc_to_us_floor64(total_cycles));
             printk("[%u bytes]Mean in us = %llu\n", 1 << current_channel,
                    k_cyc_to_us_floor64(total_cycles) / 1000);
+            total_cycles = 0;
             if (current_channel < 11) {
                 ++current_channel;
             } else {

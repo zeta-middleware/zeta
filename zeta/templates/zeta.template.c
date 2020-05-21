@@ -14,8 +14,10 @@
 #include "zeta.h"
 
 
+#include <drivers/flash.h>
 #include <fs/nvs.h>
 #include <logging/log.h>
+#include <storage/flash_map.h>
 #include <string.h>
 #include <zephyr.h>
 
@@ -46,12 +48,7 @@ K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage
                 NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, 0);
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
-
-static struct nvs_fs zt_fs = {
-    .sector_size  = NVS_SECTOR_SIZE,
-    .sector_count = NVS_SECTOR_COUNT,
-    .offset       = NVS_STORAGE_OFFSET,
-};
+static struct nvs_fs zt_fs;
 
 // <ZT_CODE_INJECTION>$channels_creation// </ZT_CODE_INJECTION>
 
@@ -293,8 +290,17 @@ void __zt_channels_thread(void)
 
 void __zt_storage_thread(void)
 {
-    int error = nvs_init(&zt_fs, DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
-    if (error) {
+    struct flash_pages_info info;
+    zt_fs.offset = FLASH_AREA_OFFSET(storage);
+    int rc       = flash_get_page_info_by_offs(
+        device_get_binding(DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL), zt_fs.offset, &info);
+    if (rc) {
+        printk("Unable to get page info");
+    }
+    zt_fs.sector_size  = info.size;
+    zt_fs.sector_count = 3U;
+    rc                 = nvs_init(&zt_fs, DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
+    if (rc) {
         LOG_INF("Flash Init failed");
     } else {
         LOG_INF("NVS started...[OK]");

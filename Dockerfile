@@ -58,7 +58,7 @@ RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/RC
 
 # Getting zephyr and creating the environment 
 #TODO: Ponto de falha por sempre utilizar o requirements do master. Isso foi feito pois em versões antigas do zephyr os requirements estavam quebrados.
-RUN git clone -q -b zephyr-v2.2.0 --single-branch https://github.com/zephyrproject-rtos/zephyr ${ZEPHYR_BASE}
+RUN git clone -q -b v2.3.0-rc1 --single-branch https://github.com/zephyrproject-rtos/zephyr ${ZEPHYR_BASE}
 RUN pip3 install wheel && \
         #wget -q https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/master/scripts/requirements.txt && \
 	pip3 install -r ${ZEPHYR_BASE}/scripts/requirements.txt && \

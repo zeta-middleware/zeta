@@ -45,7 +45,6 @@ void PING_task()
     u32_t start_cycles = k_cycle_get_32();
     zt_chan_pub(ZT_PING_DATA_1_CHANNEL, ping_data[current_channel >> 1]);
     int count = 1000;
-    int rc    = 0;
     while (1) {
         k_sem_take(&PING_callback_sem, K_FOREVER);
         // end_cycles = k_cycle_get_32();
@@ -69,11 +68,7 @@ void PING_task()
         --count;
         /*  Start another interaction */
         start_cycles = k_cycle_get_32();
-        rc = zt_chan_pub(1 + (current_channel << 1), ping_data[current_channel]);
-        if (rc) {
-            printk("Error ping: %d, count %d, current_channel %d\n", rc, count,
-                   current_channel);
-        }
+        zt_chan_pub(1 + (current_channel << 1), ping_data[current_channel]);
     }
 }
 

@@ -135,6 +135,8 @@ void PING_task(void)
                   "PONG2 callback was not called with a valid call(value different from "
                   "existent) %d\n",
                   sensor_a_hit);
+    error = zt_chan_pub(ZT_CH03_CHANNEL, ch03);
+    zassert_equal(error, 0, "Error executing a valid publish call!\n");
     zassert_equal(sensor_a_hit, 1,
                   "PONG2 callback was called on a publish procedure without changes on "
                   "channel value!\n");

@@ -1,12 +1,10 @@
 Config:
-  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
   sector_count: 4
-  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
 
 Channels:
   - FIRMWARE_VERSION:
       size: 4
-      publish: 'NULL'
+      read_only: True
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
   - SENSOR_A:
       size: 1

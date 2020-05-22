@@ -1,7 +1,5 @@
 Config:
-  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
   sector_count: 4
-  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
 
 Channels:
   - FIRMWARE_VERSION:

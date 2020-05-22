@@ -128,7 +128,7 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
             if (memcmp(channel->data, channel_data->bytes.value, channel->size) == 0) {
                 channel->flag.field.pend_callback = 0;
                 k_sem_give(channel->sem);
-                return 10;
+                return 0;
             }
         }
         channel->flag.field.pend_callback = 1;

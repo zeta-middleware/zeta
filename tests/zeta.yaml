@@ -10,44 +10,43 @@ Channels:
       publish: 'NULL'
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
 
-  - POWER_VAL:
+  - CH01:
+      size: 1
+      publish: 'NULL'
+  - CH02:
       size: 2
       persistent: True
-      validate: 'power_validate_different_zero'
-      pre_publish: 'pre_publish_power'
-      pos_publish: 'pos_publish_power'
-        
-  - DATA_VAL:
-      size: 1
-      pre_read: 'pre_read_data_val'
-      pos_read: 'pos_read_data_val'
-      publish: 'NULL'
-
-  - SENSOR_A_CHANGE:
-      size: 1
+  - CH03:
+      size: 8
       react_on: change
-  - SENSOR_B_UPDATE:
-      size: 1
+  - CH04:
+      size: 128
       react_on: update
+  - CH05:
+      size: 255
 
 Services:
-  - CORE: 
-      priority: 5
-      stack_size: 512
-      sub_channels:
-        - !ref POWER_VAL
-  - HAL:
+  - PING: 
       priority: 2
-      stack_size: 1024
+      stack_size: 2048
       pub_channels:
-        - !ref POWER_VAL
-        - !ref SENSOR_A_CHANGE
-        - !ref SENSOR_B_UPDATE
-
-  - APP:
-      priority: 1
+        - !ref CH01
+        - !ref CH02
+        - !ref CH03
+        - !ref CH04
+        - !ref CH05
+  - PONG:
+      priority: 3
       stack_size: 2048
       sub_channels:
-        - !ref SENSOR_A_CHANGE
-        - !ref SENSOR_B_UPDATE      
-        
+        - !ref CH01
+        - !ref CH02
+        - !ref CH05
+
+  - PONG2:
+      priority: 3
+      stack_size: 2048
+      sub_channels:
+        - !ref CH03
+        - !ref CH04
+        - !ref CH05

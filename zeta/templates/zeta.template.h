@@ -376,23 +376,6 @@ int zt_chan_raw_read(zt_channel_e id, u8_t *channel_value, size_t size);
  */
 int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data);
 
-/**
- * @brief Publish channel value.
- *
- * @param id Channel Id
- * @param channel_value New channel value
- * @param size Channel size
- *
- * @return Error code
- * @retval -ENODATA The channel was not found
- * @retval -EACCESS Current thread hasn't permission to publish this channel
- * @retval -EFAULT Channel value is NULL
- * @retval -EPERM Channel is read only
- * @retval -EINVAL Size passed is different to channel size
- * @retval -EAGAIN Valid function returns false
- */
-int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size);
-
 // <ZT_CODE_INJECTION>$services_reference// </ZT_CODE_INJECTION>
 
 #endif

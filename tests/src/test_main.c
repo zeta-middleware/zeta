@@ -132,43 +132,43 @@ void test_channels_name(void)
                  "[%s] channel #%d was created with a wrong name: %s\n", __FUNCTION__,
                  ZT_FIRMWARE_VERSION_CHANNEL, name);
 
-    /* Checking DATA_VAL call */
+    /* Checking CH01 call */
     error = 1;
-    name  = zt_channel_name(ZT_DATA_VAL_CHANNEL, &error);
+    name  = zt_channel_name(ZT_CH01_CHANNEL, &error);
     zassert_equal(error, 0,
                   "[%s] zt_channel_name is not setting error to 0 in a valid call!\n",
                   __FUNCTION__);
-    zassert_true(!strcmp(name, "DATA_VAL"),
+    zassert_true(!strcmp(name, "CH01"),
                  "[%s] channel #%d was created with a wrong name: %s\n", __FUNCTION__,
-                 ZT_DATA_VAL_CHANNEL, name);
+                 ZT_CH01_CHANNEL, name);
 
-    /* Checking POWER_VAL call */
+    /* Checking CH02 call */
     error = 1;
-    name  = zt_channel_name(ZT_POWER_VAL_CHANNEL, &error);
+    name  = zt_channel_name(ZT_CH02_CHANNEL, &error);
     zassert_equal(error, 0,
                   "[%s] zt_channel_name is not setting error to 0 in a valid call!\n",
                   __FUNCTION__);
-    zassert_true(!strcmp(name, "POWER_VAL"),
+    zassert_true(!strcmp(name, "CH02"),
                  "[%s] channel #%d was created with a wrong name: %s\n", __FUNCTION__,
-                 ZT_POWER_VAL_CHANNEL, name);
-    /* Checking SENSOR_A_CHANGE call */
+                 ZT_CH02_CHANNEL, name);
+    /* Checking CH03 call */
     error = 1;
-    name  = zt_channel_name(ZT_SENSOR_A_CHANGE_CHANNEL, &error);
+    name  = zt_channel_name(ZT_CH03_CHANNEL, &error);
     zassert_equal(error, 0,
                   "[%s] zt_channel_name is not setting error to 0 in a valid call!\n",
                   __FUNCTION__);
-    zassert_true(!strcmp(name, "SENSOR_A_CHANGE"),
+    zassert_true(!strcmp(name, "CH03"),
                  "[%s] channel #%d was created with a wrong name: %s\n", __FUNCTION__,
-                 ZT_SENSOR_A_CHANGE_CHANNEL, name);
-    /* Checking SENSOR_B_UPDATE call */
+                 ZT_CH03_CHANNEL, name);
+    /* Checking CH04 call */
     error = 1;
-    name  = zt_channel_name(ZT_SENSOR_B_UPDATE_CHANNEL, &error);
+    name  = zt_channel_name(ZT_CH04_CHANNEL, &error);
     zassert_equal(error, 0,
                   "[%s] zt_channel_name is not setting error to 0 in a valid call!\n",
                   __FUNCTION__);
-    zassert_true(!strcmp(name, "SENSOR_B_UPDATE"),
+    zassert_true(!strcmp(name, "CH04"),
                  "[%s] channel #%d was created with a wrong name: %s\n", __FUNCTION__,
-                 ZT_SENSOR_B_UPDATE_CHANNEL, name);
+                 ZT_CH04_CHANNEL, name);
 }
 
 void test_channels_size(void)
@@ -192,34 +192,34 @@ void test_channels_size(void)
     zassert_equal(sz, 4, "[%s] zt_channel_size returned a wrong size value: %d\n",
                   __FUNCTION__, sz);
 
-    /* Checking POWER_VAL size*/
-    sz = zt_channel_size(ZT_POWER_VAL_CHANNEL, &error);
+    /* Checking CH01 size*/
+    sz = zt_channel_size(ZT_CH01_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 1, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+    /* Checking CH02 size*/
+    sz = zt_channel_size(ZT_CH02_CHANNEL, &error);
     zassert_equal(error, 0,
                   "[%s] zt_channel_size is setting error to %d in a valid call!\n",
                   __FUNCTION__, error);
     zassert_equal(sz, 2, "[%s] zt_channel_size returned a wrong size value: %d\n",
                   __FUNCTION__, sz);
 
-    /* Checking DATA_VAL size*/
-    sz = zt_channel_size(ZT_DATA_VAL_CHANNEL, &error);
+    /* Checking CH03 size*/
+    sz = zt_channel_size(ZT_CH03_CHANNEL, &error);
     zassert_equal(error, 0,
                   "[%s] zt_channel_size is setting error to %d in a valid call!\n",
                   __FUNCTION__, error);
-    zassert_equal(sz, 1, "[%s] zt_channel_size returned a wrong size value: %d\n",
+    zassert_equal(sz, 8, "[%s] zt_channel_size returned a wrong size value: %d\n",
                   __FUNCTION__, sz);
-    /* Checking SENSOR_A_CHANGE size*/
-    sz = zt_channel_size(ZT_SENSOR_A_CHANGE_CHANNEL, &error);
+    /* Checking CH04 size*/
+    sz = zt_channel_size(ZT_CH04_CHANNEL, &error);
     zassert_equal(error, 0,
                   "[%s] zt_channel_size is setting error to %d in a valid call!\n",
                   __FUNCTION__, error);
-    zassert_equal(sz, 1, "[%s] zt_channel_size returned a wrong size value: %d\n",
-                  __FUNCTION__, sz);
-    /* Checking SENSOR_B_UPDATE size*/
-    sz = zt_channel_size(ZT_SENSOR_B_UPDATE_CHANNEL, &error);
-    zassert_equal(error, 0,
-                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
-                  __FUNCTION__, error);
-    zassert_equal(sz, 1, "[%s] zt_channel_size returned a wrong size value: %d\n",
+    zassert_equal(sz, 128, "[%s] zt_channel_size returned a wrong size value: %d\n",
                   __FUNCTION__, sz);
 }
 

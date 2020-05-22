@@ -88,6 +88,8 @@ size_t zt_channel_size(zt_channel_e id, int *error)
 
 int zt_chan_read(zt_channel_e id, zt_data_t *channel_data)
 {
+    ZT_CHECK_VAL(channel_data, NULL, -EFAULT,
+                 "publish function was called with channel_value paramater as NULL!");
     return zt_chan_raw_read(id, channel_data->bytes.value, channel_data->bytes.size);
 }
 
@@ -137,14 +139,8 @@ static int __zt_chan_raw_read_private(zt_channel_e id, u8_t *channel_value, size
 
 int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
 {
-    return zt_chan_raw_pub(id, channel_data->bytes.value, channel_data->bytes.size);
-}
-
-int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size)
-{
     if (id < ZT_CHANNEL_COUNT) {
         int error             = 0;
-        int valid             = 1;
         zt_channel_t *channel = &__zt_channels[id];
         zt_service_t **pub;
 
@@ -156,26 +152,30 @@ int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size)
         ZT_CHECK_VAL(*pub, NULL, -EACCES,
                      "The current thread has not the permission to change channel #%d!",
                      id);
-        ZT_CHECK_VAL(channel_value, NULL, -EFAULT,
+        ZT_CHECK_VAL(channel_data, NULL, -EFAULT,
                      "publish function was called with channel_value paramater as NULL!");
         ZT_CHECK_VAL(channel->publish, NULL, -EPERM, "The channel #%d is read only!", id);
-        ZT_CHECK(size != channel->size, -EINVAL, "The channel #%d has a different size!",
-                 id);
-        if (channel->validate) {
-            valid = channel->validate(channel_value, size);
+        ZT_CHECK(channel_data->bytes.size != channel->size, -EINVAL,
+                 "The channel #%d has a different size!", id);
+        ZT_CHECK(k_sem_take(channel->sem, K_MSEC(200)) != 0, -EBUSY,
+                 "Could not publish the channel. Channel is busy");
+        if (channel->flag.field.react_on) {  // CHANGE
+            if (memcmp(channel->data, channel_data->bytes.value, channel->size) == 0) {
+                channel->flag.field.pend_callback = 0;
+                k_sem_give(channel->sem);
+                return 10;
+            }
         }
-        ZT_CHECK(!valid, -EAGAIN,
-                 "The value doesn't satisfy valid function of channel #%d!", id);
-        if (channel->pre_publish) {
-            error = channel->pre_publish(id, channel_value, size);
-            ZT_CHECK(error, error, "Error on pre_publish function of channel #%d!", id);
+        channel->flag.field.pend_callback = 1;
+        memcpy(channel->data, channel_data->bytes.value, channel->size);
+        error = k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500));
+        if (error != 0) {
+            LOG_INF("[Channel #%d] Error sending channels change message to ZT "
+                    "thread!",
+                    id);
         }
-        error = channel->publish(id, channel_value, size);
-        ZT_CHECK(error, error, "Current channel #%d, error code: %d!", id, error);
-        if (channel->pos_publish) {
-            error = channel->pos_publish(id, channel_value, size);
-            ZT_CHECK(error, error, "Error on pos_publish function of channel #%d!", id);
-        }
+        channel->flag.field.pend_persistent = (channel->persistent) ? 1 : 0;
+        k_sem_give(channel->sem);
         return error;
     } else {
         LOG_INF("The channel #%d was not found!", id);
@@ -185,35 +185,27 @@ int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size)
 
 static int __zt_chan_raw_private(zt_channel_e id, u8_t *channel_value, size_t size)
 {
-    int ret               = 0;
-    zt_channel_t *channel = &__zt_channels[id];
-    if (k_sem_take(channel->sem, K_MSEC(200))) {
-        LOG_INF("Could not publish the channel. Channel is busy");
-        ret = -EBUSY;
-    } else {
-        channel->flag.field.pend_callback = 1;
-        if (memcmp(channel->data, channel_value, size)) {
-            memcpy(channel->data, channel_value, channel->size);
-            if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                LOG_INF("[Channel #%d] Error sending channels change message to ZT "
-                        "thread!",
-                        id);
-            }
-            channel->flag.field.pend_persistent = (channel->persistent) ? 1 : 0;
-            k_sem_give(channel->sem);
-        } else {
-            if (!channel->flag.field.react_on) {
-                if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                    LOG_INF("[Channel #%d] Error sending channels change message to ZT "
-                            "thread!",
-                            id);
-                }
-            } else {
-                channel->flag.field.pend_callback = 0;
-            }
-            k_sem_give(channel->sem);
-        }
-    }
+    int ret = 0;
+    /* zt_channel_t *channel = &__zt_channels[id]; */
+    /* ZT_CHECK_VAL(k_sem_take(channel->sem, K_MSEC(200), 0, -EBUSY, */
+    /*                         "Could not publish the channel. Channel is busy")); */
+    /* if (channel->flag.field.react_on) {  // CHANGE */
+    /*     if (memcmp(channel->data, channel_value, size) == 0) { */
+    /*         channel->flag.field.pend_callback = 0; */
+    /*         k_sem_give(channel->sem); */
+    /*         return 0; */
+    /*     } */
+    /* } */
+    /* channel->flag.field.pend_callback = 1; */
+    /* memcpy(channel->data, channel_value, channel->size); */
+    /* ret = k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500)); */
+    /* if (ret != 0) { */
+    /*     LOG_INF("[Channel #%d] Error sending channels change message to ZT " */
+    /*             "thread!", */
+    /*             id); */
+    /* } */
+    /* channel->flag.field.pend_persistent = (channel->persistent) ? 1 : 0; */
+    /* k_sem_give(channel->sem); */
     return ret;
 }
 

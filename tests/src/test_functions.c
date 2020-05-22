@@ -12,9 +12,6 @@ K_SEM_DEFINE(zt_app_pend_evt, 0, 1);
 u8_t sensor_a_hit = 0;
 u8_t sensor_b_hit = 0;
 u8_t sensor_c_hit = 0;
-/* u8_t count_data_read        = 0; */
-/* u8_t running_urgent_routine = 0; */
-/* k_tid_t read_data_last_thread; */
 zt_channel_e zt_core_evt_id;
 
 void PONG_task(void)
@@ -80,13 +77,6 @@ void PING_task(void)
     error = zt_chan_read(ZT_CH01_CHANNEL, NULL);
     zassert_equal(error, -EFAULT,
                   "Get function is allowing the call with data parameter NULL!\n");
-
-    /* Calculating power_val variable */
-    /* u16_t power_val = 1; */
-    /* u8_t power      = 2; */
-    /* for (u8_t i = 1; i <= data; ++i) { */
-    /*     power_val *= power; */
-    /* } */
 
     /* Testing invalid publish calls to CH02 channel*/
     error = zt_chan_pub(ZT_CHANNEL_COUNT, data);

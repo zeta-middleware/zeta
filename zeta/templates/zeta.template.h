@@ -46,7 +46,7 @@
  * @brief Storage sleep time.
  *
  */
-#define ZT_STORAGE_SLEEP_TIME $storage_sleep_time
+#define ZT_STORAGE_SLEEP_TIME $storage_period
 
 /**
  * @brief Channels thread priority
@@ -276,8 +276,8 @@ union flag_data {
                                      flash by zeta_thread_nvs */
         u8_t pend_callback : 1;   /**< Active represent that services callbacks from
                                      subscribers must be called by zeta_thread */
-        u8_t react_on : 1;        /**< Active represent that the service callback will
-                                              be called on change and not on update */
+        u8_t on_changed : 1;      /**< Active represent that the service callback will
+                                            be called on change and not on update */
     } field;
     u8_t data; /**< Raw data */
 };
@@ -288,26 +288,14 @@ union flag_data {
 struct zt_channel {
     const char *name; /**< Channel name */
     u8_t *data;       /**< Channel raw data */
-    int (*validate)(u8_t *data,
-                    size_t size); /**< Valid data sent to be publish to channel */
-    int (*pre_read)(zt_channel_e id, u8_t *channel_value,
-                    size_t size); /**< Called before some read call */
-    int (*read)(zt_channel_e id, u8_t *channel_value, size_t size); /**< Read call */
-    int (*pos_read)(zt_channel_e id, u8_t *channel_value,
-                    size_t size); /**< Called after some read call */
-    int (*pre_publish)(zt_channel_e id, u8_t *channel_value,
-                       size_t size); /**< Called before some publish call */
-    int (*publish)(zt_channel_e id, u8_t *channel_value,
-                   size_t size); /**< Publish call */
-    int (*pos_publish)(zt_channel_e id, u8_t *channel_value,
-                       size_t size); /**< Called after some publish call */
-    u8_t size;                       /**< Channel size */
-    u8_t persistent;                 /**< Persistent type */
-    union flag_data flag;            /**< Options */
-    struct k_sem *sem;               /**< Preserve shared-memory */
-    zt_service_t **publishers;       /**< Publishers */
-    zt_service_t **subscribers;      /**< Subscribers */
-    zt_channel_e id;                 /**< Channel Id */
+    u8_t read_only;
+    u8_t size;                  /**< Channel size */
+    u8_t persistent;            /**< Persistent type */
+    zt_channel_e id;            /**< Channel Id */
+    union flag_data flag;       /**< Options */
+    struct k_sem *sem;          /**< Preserve shared-memory */
+    zt_service_t **publishers;  /**< Publishers */
+    zt_service_t **subscribers; /**< Subscribers */
 };
 typedef struct zt_channel zt_channel_t;
 
@@ -344,21 +332,6 @@ const char *zt_channel_name(zt_channel_e id, int *error);
  * @retval -EINVAL Size passed is different to channel size
  */
 int zt_chan_read(zt_channel_e id, zt_data_t *channel_data);
-
-/**
- * @brief Read channel value.
- *
- * @param id Channel Id
- * @param channel_value Handle channel value
- * @param size Channel size
- *
- * @return Error code
- * @retval -ENODATA The channel was not found
- * @retval -EFAULT Channel value is NULL
- * @retval -EPERM  Channel hasn't read function implemented
- * @retval -EINVAL Size passed is different to channel size
- */
-int zt_chan_raw_read(zt_channel_e id, u8_t *channel_value, size_t size);
 
 /**
  * @brief Publish channel value.

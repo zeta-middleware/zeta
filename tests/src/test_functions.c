@@ -104,6 +104,11 @@ void PING_task(void)
                   "Set function either isn't checking data size or is checking wrong, "
                   "error code: %d!\n",
                   error);
+    error = zt_chan_pub(ZT_CH01_CHANNEL, ZT_DATA_U8(0));
+    zassert_equal(error, -EPERM,
+                  "Publish function is not checking the readonly filed before publish, "
+                  "error code: %d!\n",
+                  error);
     zt_data_t *d1 = ZT_DATA_U64(0);
     error         = zt_chan_pub(ZT_CH02_CHANNEL, d1);
     zassert_equal(error, -EINVAL,
@@ -133,9 +138,9 @@ void PING_task(void)
     zassert_equal(ch03->u64.value, 0, "Error old value is wrong: %x", ch03->u64.value);
     ch03->u64.value = 0xff;
     error           = zt_chan_pub(ZT_CH03_CHANNEL, ch03);
+    zassert_equal(error, 0, "Error executing a valid publish call!\n");
     zt_chan_read(ZT_CH03_CHANNEL, ch03);
     zassert_equal(ch03->u64.value, 0xff, "Error old value is wrong: %x", ch03->u64.value);
-    zassert_equal(error, 0, "Error executing a valid publish call!\n");
     zassert_equal(sensor_a_hit, 1,
                   "PONG2 callback was not called with a valid call(value different from "
                   "existent) %d\n",

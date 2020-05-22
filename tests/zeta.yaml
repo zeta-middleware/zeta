@@ -1,27 +1,25 @@
 Config:
-  sector_size: 'DT_FLASH_ERASE_BLOCK_SIZE'
   sector_count: 4
-  storage_offset: 'DT_FLASH_AREA_STORAGE_OFFSET'
-  storage_sleep_time: 17
+  storage_partition: 'storage'
+  storage_period: 17
       
 Channels:
   - FIRMWARE_VERSION:
       size: 4
-      publish: 'NULL'
+      read_only: True
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
 
   - CH01:
       size: 1
-      publish: 'NULL'
+      read_only: True
   - CH02:
       size: 2
       persistent: True
   - CH03:
       size: 8
-      react_on: change
+      on_changed: True
   - CH04:
       size: 128
-      react_on: update
   - CH05:
       size: 255
 

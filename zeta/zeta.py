@@ -300,42 +300,6 @@ class ZetaSource(SourceFileFactory):
         self.substitutions['arrays_init'] = self.arrays_init
 
 
-# class ZetaCustomFunctionsHeader(HeaderFileFactory):
-#     def __init__(self, zeta):
-#         super().__init__('zeta_custom_functions.template.h', zeta)
-#         self.channels_functions = ''
-
-#     def create_substitutions(self):
-#         for channel in self.zeta.channels:
-#             name = channel.name
-#             self.channels_functions += textwrap.dedent(f'''
-#                 /* BEGIN {name} CHANNEL FUNCTIONS */
-#                 ''')
-#             if channel.pre_read != 'NULL':
-#                 self.channels_functions += textwrap.dedent(f'''
-#                     int {channel.pre_read}(zt_channel_e id, u8_t *channel_value, size_t size);
-#                     ''')
-#             if channel.pos_read != 'NULL':
-#                 self.channels_functions += textwrap.dedent(f'''
-#                     int {channel.pos_read}(zt_channel_e id, u8_t *channel_value, size_t size);
-#                     ''')
-#             if channel.pre_publish != 'NULL':
-#                 self.channels_functions += textwrap.dedent(f'''
-#                     int {channel.pre_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
-#                     ''')
-#             if channel.pos_publish != 'NULL':
-#                 self.channels_functions += textwrap.dedent(f'''
-#                     int {channel.pos_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
-#                     ''')
-#             if channel.validate != 'NULL':
-#                 self.channels_functions += textwrap.dedent(f'''
-#                     int {channel.validate}(u8_t *data, size_t size);
-#                     ''')
-#             self.channels_functions += textwrap.dedent(f'''
-#                 /* END {name} CHANNEL FUNCTIONS */
-#                 ''')
-
-
 class ZetaCLI(object):
     def __init__(self):
         parser = argparse.ArgumentParser(description='ZETA cli tool',
@@ -638,9 +602,6 @@ class ZetaCLI(object):
                 print("[ZETA]: Generating zeta.c...", end="")
                 ZetaSource(zeta).run()
                 print("[OK]")
-                # print("[ZETA]: Generating zeta_custom_functions.c...", end="")
-                # ZetaCustomFunctionsHeader(zeta).run()
-                # print("[OK]")
         else:
             print("[ZETA]: Error. Zeta YAML file does not exist!")
 

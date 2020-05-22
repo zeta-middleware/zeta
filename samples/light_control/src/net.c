@@ -9,8 +9,6 @@
 #include <zephyr.h>
 #include "zeta.h"
 
-#define ZT_REF(x) (u8_t *) &x, sizeof(x)
-
 /**
  * @brief This is the function used by Zeta to tell the NET that one(s) of the channels
  * which it is subscribed has changed. This callback will be called passing the channel's
@@ -34,16 +32,16 @@ void NET_service_callback(zt_channel_e id)
  */
 void NET_task()
 {
-    u8_t manual_load_control[2] = {0x00, 0x01};
+    zt_data_t *manual_load_control = ZT_DATA_BYTES(2, 0x00, 0x01);
     printk("Hello NET\n");
     while (1) {
-        manual_load_control[0] = 1;
+        manual_load_control->bytes.value[0] = 1;
         printk("on\n");
-        zt_chan_raw_pub(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
+        zt_chan_pub(ZT_MANUAL_LOAD_CONTROL_CHANNEL, manual_load_control);
         k_sleep(K_SECONDS(5));
         printk("off\n");
-        manual_load_control[0] = 0;
-        zt_chan_raw_pub(ZT_MANUAL_LOAD_CONTROL_CHANNEL, ZT_REF(manual_load_control));
+        manual_load_control->bytes.value[0] = 0;
+        zt_chan_pub(ZT_MANUAL_LOAD_CONTROL_CHANNEL, manual_load_control);
         k_sleep(K_SECONDS(10));
     }
 }

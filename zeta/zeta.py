@@ -33,25 +33,13 @@ class Channel(object):
     def __init__(self,
                  name,
                  initial_value=None,
-                 validate='NULL',
-                 pre_read='NULL',
-                 read='__zt_chan_raw_read_private',
-                 pos_read='NULL',
-                 pre_publish='NULL',
-                 publish='__zt_chan_raw_private',
-                 pos_publish='NULL',
-                 react_on='update',
+                 read_only=False,
+                 on_changed=False,
                  size=1,
                  persistent=0):
         self.name = name.strip()
-        self.validate = validate
-        self.pre_read = pre_read
-        self.read = read
-        self.pos_read = pos_read
-        self.pre_publish = pre_publish
-        self.publish = publish
-        self.pos_publish = pos_publish
-        self.react_on = react_on
+        self.read_only = int(read_only)
+        self.on_changed = int(on_changed)
         self.size = size
         self.persistent = 1 if persistent else 0
         self.sem = f"zt_{name.lower()}_channel_sem"
@@ -84,14 +72,12 @@ class Service(object):
 
 class Config(object):
     def __init__(self,
-                 sector_size='DT_FLASH_ERASE_BLOCK_SIZE',
                  sector_count=4,
-                 storage_offset='DT_FLASH_AREA_STORAGE_OFFSET',
-                 storage_sleep_time=30):
-        self.sector_size = sector_size
+                 storage_partition='storage',
+                 storage_period=30):
         self.sector_count = sector_count
-        self.storage_offset = storage_offset
-        self.storage_sleep_time = storage_sleep_time
+        self.storage_partition = storage_partition
+        self.storage_period = storage_period
 
 
 class Zeta(object):
@@ -200,8 +186,7 @@ class ZetaHeader(HeaderFileFactory):
                 /* END {name} SECTION */
                 ''')
         self.substitutions['services_reference'] = self.services_reference
-        self.substitutions[
-            'storage_sleep_time'] = self.zeta.config.storage_sleep_time
+        self.substitutions['storage_period'] = self.zeta.config.storage_period
 
 
 class ZetaSource(SourceFileFactory):
@@ -236,12 +221,8 @@ class ZetaSource(SourceFileFactory):
                           f"{{{', '.join(channel.initial_value)}}};")
             channel.data = f"__{channel.name.lower()}_data"
             channel.flag = 0x00
-            if channel.react_on == 'change':
+            if channel.on_changed:
                 channel.flag = channel.flag | (1 << 2)
-            elif channel.react_on != 'update':
-                raise Exception(("[ZETA ERROR]: Failed to generate zeta.c."
-                                 f" The field react_on has an invalid value:"
-                                 f" {channel.react_on}."))
 
             subscribers_alloc = "NULL"
             if len(channel.sub_services_obj) > 0:
@@ -285,13 +266,7 @@ class ZetaSource(SourceFileFactory):
                 '''
                 {{
                     .name = "{name}",
-                    .validate = {validate},
-                    .pre_read = {pre_read},
-                    .read = {read},
-                    .pos_read = {pos_read},
-                    .pre_publish = {pre_publish},
-                    .publish = {publish},
-                    .pos_publish = {pos_publish},
+                    .read_only = {read_only},
                     .flag = {{.data = {flag}}},
                     .size = {size},
                     .persistent = {persistent},
@@ -309,9 +284,8 @@ class ZetaSource(SourceFileFactory):
             ''')
 
     def gen_nvs_config(self):
-        self.sector_size = self.zeta.config.sector_size
         self.sector_count = self.zeta.config.sector_count
-        self.storage_offset = self.zeta.config.storage_offset
+        self.storage_partition = self.zeta.config.storage_partition
 
     def create_substitutions(self):
         self.gen_nvs_config()
@@ -319,49 +293,11 @@ class ZetaSource(SourceFileFactory):
         self.gen_creation()
         self.substitutions['channels_creation'] = self.channels_creation
         self.substitutions['channels_sems'] = self.channels_sems
-        self.substitutions['sector_size'] = self.sector_size
         self.substitutions['sector_count'] = self.sector_count
-        self.substitutions['storage_offset'] = self.storage_offset
+        self.substitutions['storage_partition'] = self.storage_partition
         self.substitutions['set_publishers'] = self.set_publishers
         self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init
-
-
-class ZetaCustomFunctionsHeader(HeaderFileFactory):
-    def __init__(self, zeta):
-        super().__init__('zeta_custom_functions.template.h', zeta)
-        self.channels_functions = ''
-
-    def create_substitutions(self):
-        for channel in self.zeta.channels:
-            name = channel.name
-            self.channels_functions += textwrap.dedent(f'''
-                /* BEGIN {name} CHANNEL FUNCTIONS */
-                ''')
-            if channel.pre_read != 'NULL':
-                self.channels_functions += textwrap.dedent(f'''
-                    int {channel.pre_read}(zt_channel_e id, u8_t *channel_value, size_t size);
-                    ''')
-            if channel.pos_read != 'NULL':
-                self.channels_functions += textwrap.dedent(f'''
-                    int {channel.pos_read}(zt_channel_e id, u8_t *channel_value, size_t size);
-                    ''')
-            if channel.pre_publish != 'NULL':
-                self.channels_functions += textwrap.dedent(f'''
-                    int {channel.pre_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
-                    ''')
-            if channel.pos_publish != 'NULL':
-                self.channels_functions += textwrap.dedent(f'''
-                    int {channel.pos_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
-                    ''')
-            if channel.validate != 'NULL':
-                self.channels_functions += textwrap.dedent(f'''
-                    int {channel.validate}(u8_t *data, size_t size);
-                    ''')
-            self.channels_functions += textwrap.dedent(f'''
-                /* END {name} CHANNEL FUNCTIONS */
-                ''')
-        self.substitutions['custom_functions'] = self.channels_functions
 
 
 class ZetaCLI(object):
@@ -665,9 +601,6 @@ class ZetaCLI(object):
                 print("[OK]")
                 print("[ZETA]: Generating zeta.c...", end="")
                 ZetaSource(zeta).run()
-                print("[OK]")
-                print("[ZETA]: Generating zeta_custom_functions.c...", end="")
-                ZetaCustomFunctionsHeader(zeta).run()
                 print("[OK]")
         else:
             print("[ZETA]: Error. Zeta YAML file does not exist!")

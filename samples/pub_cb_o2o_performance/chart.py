@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 def channel_latency_ping():
     xs = ['1', '2', '4', '8', '16', '32', '64', '128', '255']
-    ys = [14, 14, 14, 16, 16, 18, 21, 30, 46]
-    plt.bar(xs, ys)  #, color=(0.4, 0.4, 0.4, 1.0))
+    ys = [13, 13, 14, 14, 15, 17, 20, 27, 22]
+    plt.bar(xs, ys)
     for x, y in zip(xs, ys):
         plt.text(x, y + 1, r"{0}".format(y), horizontalalignment='center')
 

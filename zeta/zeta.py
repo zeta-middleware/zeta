@@ -22,6 +22,9 @@ ZETA_INCLUDE_DIR = "."
 
 
 class YamlRefLoader(yaml.SafeLoader):
+    """Modify the SafeLoader object and generate a correct dictionary
+    based in the yaml file. 
+    """
     def __init__(self, stream):
         """YamlRefloader constructor
 
@@ -45,6 +48,8 @@ class YamlRefLoader(yaml.SafeLoader):
 
 
 class Channel(object):
+    """Represents a channel written on yaml file.
+    """
     def __init__(self,
                  name,
                  initial_value=None,
@@ -84,6 +89,8 @@ class Channel(object):
 
 
 class Service(object):
+    """Represents a service written on yaml file.
+    """
     def __init__(self,
                  name,
                  priority=10,
@@ -134,6 +141,9 @@ class Config(object):
 
 
 class Zeta(object):
+    """Represents the Zeta object that has access to services, channels
+    and config parameters specified in yaml file.
+    """
     def __init__(self, yamlfile):
         """Zeta constructor.
 
@@ -196,6 +206,9 @@ class Zeta(object):
 
 
 class FileFactory(object):
+    """Represents a generic class responsible to generate a file based
+    in a template and your respective substitutions.
+    """
     def __init__(self,
                  destination_dir,
                  template_file,
@@ -257,6 +270,9 @@ class FileFactory(object):
 
 
 class HeaderFileFactory(FileFactory):
+    """Represents a generic class for creation of header files that will
+    be used by Zeta.
+    """
     def __init__(self, template_file, zeta):
         """Headerfilefactory constructor.
 
@@ -283,6 +299,9 @@ class SourceFileFactory(FileFactory):
 
 
 class ZetaHeader(HeaderFileFactory):
+    """Represents a class that generate the zeta.h file and has the goal
+    to assigns all the substitutions needed to Zeta works properly.
+    """
     def __init__(self, zeta):
         """ZetaHeader constructor.
 
@@ -328,6 +347,9 @@ class ZetaHeader(HeaderFileFactory):
 
 
 class ZetaSource(SourceFileFactory):
+    """Represents a class that generate the zeta.c file and has the goal
+    to assigns all the substitutions needed to Zeta works properly.
+    """    
     def __init__(self, zeta):
         """ZetaSource constructor.
 
@@ -472,6 +494,9 @@ class ZetaSource(SourceFileFactory):
 
 
 class ZetaCLI(object):
+    """Represents the ZetaCLI and has all the callbacks that will be
+    called when some user type zeta on terminal.
+    """
     def __init__(self):
         """ZetaCLI constructor.
 

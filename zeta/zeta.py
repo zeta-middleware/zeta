@@ -182,8 +182,7 @@ class Zeta(object):
                         service.pub_channels_obj.append(channel)
                         break
                 else:
-                    raise ValueError("Channel {channel_name} does not
-        exists")
+                    raise ValueError("Channel {channel_name} does not exists")
             for channel_name in service.sub_channels_names:
                 for channel in self.channels:
                     if channel.name == channel_name:
@@ -191,8 +190,7 @@ class Zeta(object):
                         service.sub_channels_obj.append(channel)
                         break
                 else:
-                    raise ValueError("Channel {channel_name} does not
-        exists")
+                    raise ValueError("Channel {channel_name} does not exists")
 
     def __process_file(self, yaml_dict):
         """Continues the processing of yamfile
@@ -349,7 +347,7 @@ class ZetaHeader(HeaderFileFactory):
 class ZetaSource(SourceFileFactory):
     """Represents a class that generate the zeta.c file and has the goal
     to assigns all the substitutions needed to Zeta works properly.
-    """    
+    """
     def __init__(self, zeta):
         """ZetaSource constructor.
 

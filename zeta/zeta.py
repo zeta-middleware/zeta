@@ -22,11 +22,11 @@ ZETA_INCLUDE_DIR = "."
 
 
 class YamlRefLoader(yaml.SafeLoader):
-    """Modify the SafeLoader object and generate a correct dictionary
-    based in the yaml file. 
+    """Modifies the SafeLoader object and generates a correct
+    dictionary-based in the YAML file.
     """
     def __init__(self, stream):
-        """YamlRefloader constructor
+        """YamlRefloader constructor.
 
         :param stream: default param used for yaml.SafeLoader
         :returns: None
@@ -36,11 +36,11 @@ class YamlRefLoader(yaml.SafeLoader):
         super(YamlRefLoader, self).__init__(stream)
 
     def ref(self, node):
-        """Handle ref statements in yaml file and generate a valid
+        """Handles ref statements in YAML file and generate a valid
         reference 
 
-        :param node: Reference name
-        :returns: Reference name string
+        :param node: Ref statement with the reference name
+        :returns: Reference name
         :rtype: str
 
         """
@@ -48,7 +48,7 @@ class YamlRefLoader(yaml.SafeLoader):
 
 
 class Channel(object):
-    """Represents a channel written on yaml file.
+    """Represents a channel written on YAML file.
     """
     def __init__(self,
                  name,
@@ -61,11 +61,11 @@ class Channel(object):
 
         :param name: Channel name
         :param initial_value: Initial value assigned to channel
-        :param read_only: Allow publish operations or not
-        :param on_changed: Define the callback call procedure after a
+        :param read_only: Allows publish operations or not
+        :param on_changed: Defines the callback call procedure after a
         publish operation 
         :param size: Channel size
-        :param persistent: Define if the channel that must be saved on
+        :param persistent: Defines if the channel that must be saved on
         flash 
         :returns: None
         :rtype: None
@@ -89,7 +89,7 @@ class Channel(object):
 
 
 class Service(object):
-    """Represents a service written on yaml file.
+    """Represents a service written on YAML file.
     """
     def __init__(self,
                  name,
@@ -100,11 +100,11 @@ class Service(object):
         """Service constructor.
 
         :param name: Service name
-        :param priority: Define service priority
-        :param stack_size: Define service stack size
-        :param sub_channels: Assign all channels that service must be
+        :param priority: Defines the service priority
+        :param stack_size: Defines the service stack size
+        :param sub_channels: Assigns all channels that service must be
         subscribed 
-        :param pub_channels: Assign all channels that service must be
+        :param pub_channels: Assigns all channels that service must be
         published 
         :returns: None
         :rtype: None
@@ -127,9 +127,9 @@ class Config(object):
         """Config constructor.
 
         :param sector_count: Sector count that must be used
-        :param storage_partition: Define storage partition that must be
+        :param storage_partition: Defines the storage partition that must be
         used to save channel data 
-        :param storage_period: Define the period that zeta will be save
+        :param storage_period: Defines the period that zeta will be save
         channel data pending 
         :returns: None
         :rtype: None
@@ -142,7 +142,7 @@ class Config(object):
 
 class Zeta(object):
     """Represents the Zeta object that has access to services, channels
-    and config parameters specified in yaml file.
+    and config parameters specified in YAML file.
     """
     def __init__(self, yamlfile):
         """Zeta constructor.
@@ -166,7 +166,7 @@ class Zeta(object):
         self.__check_service_channel_relation()
 
     def __check_service_channel_relation(self):
-        """Check if the use of !ref was correct or was used some
+        """Checks if the use of !ref is correct or is used some
         nonexistent channel.
 
         :returns: None
@@ -204,7 +204,7 @@ class Zeta(object):
 
 
 class FileFactory(object):
-    """Represents a generic class responsible to generate a file based
+    """Represents a generic class responsible to generate a file-based
     in a template and your respective substitutions.
     """
     def __init__(self,
@@ -234,7 +234,7 @@ class FileFactory(object):
         self.substitutions = {}
 
     def create_substitutions(self):
-        """Function that will be implemented by classes inherited.
+        """The function that will be implemented by classes inherited.
 
         :returns: None
         :rtype: None
@@ -243,7 +243,7 @@ class FileFactory(object):
         pass
 
     def generate_file(self):
-        """Write the output file with the respective substitutions
+        """Writes the output file with the respective substitutions
         assigned in create_substitutions function.
 
         :returns: None
@@ -256,7 +256,7 @@ class FileFactory(object):
                 result_file.write(t.substitute(**self.substitutions))
 
     def run(self):
-        """Run the routine responsible for assigns substitutions and
+        """Runs the routine responsible for assigns substitutions and
         write the output file.
 
         :returns: None
@@ -297,8 +297,9 @@ class SourceFileFactory(FileFactory):
 
 
 class ZetaHeader(HeaderFileFactory):
-    """Represents a class that generate the zeta.h file and has the goal
-    to assigns all the substitutions needed to Zeta works properly.
+    """Represents a class that generates the zeta.h file and has the
+    goal to assigns all the substitutions needed to Zeta works
+    properly.
     """
     def __init__(self, zeta):
         """ZetaHeader constructor.
@@ -312,8 +313,8 @@ class ZetaHeader(HeaderFileFactory):
         self.services_reference = ""
 
     def create_substitutions(self):
-        """Responsible to assigns the needed substitutions to be written
-        on the output file.
+        """Responsible for assigns the needed substitutions to be
+        written on the output file.
 
         :returns: None
         :rtype: None
@@ -345,8 +346,9 @@ class ZetaHeader(HeaderFileFactory):
 
 
 class ZetaSource(SourceFileFactory):
-    """Represents a class that generate the zeta.c file and has the goal
-    to assigns all the substitutions needed to Zeta works properly.
+    """Represents a class that generates the zeta.c file and has the
+    goal to assigns all the substitutions needed to Zeta works
+    properly.
     """
     def __init__(self, zeta):
         """ZetaSource constructor.
@@ -367,7 +369,7 @@ class ZetaSource(SourceFileFactory):
         self.arrays_init = ''
 
     def gen_sems(self):
-        """Responsible to assign the channel semaphores.
+        """Responsible for assigns the channel semaphores.
 
         :returns: None
         :rtype: None
@@ -386,7 +388,7 @@ class ZetaSource(SourceFileFactory):
             ''')
 
     def gen_creation(self):
-        """Responsible to create all the channels that will be used by
+        """Responsible for creates all the channels that will be used by
         Zeta.
 
         :returns: None
@@ -462,7 +464,7 @@ class ZetaSource(SourceFileFactory):
             ''')
 
     def gen_nvs_config(self):
-        """Responsible to assigns the nvs config.
+        """Responsible for assigns the nvs config.
 
         :returns: None
         :rtype: None
@@ -472,7 +474,7 @@ class ZetaSource(SourceFileFactory):
         self.storage_partition = self.zeta.config.storage_partition
 
     def create_substitutions(self):
-        """Responsible to assigns the needed substitutions to be written
+        """Responsible for assigns the needed substitutions to be written
         on the output file.
 
         :returns: None
@@ -493,7 +495,7 @@ class ZetaSource(SourceFileFactory):
 
 class ZetaCLI(object):
     """Represents the ZetaCLI and has all the callbacks that will be
-    called when some user type zeta on terminal.
+    called when the user type zeta on the terminal.
     """
     def __init__(self):
         """ZetaCLI constructor.
@@ -516,8 +518,8 @@ class ZetaCLI(object):
         getattr(self, args.command)()
 
     def init(self):
-        """Called when the user type "zeta init" and is responsible to
-        generate the minimum requirements in order to Zeta works
+        """Called when the user type "zeta init" and is responsible for
+        generates the minimum requirements in order to Zeta works
         properly.
 
         :returns: None
@@ -549,8 +551,8 @@ class ZetaCLI(object):
                     cmake.write(header_template.read())
 
     def check(self):
-        """Called when the user type "zeta check" and is responsible to
-        check if the needed steps were made by user in order to Zeta
+        """Called when the user type "zeta check" and is responsible for
+        checks if the needed steps were made by user in order to Zeta
         works properly.
 
         :returns: None
@@ -702,7 +704,7 @@ class ZetaCLI(object):
 
     def services(self):
         """Called when the user type "zeta services" and is responsible
-        to generate files template-based with the services initialized.
+        for generates files template-based with the services initialized.
 
         :returns: None
         :rtype: None
@@ -773,7 +775,7 @@ class ZetaCLI(object):
 
     def gen(self):
         """Generate all the internal files that represents Zeta system
-        like channels, Zeta threads, Zeta API and others.
+        like channels, Zeta threads, Zeta API, and others.
 
         :returns: None
         :rtype: None

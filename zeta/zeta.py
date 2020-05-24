@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 # TODO: Criar os warnings nos arquivos gerados
 
-from _io import TextIOWrapper
 import argparse
 import os
 import re
@@ -32,12 +31,12 @@ class YamlRefLoader(yaml.SafeLoader):
 
 class Channel(object):
     def __init__(self,
-                 name: str,
-                 initial_value: list = None,
-                 read_only: bool = False,
-                 on_changed: bool = False,
-                 size: int = 1,
-                 persistent: int = 0) -> None:
+                 name,
+                 initial_value=None,
+                 read_only=False,
+                 on_changed=False,
+                 size=1,
+                 persistent=0):
         self.name = name.strip()
         self.read_only = int(read_only)
         self.on_changed = int(on_changed)
@@ -57,11 +56,11 @@ class Channel(object):
 
 class Service(object):
     def __init__(self,
-                 name: str,
-                 priority: int = 10,
-                 stack_size: int = 512,
-                 sub_channels: list = [],
-                 pub_channels: list = []) -> None:
+                 name,
+                 priority=10,
+                 stack_size=512,
+                 sub_channels=[],
+                 pub_channels=[]):
         self.name = name
         self.priority = priority
         self.stack_size = stack_size
@@ -73,16 +72,16 @@ class Service(object):
 
 class Config(object):
     def __init__(self,
-                 sector_count: int = 4,
-                 storage_partition: str = 'storage',
-                 storage_period: int = 30) -> None:
+                 sector_count=4,
+                 storage_partition='storage',
+                 storage_period=30):
         self.sector_count = sector_count
         self.storage_partition = storage_partition
         self.storage_period = storage_period
 
 
 class Zeta(object):
-    def __init__(self, yamlfile: TextIOWrapper) -> None:
+    def __init__(self, yamlfile):
         YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
         yaml_dict = yaml.load(yamlfile, Loader=YamlRefLoader)
         self.config = Config(**yaml_dict['Config'])
@@ -96,7 +95,7 @@ class Zeta(object):
                 self.services.append(Service(name, **fields))
         self.__check_service_channel_relation()
 
-    def __check_service_channel_relation(self) -> None:
+    def __check_service_channel_relation(self):
         for service in self.services:
             for channel_name in service.pub_channels_names:
                 for channel in self.channels:
@@ -115,16 +114,16 @@ class Zeta(object):
                 else:
                     raise ValueError("Channel {channel_name} does not exists")
 
-    def __process_file(self, yaml_dict: dict):
+    def __process_file(self, yaml_dict):
         pass
 
 
 class FileFactory(object):
     def __init__(self,
-                 destination_dir: str,
-                 template_file: str,
-                 zeta: Zeta,
-                 destination_file_name: str = "") -> None:
+                 destination_dir,
+                 template_file,
+                 zeta,
+                 destination_file_name=""):
         if destination_file_name:
             self.destination_file = (
                 f"{destination_dir}/{destination_file_name}")
@@ -135,36 +134,36 @@ class FileFactory(object):
         self.zeta = zeta
         self.substitutions = {}
 
-    def create_substitutions(self) -> None:
+    def create_substitutions(self):
         pass
 
-    def generate_file(self) -> None:
+    def generate_file(self):
         with open(self.template_file, 'r') as template:
             t = Template(template.read())
             with open(self.destination_file, 'w') as result_file:
                 result_file.write(t.substitute(**self.substitutions))
 
-    def run(self) -> None:
+    def run(self):
         self.create_substitutions()
         self.generate_file()
 
 
 class HeaderFileFactory(FileFactory):
-    def __init__(self, template_file: str, zeta: Zeta) -> None:
+    def __init__(self, template_file, zeta):
         super().__init__(ZETA_INCLUDE_DIR, template_file, zeta)
 
 
 class SourceFileFactory(FileFactory):
-    def __init__(self, template_file: str, zeta: Zeta) -> None:
+    def __init__(self, template_file, zeta):
         super().__init__(ZETA_SRC_DIR, template_file, zeta)
 
 
 class ZetaHeader(HeaderFileFactory):
-    def __init__(self, zeta: Zeta) -> None:
+    def __init__(self, zeta):
         super().__init__('zeta.template.h', zeta)
         self.services_reference = ""
 
-    def create_substitutions(self) -> None:
+    def create_substitutions(self):
         channel_names = ',\n    '.join([
             f"ZT_{channel.name.upper()}_CHANNEL"
             for channel in self.zeta.channels
@@ -191,7 +190,7 @@ class ZetaHeader(HeaderFileFactory):
 
 
 class ZetaSource(SourceFileFactory):
-    def __init__(self, zeta: Zeta) -> None:
+    def __init__(self, zeta):
         super().__init__('zeta.template.c', zeta)
         self.channels_creation = ''
         self.channels_sems = ''
@@ -202,7 +201,7 @@ class ZetaSource(SourceFileFactory):
         self.set_subscribers = ''
         self.arrays_init = ''
 
-    def gen_sems(self) -> None:
+    def gen_sems(self):
         self.channels_sems += textwrap.dedent('''
             /* BEGIN INITIALIZING CHANNEL SEMAPHORES */
             ''')
@@ -215,7 +214,7 @@ class ZetaSource(SourceFileFactory):
             /* END INITIALIZING CHANNEL SEMAPHORES */
             ''')
 
-    def gen_creation(self) -> None:
+    def gen_creation(self):
         channels = ''
         for channel in self.zeta.channels:
             data_alloc = (f"static u8_t __{channel.name.lower()}_data[] ="
@@ -284,11 +283,11 @@ class ZetaSource(SourceFileFactory):
             /* END INITIALIZING CHANNELS */
             ''')
 
-    def gen_nvs_config(self) -> None:
+    def gen_nvs_config(self):
         self.sector_count = self.zeta.config.sector_count
         self.storage_partition = self.zeta.config.storage_partition
 
-    def create_substitutions(self) -> None:
+    def create_substitutions(self):
         self.gen_nvs_config()
         self.gen_sems()
         self.gen_creation()
@@ -302,7 +301,7 @@ class ZetaSource(SourceFileFactory):
 
 
 class ZetaCLI(object):
-    def __init__(self) -> None:
+    def __init__(self):
         parser = argparse.ArgumentParser(description='ZETA cli tool',
                                          usage='''zeta <command> [<args>]
     init - for creating the need files.
@@ -316,7 +315,7 @@ class ZetaCLI(object):
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)()
 
-    def init(self) -> None:
+    def init(self):
         argparse.ArgumentParser(
             description='''Run this command on the project root directory.
             It will create the zeta.cmake and the zeta.yaml files''',
@@ -341,7 +340,7 @@ class ZetaCLI(object):
                 with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
                     cmake.write(header_template.read())
 
-    def check(self) -> None:
+    def check(self):
         OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
         FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
         parser = argparse.ArgumentParser(
@@ -485,7 +484,7 @@ class ZetaCLI(object):
                 {cmakelists_output}''') + services_output
         print(check_output)
 
-    def services(self) -> None:
+    def services(self):
         parser = argparse.ArgumentParser(
             description='Verify or create services files on the src folder',
             usage='zeta services [-g] <src dir>')
@@ -549,7 +548,7 @@ class ZetaCLI(object):
             cmake_services_file.run()
             print("[ZETA]: Inject services sources into the zeta.cmake file")
 
-    def gen(self) -> None:
+    def gen(self):
         parser = argparse.ArgumentParser(
             description='Generate zeta files on the build folder',
             usage='zeta gen [-p] yamlfile')

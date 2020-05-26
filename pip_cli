@@ -27,7 +27,7 @@ def generate_file_version(inc=True):
         if v['release_candidate'] > 0:
             release_candidate = f"rc{v['release_candidate']}"
         version_file.write(
-            "__version__ = " +
+            "__version__: str = " +
             f"'{v['major']}.{v['minor']}.{v['build']}{release_candidate}'")
 
 if __name__ == "__main__":

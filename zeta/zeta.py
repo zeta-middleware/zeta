@@ -7,6 +7,7 @@ import re
 import shutil
 import sys
 import textwrap
+from .zeta_errors import *
 from pathlib import Path
 from string import Template
 
@@ -150,6 +151,7 @@ class Zeta(object):
         :param yamlfile: Zeta yaml file config
         :returns: None
         :rtype: None
+        :raise ZetaCLIError: Error creating Channel object or Service object
 
         """
         YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
@@ -158,11 +160,21 @@ class Zeta(object):
         self.channels = []
         for channel_description in yaml_dict['Channels']:
             for name, fields in channel_description.items():
-                self.channels.append(Channel(name, **fields))
+                try:
+                    self.channels.append(Channel(name, **fields))
+                except TypeError as terr:
+                    raise ZetaCLIError(
+                        f"Error creating Channel object. {terr.__str__()}",
+                        EZTFIELD)
         self.services = []
         for service_description in yaml_dict['Services']:
             for name, fields in service_description.items():
-                self.services.append(Service(name, **fields))
+                try:
+                    self.services.append(Service(name, **fields))
+                except TypeError as terr:
+                    raise ZetaCLIError(
+                        f"Error creating Service object. {terr.__str__()}",
+                        EZTFIELD)
         self.__check_service_channel_relation()
 
     def __check_service_channel_relation(self) -> None:
@@ -171,7 +183,7 @@ class Zeta(object):
 
         :returns: None
         :rtype: None
-        :raise ValueError: Channel referenced by !ref does not exists.
+        :raise ZetaCLIError: Channel name doesn't exists in channel list.
 
         """
         for service in self.services:
@@ -182,7 +194,8 @@ class Zeta(object):
                         service.pub_channels_obj.append(channel)
                         break
                 else:
-                    raise ValueError("Channel {channel_name} does not exists")
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
             for channel_name in service.sub_channels_names:
                 for channel in self.channels:
                     if channel.name == channel_name:
@@ -190,7 +203,8 @@ class Zeta(object):
                         service.sub_channels_obj.append(channel)
                         break
                 else:
-                    raise ValueError("Channel {channel_name} does not exists")
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
 
     def __process_file(self, yaml_dict: dict):
         """Continues the processing of yamfile
@@ -527,6 +541,7 @@ class ZetaCLI(object):
 
         :returns: None
         :rtype: None
+        :raise ZetaCLIError: Error in zeta.cmake or zeta.yaml file path
 
         """
         argparse.ArgumentParser(
@@ -541,17 +556,27 @@ class ZetaCLI(object):
         global ZETA_TEMPLATES_DIR
         ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
         print("[ZETA]: Generating cmake file on", project_dir)
-        with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
-                  'r') as header_template:
-            t = header_template.read()
-            with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
-                cmake.write(t)
-        if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
-            print("[ZETA]: Generating yaml file on", project_dir)
-            with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.yaml',
-                      'r') as header_template:
-                with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
-                    cmake.write(header_template.read())
+        try:
+            with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
+                      'r') as cmake_template:
+                t = cmake_template.read()
+                with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
+                    cmake.write(t)
+        except FileNotFoundError:
+            raise ZetaCLIError(
+                "Error in such file or directory related to zeta.cmake",
+                EZTFILE)
+        try:
+            if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
+                print("[ZETA]: Generating yaml file on", project_dir)
+                with open(f'{ZETA_TEMPLATES_DIR}/zeta.emplate.yaml',
+                          'r') as header_template:
+                    with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
+                        cmake.write(header_template.read())
+        except FileNotFoundError:
+            raise ZetaCLIError(
+                "Error in such file or directory related to zeta.yaml",
+                EZTFILE)
 
     def check(self) -> None:
         """Called when the user type "zeta check" and is responsible for
@@ -632,7 +657,7 @@ class ZetaCLI(object):
         try:
             with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
                 zeta = Zeta(f)
-        except FileNotFoundError:
+        except ZetaCLIError as zerr:
             #  print("[ZETA]: Could not found zeta.yaml file. Maybe it is not a zeta project.")
             pass
         if zeta and zeta_cmake.exists():
@@ -711,6 +736,7 @@ class ZetaCLI(object):
 
         :returns: None
         :rtype: None
+        :raise ZetaCLIError: Error opening or reading files
 
         """
         parser = argparse.ArgumentParser(
@@ -739,8 +765,12 @@ class ZetaCLI(object):
         global ZETA_TEMPLATES_DIR
         ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
         zeta = None
-        with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
-            zeta = Zeta(f)
+        try:
+            with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
+                zeta = Zeta(f)
+        except FileNotFoundError:
+            raise ZetaCLIError("Error opening zeta.yaml file, file not found",
+                               EZTFILE)
         services_sources = []
         for service in zeta.services:
             service_name = service.name.strip().lower()
@@ -760,21 +790,27 @@ class ZetaCLI(object):
                             f"[ZETA]: Generating service {service_name}.c file"
                             " on the folder {args.src_dir}"))
                     except FileNotFoundError:
-                        print(
-                            ("[ZETA ERROR]: Failed to generate service files."
-                             f" Destination folder {args.src_dir}"
-                             " does not exists."))
-                        return
+                        raise ZetaCLIError(
+                            f"Failed to generate service files. Destination folder {args.src_dir} does not exists",
+                            EZTFILE)
+
             else:
                 """@todo: check implementations on the src folder (maybe in the future)"""
                 pass
         if len(services_sources) > 0:
-            cmake_services_file = FileFactory(
-                ".", "zeta_with_services.template.cmake", zeta, "zeta.cmake")
-            cmake_services_file.substitutions['services_sources'] = " ".join(
-                services_sources)
-            cmake_services_file.run()
-            print("[ZETA]: Inject services sources into the zeta.cmake file")
+            try:
+                cmake_services_file = FileFactory(
+                    ".", "zeta_with_services.template.cmake", zeta,
+                    "zeta.cmake")
+                cmake_services_file.substitutions[
+                    'services_sources'] = " ".join(services_sources)
+                cmake_services_file.run()
+                print(
+                    "[ZETA]: Inject services sources into the zeta.cmake file")
+            except FileNotFoundError:
+                raise ZetaCLIError(
+                    "Failed to generate service files. Error opening and creating zeta.cmake",
+                    EZTFILE)
 
     def gen(self) -> None:
         """Generate all the internal files that represents Zeta system
@@ -842,8 +878,14 @@ class ZetaCLI(object):
 
 
 def run():
-    ZetaCLI()
-
-
-if __name__ == "__main__":
-    ZetaCLI()
+    try:
+        ZetaCLI()
+        exit(0)
+    except ZetaCLIError as zterr:
+        zterr.handle()
+    except Exception as err:
+        print(
+            f"[ZetaCLI Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred."
+        )
+        print(err.with_traceback())
+        exit(EZTUNEXP)

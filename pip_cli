@@ -26,9 +26,9 @@ def generate_file_version(inc=True):
         release_candidate = ""
         if v['release_candidate'] > 0:
             release_candidate = f"rc{v['release_candidate']}"
-        version_file.write("__version__ = " +
-                           f"'{v['major']}.{v['minor']}.{v['build']}{release_candidate}'")
-
+        version_file.write(
+            "__version__ = " +
+            f"'{v['major']}.{v['minor']}.{v['build']}{release_candidate}'")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -151,6 +151,7 @@ class Zeta(object):
         :param yamlfile: Zeta yaml file config
         :returns: None
         :rtype: None
+        :raise ZetaCLIError: Error creating Channel object or Service object
 
         """
         YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
@@ -162,7 +163,7 @@ class Zeta(object):
                 try:
                     self.channels.append(Channel(name, **fields))
                 except TypeError as terr:
-                    raise ZetaCliGenError(
+                    raise ZetaCLIError(
                         f"Error creating Channel object. {terr.__str__()}",
                         EZTFIELD)
         self.services = []
@@ -171,7 +172,7 @@ class Zeta(object):
                 try:
                     self.services.append(Service(name, **fields))
                 except TypeError as terr:
-                    raise ZetaCliGenError(
+                    raise ZetaCLIError(
                         f"Error creating Service object. {terr.__str__()}",
                         EZTFIELD)
         self.__check_service_channel_relation()
@@ -182,7 +183,7 @@ class Zeta(object):
 
         :returns: None
         :rtype: None
-        :raise ValueError: Channel referenced by !ref does not exists.
+        :raise ZetaCLIError: Channel name doesn't exists in channel list.
 
         """
         for service in self.services:
@@ -193,8 +194,8 @@ class Zeta(object):
                         service.pub_channels_obj.append(channel)
                         break
                 else:
-                    raise ZetaCliGenError(
-                        "Channel {channel_name} does not exists", EZTINVREF)
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
             for channel_name in service.sub_channels_names:
                 for channel in self.channels:
                     if channel.name == channel_name:
@@ -202,8 +203,8 @@ class Zeta(object):
                         service.sub_channels_obj.append(channel)
                         break
                 else:
-                    raise ZetaCliGenError(
-                        "Channel {channel_name} does not exists", EZTINVREF)
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
 
     def __process_file(self, yaml_dict: dict):
         """Continues the processing of yamfile
@@ -540,6 +541,7 @@ class ZetaCLI(object):
 
         :returns: None
         :rtype: None
+        :raise ZetaCLIError: Error in zeta.cmake or zeta.yaml file path
 
         """
         argparse.ArgumentParser(
@@ -561,7 +563,7 @@ class ZetaCLI(object):
                 with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
                     cmake.write(t)
         except FileNotFoundError:
-            raise ZetaCliInitError(
+            raise ZetaCLIError(
                 "Error in such file or directory related to zeta.cmake",
                 EZTFILE)
         try:
@@ -572,7 +574,7 @@ class ZetaCLI(object):
                     with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
                         cmake.write(header_template.read())
         except FileNotFoundError:
-            raise ZetaCliInitError(
+            raise ZetaCLIError(
                 "Error in such file or directory related to zeta.yaml",
                 EZTFILE)
 
@@ -655,7 +657,7 @@ class ZetaCLI(object):
         try:
             with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
                 zeta = Zeta(f)
-        except FileNotFoundError:
+        except ZetaCLIError as zerr:
             #  print("[ZETA]: Could not found zeta.yaml file. Maybe it is not a zeta project.")
             pass
         if zeta and zeta_cmake.exists():
@@ -734,6 +736,7 @@ class ZetaCLI(object):
 
         :returns: None
         :rtype: None
+        :raise ZetaCLIError: Error opening or reading files
 
         """
         parser = argparse.ArgumentParser(
@@ -766,8 +769,8 @@ class ZetaCLI(object):
             with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
                 zeta = Zeta(f)
         except FileNotFoundError:
-            raise ZetaCliServicesError(
-                "Error opening zeta.yaml file, file not found", EZTFILE)
+            raise ZetaCLIError("Error opening zeta.yaml file, file not found",
+                               EZTFILE)
         services_sources = []
         for service in zeta.services:
             service_name = service.name.strip().lower()
@@ -787,7 +790,7 @@ class ZetaCLI(object):
                             f"[ZETA]: Generating service {service_name}.c file"
                             " on the folder {args.src_dir}"))
                     except FileNotFoundError:
-                        raise ZetaCliServicesError(
+                        raise ZetaCLIError(
                             f"Failed to generate service files. Destination folder {args.src_dir} does not exists",
                             EZTFILE)
 
@@ -805,7 +808,7 @@ class ZetaCLI(object):
                 print(
                     "[ZETA]: Inject services sources into the zeta.cmake file")
             except FileNotFoundError:
-                raise ZetaCliServicesError(
+                raise ZetaCLIError(
                     "Failed to generate service files. Error opening and creating zeta.cmake",
                     EZTFILE)
 
@@ -878,11 +881,11 @@ def run():
     try:
         ZetaCLI()
         exit(0)
-    except ZetaCliError as zterr:
+    except ZetaCLIError as zterr:
         zterr.handle()
     except Exception as err:
         print(
-            f"[ZetaCli Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred."
+            f"[ZetaCLI Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred."
         )
         print(err.with_traceback())
         exit(EZTUNEXP)

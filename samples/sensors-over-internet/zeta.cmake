@@ -5,10 +5,13 @@
 message("[ZETA]: Running zeta.cmake")
 
 execute_process(COMMAND zeta gen -b "${CMAKE_CURRENT_LIST_DIR}/build"
-                        ${CMAKE_CURRENT_LIST_DIR}/zeta.yaml)
+                        ${CMAKE_CURRENT_LIST_DIR}/zeta.yaml RESULT_VARIABLE ztcli_gen_exit_code)
 
+if (NOT ("${ztcli_gen_exit_code}" STREQUAL "0"))
+  message( FATAL_ERROR "ZetaCli generation failed with exit code: ${ztcli_gen_exit_code}")
+endif()
+                      
 list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/build/zeta/include/")
 list(APPEND SOURCES "${CMAKE_CURRENT_LIST_DIR}/src/core.c" "${CMAKE_CURRENT_LIST_DIR}/src/board.c" "${CMAKE_CURRENT_LIST_DIR}/src/net.c")
 
 set(ZEPHYR_EXTRA_MODULES "${CMAKE_CURRENT_LIST_DIR}/build/zeta")
-

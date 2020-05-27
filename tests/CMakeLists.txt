@@ -7,7 +7,6 @@ include(zeta.cmake NO_POLICY_SCOPE)
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
 project(Zeta)
 
-
 # Generate version file
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

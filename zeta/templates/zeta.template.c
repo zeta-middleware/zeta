@@ -34,14 +34,16 @@ LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 // <ZT_CODE_INJECTION>$channels_sems// </ZT_CODE_INJECTION>
 
 static void __zt_channels_thread(void);
-static void __zt_storage_thread(void);
-
 K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
                 __zt_channels_thread, NULL, NULL, NULL, ZT_CHANNELS_THREAD_PRIORITY, 0,
                 0);
 
+#ifdef CONFIG_ZETA_STORAGE
+static void __zt_storage_thread(void);
 K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage_thread,
                 NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, 0);
+#endif
+
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
 static struct nvs_fs zt_fs;
@@ -148,6 +150,34 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
     }
 }
 
+void __zt_channels_thread(void)
+{
+    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
+
+    // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
+
+    u8_t id = 0;
+    while (1) {
+        k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
+        if (id < ZT_CHANNEL_COUNT) {
+            if (__zt_channels[id].flag.field.pend_callback) {
+                for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
+                    (*s)->cb(id);
+                }
+                __zt_channels[id].flag.field.pend_callback = 0;
+            } else {
+                LOG_INF("[ZT-THREAD]: Received pend_callback from a channel(#%d) "
+                        "without changes!",
+                        id);
+            }
+        } else {
+            LOG_INF("[ZT-THREAD]: Received an invalid ID channel #%d", id);
+        }
+    }
+}
+
+#ifdef CONFIG_ZETA_STORAGE
+
 static void __zt_recover_data_from_flash(void)
 {
     int rc = 0;
@@ -192,32 +222,6 @@ static void __zt_persist_data_on_flash(void)
     }
 }
 
-void __zt_channels_thread(void)
-{
-    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
-
-    // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
-
-    u8_t id = 0;
-    while (1) {
-        k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
-        if (id < ZT_CHANNEL_COUNT) {
-            if (__zt_channels[id].flag.field.pend_callback) {
-                for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
-                    (*s)->cb(id);
-                }
-                __zt_channels[id].flag.field.pend_callback = 0;
-            } else {
-                LOG_INF("[ZT-THREAD]: Received pend_callback from a channel(#%d) "
-                        "without changes!",
-                        id);
-            }
-        } else {
-            LOG_INF("[ZT-THREAD]: Received an invalid ID channel #%d", id);
-        }
-    }
-}
-
 void __zt_storage_thread(void)
 {
     struct flash_pages_info info;
@@ -242,3 +246,5 @@ void __zt_storage_thread(void)
         __zt_persist_data_on_flash();
     }
 }
+
+#endif

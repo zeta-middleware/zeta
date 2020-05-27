@@ -15,9 +15,10 @@ import yaml
 
 from ._version import __version__
 
-ZETA_DIR = "."
+ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."
 PROJECT_DIR = "."
+ZETA_DIR = "."
 ZETA_SRC_DIR = "."
 ZETA_INCLUDE_DIR = "."
 
@@ -313,6 +314,21 @@ class SourceFileFactory(FileFactory):
         super().__init__(ZETA_SRC_DIR, template_file, zeta)
 
 
+class ZetaConf(FileFactory):
+    def __init__(self, zeta: Zeta) -> None:
+        super().__init__(ZETA_DIR, "zeta.template.conf", zeta)
+
+    def create_substitutions(self):
+        storage = "n"
+        for channel in self.zeta.channels:
+            if channel.persistent:
+                storage = "y"
+                break
+        else:
+            print("[ZETA]: Zeta storage disabled")
+        self.substitutions['storage'] = storage
+
+
 class ZetaHeader(HeaderFileFactory):
     """Represents a class that generates the zeta.h file and has the
     goal to assigns all the substitutions needed to Zeta works
@@ -549,12 +565,12 @@ class ZetaCLI(object):
             It will create the zeta.cmake and the zeta.yaml files''',
             usage='zeta init')
         project_dir = "."
-        global ZETA_DIR
-        ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+        global ZETA_MODULE_DIR
+        ZETA_MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
         global PROJECT_DIR
         PROJECT_DIR = project_dir
         global ZETA_TEMPLATES_DIR
-        ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        ZETA_TEMPLATES_DIR = f"{ZETA_MODULE_DIR}/templates"
         print("[ZETA]: Generating cmake file on", project_dir)
         try:
             with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
@@ -758,12 +774,12 @@ class ZetaCLI(object):
         )
         project_dir = "."
         args = parser.parse_args(sys.argv[2:])
-        global ZETA_DIR
-        ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+        global ZETA_MODULE_DIR
+        ZETA_MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
         global PROJECT_DIR
         PROJECT_DIR = project_dir
         global ZETA_TEMPLATES_DIR
-        ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        ZETA_TEMPLATES_DIR = f"{ZETA_MODULE_DIR}/templates"
         zeta = None
         try:
             with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
@@ -836,12 +852,15 @@ class ZetaCLI(object):
         args = parser.parse_args(sys.argv[2:])
         if os.path.exists(args.yamlfile):
             print("[ZETA]: Current dir =", os.getcwd())
-            global ZETA_DIR
-            ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
-            print("[ZETA]: ZETA_DIR =", ZETA_DIR)
+            global ZETA_MODULE_DIR
+            ZETA_MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
+            print("[ZETA]: ZETA_MODULE_DIR =", ZETA_MODULE_DIR)
             global PROJECT_DIR
             PROJECT_DIR = args.build_dir
             print("[ZETA]: PROJECT_DIR =", PROJECT_DIR)
+            global ZETA_DIR
+            ZETA_DIR = f"{PROJECT_DIR}/zeta"
+            print("[ZETA]: ZETA_DIR = ", ZETA_DIR)
             global ZETA_SRC_DIR
             ZETA_SRC_DIR = f"{PROJECT_DIR}/zeta/src"
             print("[ZETA]: ZETA_SRC_DIR =", ZETA_SRC_DIR)
@@ -849,7 +868,7 @@ class ZetaCLI(object):
             ZETA_INCLUDE_DIR = f"{PROJECT_DIR}/zeta/include"
             print("[ZETA]: ZETA_INCLUDE_DIR =", ZETA_INCLUDE_DIR)
             global ZETA_TEMPLATES_DIR
-            ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+            ZETA_TEMPLATES_DIR = f"{ZETA_MODULE_DIR}/templates"
             print("[ZETA]: ZETA_TEMPLATES_DIR =", ZETA_TEMPLATES_DIR)
 
             try:
@@ -872,6 +891,9 @@ class ZetaCLI(object):
                 print("[OK]")
                 print("[ZETA]: Generating zeta.c...", end="")
                 ZetaSource(zeta).run()
+                print("[OK]")
+                print("[ZETA]: Generating zeta.conf...", end="")
+                ZetaConf(zeta).run()
                 print("[OK]")
         else:
             print("[ZETA]: Error. Zeta YAML file does not exist!")

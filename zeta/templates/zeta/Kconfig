@@ -1,17 +1,21 @@
 menuconfig ZETA
     bool "Zeta"
-	select FLASH
-	select FLASH_PAGE_LAYOUT
-	select FLASH_MAP
-	select MPU_ALLOW_FLASH_WRITE
-	select NVS
     help
         This option enables Zeta support.
+
 
 if ZETA
 
 module = ZETA
 module-str = zt
 source "subsys/logging/Kconfig.template.log_config"
+
+config ZETA_STORAGE
+       bool "Enable zeta storage support"
+       select FLASH
+       select FLASH_PAGE_LAYOUT
+       select FLASH_MAP
+       select MPU_ALLOW_FLASH_WRITE
+       select NVS  
 
 endif # ZETA

@@ -9,7 +9,7 @@ K_MSGQ_DEFINE(NET_callback_msgq, sizeof(u8_t), 30, 4);
 
 u8_t generate_random_number(u8_t lower, u8_t upper)
 {
-    return (rand() % (upper - lower + 1)) + lower;
+    return (sys_rand32_get() % (upper - lower + 1)) + lower;
 }
 
 static void handle_net_requests(void)
@@ -94,10 +94,13 @@ void NET_task()
     LOG_DBG("NET Service has started...[OK]");
     u8_t channel_id = 0;
     while (1) {
-        k_msgq_get(&NET_callback_msgq, &channel_id, K_SECONDS(1));
+        k_msgq_get(&NET_callback_msgq, &channel_id, K_NO_WAIT);
         net_handle_channel_callback(channel_id);
         handle_net_requests();
-        k_sleep(K_SECONDS(2));
+        k_sleep(K_SECONDS(10));
+        u32_t per = cpu_stats_non_idle_and_sched_get_percent();
+        LOG_WRN("CPU usage: %u%%\n", per);
+        cpu_stats_reset_counters();
     }
 }
 

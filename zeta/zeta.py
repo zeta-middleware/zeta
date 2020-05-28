@@ -1,55 +1,81 @@
 #!/usr/bin/python3
-# TODO: Criar os warnings nos arquivos gerados
+
+from _io import TextIOWrapper
+import argparse
+import os
+import re
+import shutil
+import sys
+import textwrap
+from .zeta_errors import *
+from pathlib import Path
+from string import Template
+
+import yaml
 
 from ._version import __version__
-import yaml
-import os
-import argparse
-import sys
-from os import getcwd
-from string import Template
-import shutil
-from pathlib import Path
-import re
 
-ZETA_DIR = "."
+ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."
 PROJECT_DIR = "."
+ZETA_DIR = "."
 ZETA_SRC_DIR = "."
 ZETA_INCLUDE_DIR = "."
 
 
 class YamlRefLoader(yaml.SafeLoader):
+    """Modifies the SafeLoader object and generates a correct
+    dictionary-based in the YAML file.
+    """
     def __init__(self, stream):
+        """YamlRefloader constructor.
+
+        :param stream: default param used for yaml.SafeLoader
+        :returns: None
+        :rtype: None
+
+        """
         super(YamlRefLoader, self).__init__(stream)
 
     def ref(self, node):
+        """Handles ref statements in YAML file and generate a valid
+        reference
+
+        :param node: Ref statement with the reference name
+        :returns: Reference name
+        :rtype: str
+
+        """
         return self.construct_scalar(node)
 
 
 class Channel(object):
+    """Represents a channel written on YAML file.
+    """
     def __init__(self,
-                 name,
-                 initial_value=None,
-                 validate='NULL',
-                 pre_read='NULL',
-                 read='__zt_chan_raw_read_private',
-                 pos_read='NULL',
-                 pre_publish='NULL',
-                 publish='__zt_chan_raw_private',
-                 pos_publish='NULL',
-                 react_on='update',
-                 size=1,
-                 persistent=0):
+                 name: str,
+                 initial_value: list = None,
+                 read_only: bool = False,
+                 on_changed: bool = False,
+                 size: int = 1,
+                 persistent: int = 0) -> None:
+        """Channel constructor.
+
+        :param name: Channel name
+        :param initial_value: Initial value assigned to channel
+        :param read_only: Allows publish operations or not
+        :param on_changed: Defines the callback call procedure after a
+        publish operation
+        :param size: Channel size
+        :param persistent: Defines if the channel that must be saved on
+        flash
+        :returns: None
+        :rtype: None
+
+        """
         self.name = name.strip()
-        self.validate = validate
-        self.pre_read = pre_read
-        self.read = read
-        self.pos_read = pos_read
-        self.pre_publish = pre_publish
-        self.publish = publish
-        self.pos_publish = pos_publish
-        self.react_on = react_on
+        self.read_only = int(read_only)
+        self.on_changed = int(on_changed)
         self.size = size
         self.persistent = 1 if persistent else 0
         self.sem = f"zt_{name.lower()}_channel_sem"
@@ -65,12 +91,27 @@ class Channel(object):
 
 
 class Service(object):
+    """Represents a service written on YAML file.
+    """
     def __init__(self,
-                 name,
-                 priority=10,
-                 stack_size=512,
-                 sub_channels=[],
-                 pub_channels=[]):
+                 name: str,
+                 priority: int = 10,
+                 stack_size: int = 512,
+                 sub_channels: list = [],
+                 pub_channels: list = []) -> None:
+        """Service constructor.
+
+        :param name: Service name
+        :param priority: Defines the service priority
+        :param stack_size: Defines the service stack size
+        :param sub_channels: Assigns all channels that service must be
+        subscribed
+        :param pub_channels: Assigns all channels that service must be
+        published
+        :returns: None
+        :rtype: None
+
+        """
         self.name = name
         self.priority = priority
         self.stack_size = stack_size
@@ -82,32 +123,73 @@ class Service(object):
 
 class Config(object):
     def __init__(self,
-                 sector_size='DT_FLASH_ERASE_BLOCK_SIZE',
-                 sector_count=4,
-                 storage_offset='DT_FLASH_AREA_STORAGE_OFFSET',
-                 storage_sleep_time=30):
-        self.sector_size = sector_size
+                 sector_count: int = 4,
+                 storage_partition: str = 'storage',
+                 storage_period: int = 30) -> None:
+        """Config constructor.
+
+        :param sector_count: Sector count that must be used
+        :param storage_partition: Defines the storage partition that must be
+        used to save channel data
+        :param storage_period: Defines the period that zeta will be save
+        channel data pending
+        :returns: None
+        :rtype: None
+
+        """
         self.sector_count = sector_count
-        self.storage_offset = storage_offset
-        self.storage_sleep_time = storage_sleep_time
+        self.storage_partition = storage_partition
+        self.storage_period = storage_period
 
 
 class Zeta(object):
-    def __init__(self, yamlfile):
+    """Represents the Zeta object that has access to services, channels
+    and config parameters specified in YAML file.
+    """
+    def __init__(self, yamlfile: TextIOWrapper) -> None:
+        """Zeta constructor.
+
+        :param yamlfile: Zeta yaml file config
+        :returns: None
+        :rtype: None
+        :raise ZetaCLIError: Error creating Channel object or Service object
+
+        """
         YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
         yaml_dict = yaml.load(yamlfile, Loader=YamlRefLoader)
-        self.config = Config(**yaml_dict['Config'])
+        try:
+            self.config = Config(**yaml_dict['Config'])
+        except KeyError:
+            self.config = Config()
         self.channels = []
         for channel_description in yaml_dict['Channels']:
             for name, fields in channel_description.items():
-                self.channels.append(Channel(name, **fields))
+                try:
+                    self.channels.append(Channel(name, **fields))
+                except TypeError as terr:
+                    raise ZetaCLIError(
+                        f"Error creating Channel object. {terr.__str__()}",
+                        EZTFIELD)
         self.services = []
         for service_description in yaml_dict['Services']:
             for name, fields in service_description.items():
-                self.services.append(Service(name, **fields))
+                try:
+                    self.services.append(Service(name, **fields))
+                except TypeError as terr:
+                    raise ZetaCLIError(
+                        f"Error creating Service object. {terr.__str__()}",
+                        EZTFIELD)
         self.__check_service_channel_relation()
 
-    def __check_service_channel_relation(self):
+    def __check_service_channel_relation(self) -> None:
+        """Checks if the use of !ref is correct or is used some
+        nonexistent channel.
+
+        :returns: None
+        :rtype: None
+        :raise ZetaCLIError: Channel name doesn't exists in channel list.
+
+        """
         for service in self.services:
             for channel_name in service.pub_channels_names:
                 for channel in self.channels:
@@ -116,7 +198,8 @@ class Zeta(object):
                         service.pub_channels_obj.append(channel)
                         break
                 else:
-                    raise ValueError("Channel {channel_name} does not exists")
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
             for channel_name in service.sub_channels_names:
                 for channel in self.channels:
                     if channel.name == channel_name:
@@ -124,83 +207,193 @@ class Zeta(object):
                         service.sub_channels_obj.append(channel)
                         break
                 else:
-                    raise ValueError("Channel {channel_name} does not exists")
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
 
-    def __process_file(self, yaml_dict):
+    def __process_file(self, yaml_dict: dict):
+        """Continues the processing of yamfile
+
+        :param yaml_dict: Dictionary derived by yamlfile
+        :returns: None
+        :rtype: None
+
+        """
         pass
 
 
 class FileFactory(object):
+    """Represents a generic class responsible to generate a file-based
+    in a template and your respective substitutions.
+    """
     def __init__(self,
-                 destination_dir,
-                 template_file,
-                 zeta,
-                 destination_file_name=""):
+                 destination_dir: str,
+                 template_file: str,
+                 zeta: Zeta,
+                 destination_file_name: str = "") -> None:
+        """FileFactory constructor.
+
+        :param destination_dir: The directory where the generated file
+        will be saved
+        :param template_file: Template file
+        :param zeta: Zeta object
+        :param destination_file_name: The file name that will be saved
+        :returns: None
+        :rtype: None
+
+        """
         if destination_file_name:
-            self.destination_file = f'{destination_dir}/{destination_file_name}'
+            self.destination_file = (
+                f"{destination_dir}/{destination_file_name}")
         else:
-            self.destination_file = f'{destination_dir}/{template_file.replace(".template", "")}'
+            self.destination_file = (
+                f'{destination_dir}/{template_file.replace(".template", "")}')
         self.template_file = f'{ZETA_TEMPLATES_DIR}/{template_file}'
         self.zeta = zeta
         self.substitutions = {}
 
-    def create_substitutions(self):
+    def create_substitutions(self) -> None:
+        """The function that will be implemented by classes inherited.
+
+        :returns: None
+        :rtype: None
+
+        """
         pass
 
-    def generate_file(self):
+    def generate_file(self) -> None:
+        """Writes the output file with the respective substitutions
+        assigned in create_substitutions function.
+
+        :returns: None
+        :rtype: None
+
+        """
         with open(self.template_file, 'r') as template:
             t = Template(template.read())
             with open(self.destination_file, 'w') as result_file:
                 result_file.write(t.substitute(**self.substitutions))
 
-    def run(self):
+    def run(self) -> None:
+        """Runs the routine responsible for assigns substitutions and
+        write the output file.
+
+        :returns: None
+        :rtype: None
+
+        """
         self.create_substitutions()
         self.generate_file()
 
 
 class HeaderFileFactory(FileFactory):
-    def __init__(self, template_file, zeta):
+    """Represents a generic class for creation of header files that will
+    be used by Zeta.
+    """
+    def __init__(self, template_file: str, zeta: Zeta) -> None:
+        """Headerfilefactory constructor.
+
+        :param template_file: Template file
+        :param zeta: Zeta object
+        :returns: None
+        :rtype: None
+
+        """
         super().__init__(ZETA_INCLUDE_DIR, template_file, zeta)
 
 
 class SourceFileFactory(FileFactory):
-    def __init__(self, template_file, zeta):
+    """Represents a generic class for creation of source files that will
+    be used by Zeta.
+    """
+    def __init__(self, template_file: str, zeta: Zeta) -> None:
+        """SourceFilefactory constructor.
+
+        :param template_file: Template file
+        :param zeta: Zeta object
+        :returns: None
+        :rtype: None
+
+        """
         super().__init__(ZETA_SRC_DIR, template_file, zeta)
 
 
+class ZetaConf(FileFactory):
+    def __init__(self, zeta: Zeta) -> None:
+        super().__init__(ZETA_DIR, "zeta.template.conf", zeta)
+
+    def create_substitutions(self):
+        storage = "n"
+        for channel in self.zeta.channels:
+            if channel.persistent:
+                storage = "y"
+                break
+        else:
+            print("[ZETA]: Zeta storage disabled")
+        self.substitutions['storage'] = storage
+
+
 class ZetaHeader(HeaderFileFactory):
-    def __init__(self, zeta):
+    """Represents a class that generates the zeta.h file and has the
+    goal to assigns all the substitutions needed to Zeta works
+    properly.
+    """
+    def __init__(self, zeta: Zeta) -> None:
+        """ZetaHeader constructor.
+
+        :param zeta: Zeta object
+        :returns: None
+        :rtype: None
+
+        """
         super().__init__('zeta.template.h', zeta)
         self.services_reference = ""
 
-    def create_substitutions(self):
+    def create_substitutions(self) -> None:
+        """Responsible for assigns the needed substitutions to be
+        written on the output file.
+
+        :returns: None
+        :rtype: None
+
+        """
         channel_names = ',\n    '.join([
             f"ZT_{channel.name.upper()}_CHANNEL"
             for channel in self.zeta.channels
         ])
-        self.substitutions['channels_enum'] = f'''
-typedef enum {{
-    {channel_names},
-    ZT_CHANNEL_COUNT
-}} __attribute__((packed)) zt_channel_e;
-'''
+        self.substitutions['channels_enum'] = textwrap.dedent('''
+            typedef enum {{
+                {channel_names},
+                ZT_CHANNEL_COUNT
+            }} __attribute__((packed)) zt_channel_e;
+            ''').format(channel_names=channel_names)
         for service in self.zeta.services:
             name = service.name
             priority = service.priority
             stack_size = service.stack_size
-            self.services_reference += f'''
-/* BEGIN {name} SECTION */
-extern zt_service_t {name}_service;
-#define {name}_TASK_PRIORITY {priority}
-#define {name}_STACK_SIZE {stack_size}
-/* END {name} SECTION */
-'''
+            self.services_reference += textwrap.dedent(f'''
+                /* BEGIN {name} SECTION */
+                extern zt_service_t {name}_service;
+                #define {name}_TASK_PRIORITY {priority}
+                #define {name}_STACK_SIZE {stack_size}
+                /* END {name} SECTION */
+                ''')
         self.substitutions['services_reference'] = self.services_reference
-        self.substitutions['storage_sleep_time'] = self.zeta.config.storage_sleep_time
+        self.substitutions['storage_period'] = self.zeta.config.storage_period
 
 
 class ZetaSource(SourceFileFactory):
-    def __init__(self, zeta):
+    """Represents a class that generates the zeta.c file and has the
+    goal to assigns all the substitutions needed to Zeta works
+    properly.
+    """
+    def __init__(self, zeta: Zeta) -> None:
+        """ZetaSource constructor.
+
+        :param zeta: Zeta object
+        :returns: None
+        :rtype: None
+
+        """
         super().__init__('zeta.template.c', zeta)
         self.channels_creation = ''
         self.channels_sems = ''
@@ -211,29 +404,41 @@ class ZetaSource(SourceFileFactory):
         self.set_subscribers = ''
         self.arrays_init = ''
 
-    def gen_sems(self):
-        self.channels_sems += f'''
-/* BEGIN INITIALIZING CHANNEL SEMAPHORES */
-'''
+    def gen_sems(self) -> None:
+        """Responsible for assigns the channel semaphores.
+
+        :returns: None
+        :rtype: None
+
+        """
+        self.channels_sems += textwrap.dedent('''
+            /* BEGIN INITIALIZING CHANNEL SEMAPHORES */
+            ''')
         for channel in self.zeta.channels:
-            self.channels_sems += f'''
-K_SEM_DEFINE({channel.sem}, 1, 1);
-'''
+            self.channels_sems += textwrap.dedent(f'''
+                K_SEM_DEFINE({channel.sem}, 1, 1);
+                ''')
 
-        self.channels_sems += f'''
-/* END INITIALIZING CHANNEL SEMAPHORES */
-'''
+        self.channels_sems += textwrap.dedent('''
+            /* END INITIALIZING CHANNEL SEMAPHORES */
+            ''')
 
-    def gen_creation(self):
+    def gen_creation(self) -> None:
+        """Responsible for creates all the channels that will be used by
+        Zeta.
+
+        :returns: None
+        :rtype: None
+
+        """
         channels = ''
         for channel in self.zeta.channels:
-            data_alloc = f"static u8_t __{channel.name.lower()}_data[] = {{{', '.join(channel.initial_value)}}};"
+            data_alloc = (f"static u8_t __{channel.name.lower()}_data[] ="
+                          f"{{{', '.join(channel.initial_value)}}};")
             channel.data = f"__{channel.name.lower()}_data"
             channel.flag = 0x00
-            if channel.react_on == 'change' :
+            if channel.on_changed:
                 channel.flag = channel.flag | (1 << 2)
-            elif channel.react_on != 'update' :
-                raise Exception(f"[ZETA ERROR]: Failed to generate zeta.c. The field react_on has an invalid value: {channel.react_on}.")
 
             subscribers_alloc = "NULL"
             if len(channel.sub_services_obj) > 0:
@@ -245,17 +450,17 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
                 subscribers_alloc = ', '.join(subscribers_alloc)
             name_subscribers = f"{channel.name.lower()}_subscribers"
             channel.subscribers = f"__{channel.name.lower()}_subcribers"
-            self.arrays_init += f'''
-/* BEGIN {channel.name} CHANNEL INIT ARRAYS */
-{data_alloc}
-/* END {channel.name} INIT ARRAYS */
-'''
-            self.set_subscribers += f'''
-/* BEGIN {channel.name} SUBSCRIBERS INIT */
-    zt_service_t *{name_subscribers}[] = {{{subscribers_alloc}}};
-    __zt_channels[{channel.id}].subscribers = {name_subscribers};
-/* END {channel.name} SUBSCRIBERS INIT */
-'''
+            self.arrays_init += textwrap.dedent(f'''
+                /* BEGIN {channel.name} CHANNEL INIT ARRAYS */
+                {data_alloc}
+                /* END {channel.name} INIT ARRAYS */
+                ''')
+            self.set_subscribers += textwrap.dedent(f'''
+                /* BEGIN {channel.name} SUBSCRIBERS INIT */
+                    zt_service_t *{name_subscribers}[] = {{{subscribers_alloc}}};
+                    __zt_channels[{channel.id}].subscribers = {name_subscribers};
+                /* END {channel.name} SUBSCRIBERS INIT */
+                ''')
             channel.publishers = "NULL"
             if len(channel.pub_services_obj) > 0:
                 channel.publishers = [
@@ -267,96 +472,74 @@ K_SEM_DEFINE({channel.sem}, 1, 1);
             channel.publishers = f"{{{channel.publishers}}}"
 
             name_publishers = f"{channel.name.lower()}_publishers"
-            self.set_publishers += f'''
-/* BEGIN {channel.name} PUBLISHERS INIT */
-    zt_service_t *{name_publishers}[] = {channel.publishers};
-    __zt_channels[{channel.id}].publishers = {name_publishers};
-/* END {channel.name} PUBLISHERS INIT */
-'''
-            channels += '''
-    {{
-        .name = "{name}",
-        .validate = {validate},
-        .pre_read = {pre_read},
-        .read = {read},
-        .pos_read = {pos_read},
-        .pre_publish = {pre_publish},
-        .publish = {publish},
-        .pos_publish = {pos_publish},
-        .flag = {{.data = {flag}}},
-        .size = {size},
-        .persistent = {persistent},
-        .sem = &{sem},
-        .id = {id},
-        .data = {data}
-    }},\n'''.format(**vars(channel))
+            self.set_publishers += textwrap.dedent(f'''
+                /* BEGIN {channel.name} PUBLISHERS INIT */
+                    zt_service_t *{name_publishers}[] = {channel.publishers};
+                    __zt_channels[{channel.id}].publishers = {name_publishers};
+                /* END {channel.name} PUBLISHERS INIT */
+                ''')
+            channels += textwrap.indent(
+                '''
+                {{
+                    .name = "{name}",
+                    .read_only = {read_only},
+                    .flag = {{.data = {flag}}},
+                    .size = {size},
+                    .persistent = {persistent},
+                    .sem = &{sem},
+                    .id = {id},
+                    .data = {data}
+                }},\n'''.format(**vars(channel)), '')
 
-        self.channels_creation = f'''
-/* BEGIN INITIALIZING CHANNELS */
-static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
-    {channels}
-}};
-/* END INITIALIZING CHANNELS */
-'''
+        self.channels_creation = textwrap.dedent(f'''
+            /* BEGIN INITIALIZING CHANNELS */
+            static zt_channel_t __zt_channels[ZT_CHANNEL_COUNT] = {{
+                {channels}
+            }};
+            /* END INITIALIZING CHANNELS */
+            ''')
 
-    def gen_nvs_config(self):
-        self.sector_size = self.zeta.config.sector_size
+    def gen_nvs_config(self) -> None:
+        """Responsible for assigns the nvs config.
+
+        :returns: None
+        :rtype: None
+
+        """
         self.sector_count = self.zeta.config.sector_count
-        self.storage_offset = self.zeta.config.storage_offset
+        self.storage_partition = self.zeta.config.storage_partition
 
-    def create_substitutions(self):
+    def create_substitutions(self) -> None:
+        """Responsible for assigns the needed substitutions to be written
+        on the output file.
+
+        :returns: None
+        :rtype: None
+
+        """
         self.gen_nvs_config()
         self.gen_sems()
         self.gen_creation()
         self.substitutions['channels_creation'] = self.channels_creation
         self.substitutions['channels_sems'] = self.channels_sems
-        self.substitutions['sector_size'] = self.sector_size
         self.substitutions['sector_count'] = self.sector_count
-        self.substitutions['storage_offset'] = self.storage_offset
+        self.substitutions['storage_partition'] = self.storage_partition
         self.substitutions['set_publishers'] = self.set_publishers
         self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init
 
 
-class ZetaCustomFunctionsHeader(HeaderFileFactory):
-    def __init__(self, zeta):
-        super().__init__('zeta_custom_functions.template.h', zeta)
-        self.channels_functions = ''
-
-    def create_substitutions(self):
-        for channel in self.zeta.channels:
-            name = channel.name
-            self.channels_functions += f'''
-/* BEGIN {name} CHANNEL FUNCTIONS */
-'''
-            if channel.pre_read is not 'NULL':
-                self.channels_functions += f'''
-int {channel.pre_read}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-            if channel.pos_read is not 'NULL':
-                self.channels_functions += f'''
-int {channel.pos_read}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-            if channel.pre_publish is not 'NULL':
-                self.channels_functions += f'''
-int {channel.pre_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-            if channel.pos_publish is not 'NULL':
-                self.channels_functions += f'''
-int {channel.pos_publish}(zt_channel_e id, u8_t *channel_value, size_t size);
-'''
-            if channel.validate is not 'NULL':
-                self.channels_functions += f'''
-int {channel.validate}(u8_t *data, size_t size);
-'''
-            self.channels_functions += f'''
-/* END {name} CHANNEL FUNCTIONS */
-'''
-        self.substitutions['custom_functions'] = self.channels_functions
-
-
 class ZetaCLI(object):
-    def __init__(self):
+    """Represents the ZetaCLI and has all the callbacks that will be
+    called when the user type zeta on the terminal.
+    """
+    def __init__(self) -> None:
+        """ZetaCLI constructor.
+
+        :returns: None
+        :rtype: None
+
+        """
         parser = argparse.ArgumentParser(description='ZETA cli tool',
                                          usage='''zeta <command> [<args>]
     init - for creating the need files.
@@ -370,33 +553,59 @@ class ZetaCLI(object):
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)()
 
-    def init(self):
-        parser = argparse.ArgumentParser(
+    def init(self) -> None:
+        """Called when the user type "zeta init" and is responsible for
+        generates the minimum requirements in order to Zeta works
+        properly.
+
+        :returns: None
+        :rtype: None
+        :raise ZetaCLIError: Error in zeta.cmake or zeta.yaml file path
+
+        """
+        argparse.ArgumentParser(
             description='''Run this command on the project root directory.
-            It will create the zeta.cmake and the zeta.yaml (if it does not exist) file on the project folder''',
+            It will create the zeta.cmake and the zeta.yaml files''',
             usage='zeta init')
         project_dir = "."
-        args = parser.parse_args(sys.argv[2:])
-        global ZETA_DIR
-        ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+        global ZETA_MODULE_DIR
+        ZETA_MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
         global PROJECT_DIR
         PROJECT_DIR = project_dir
         global ZETA_TEMPLATES_DIR
-        ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        ZETA_TEMPLATES_DIR = f"{ZETA_MODULE_DIR}/templates"
         print("[ZETA]: Generating cmake file on", project_dir)
-        with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
-                  'r') as header_template:
-            t = header_template.read()
-            with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
-                cmake.write(t)
-        if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
-            print("[ZETA]: Generating yaml file on", project_dir)
-            with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.yaml',
-                      'r') as header_template:
-                with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
-                    cmake.write(header_template.read())
+        try:
+            with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
+                      'r') as cmake_template:
+                t = cmake_template.read()
+                with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
+                    cmake.write(t)
+        except FileNotFoundError:
+            raise ZetaCLIError(
+                "Error in such file or directory related to zeta.cmake",
+                EZTFILE)
+        try:
+            if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
+                print("[ZETA]: Generating yaml file on", project_dir)
+                with open(f'{ZETA_TEMPLATES_DIR}/zeta.emplate.yaml',
+                          'r') as header_template:
+                    with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
+                        cmake.write(header_template.read())
+        except FileNotFoundError:
+            raise ZetaCLIError(
+                "Error in such file or directory related to zeta.yaml",
+                EZTFILE)
 
-    def check(self):
+    def check(self) -> None:
+        """Called when the user type "zeta check" and is responsible for
+        checks if the needed steps were made by user in order to Zeta
+        works properly.
+
+        :returns: None
+        :rtype: None
+
+        """
         OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
         FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
         parser = argparse.ArgumentParser(
@@ -414,28 +623,34 @@ class ZetaCLI(object):
         zeta_cmake = Path('./zeta.cmake')
         zeta_cmake_path = zeta_cmake.resolve()
         if zeta_cmake.exists():
-            zeta_cmake_output = f"{OK_COLORED}: zeta.cmake found ({zeta_cmake_path})"
+            zeta_cmake_output = (
+                f" {OK_COLORED} zeta.cmake found ({zeta_cmake_path})")
         else:
-            zeta_cmake_output = f"{FAIL_COLORED}: zeta.cmake not found"
+            zeta_cmake_output = f" {FAIL_COLORED} zeta.cmake not found"
 
         zeta_yaml = Path('./zeta.yaml')
         zeta_yaml_path = zeta_yaml.resolve()
         if zeta_yaml.exists():
-            zeta_yaml_output = f"{OK_COLORED}: zeta.yaml found ({zeta_yaml_path})"
+            zeta_yaml_output = (
+                f" {OK_COLORED} zeta.yaml found ({zeta_yaml_path})")
         else:
-            zeta_yaml_output = f"{FAIL_COLORED}: zeta.yaml not found"
+            zeta_yaml_output = f" {FAIL_COLORED} zeta.yaml not found"
 
         prj_conf = Path('./prj.conf')
         prj_conf_path = prj_conf.resolve()
         if prj_conf.exists():
             with prj_conf.open() as prj_conf_file:
                 for line, line_content in enumerate(prj_conf_file.readlines()):
-                    # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
+                    # @todo: check it with an regex. Maybe the line is comment
+                    # out and it will not be true that it is setup ok
                     if "CONFIG_ZETA=y" in line_content:
-                        prj_conf_output = f"{OK_COLORED}: CONFIG_ZETA=y added to the prj ({prj_conf_path}:{line + 1})"
+                        prj_conf_output = (
+                            f" {OK_COLORED} CONFIG_ZETA=y added to the prj"
+                            f" ({prj_conf_path}:{line + 1})")
                         break
                 else:
-                    prj_conf_output = f"{FAIL_COLORED}: CONFIG_ZETA=y NOT added to the prj"
+                    prj_conf_output = (
+                        f" {FAIL_COLORED} CONFIG_ZETA=y NOT added to the prj")
 
         cmakelists = Path('./CMakeLists.txt')
         cmakelists_path = cmakelists.resolve()
@@ -443,68 +658,106 @@ class ZetaCLI(object):
             with cmakelists.open() as cmakelists_file:
                 for line, line_content in enumerate(
                         cmakelists_file.readlines()):
-                    # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
+                    # @todo: check it with an regex. Maybe the line is comment
+                    # out and it will not be true that it is setup ok
                     if "include(zeta.cmake NO_POLICY_SCOPE)" in line_content:
-                        cmakelists_output = f"{OK_COLORED}: zeta.cmake included properly ({cmakelists_path}:{line + 1})"
+                        cmakelists_output = (
+                            f" {OK_COLORED} zeta.cmake included properly"
+                            f" ({cmakelists_path}:{line + 1})")
                         break
                 else:
-                    cmakelists_output = f"{FAIL_COLORED}: zeta.cmake NOT included properly into the CMakeLists.txt file"
+                    cmakelists_output = (
+                        f" {FAIL_COLORED} zeta.cmake NOT included properly"
+                        " into the CMakeLists.txt file")
         services_output = ""
+        services_output_list = []
 
         zeta = None
         try:
             with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
                 zeta = Zeta(f)
-        except FileNotFoundError:
+        except ZetaCLIError as zerr:
             #  print("[ZETA]: Could not found zeta.yaml file. Maybe it is not a zeta project.")
             pass
-        if zeta:
-            services_output = "## \033[1;37mServices\033[0m "
+        if zeta and zeta_cmake.exists():
             for service_info in zeta.services:
                 service = Path(f'{args.src_dir}',
                                f"{service_info.name.lower()}.c")
                 service_path = service.resolve()
-                service_init_output = f"        - {FAIL_COLORED}: Service {service_info.name} was NOT initialized properly into the {service_path.name} file"
-                service_included_output = f"\n        - {FAIL_COLORED}: Service {service_info.name} was NOT added to be compiled into the CMakeLists.txt file"
+                service_init_output = (
+                    f" {FAIL_COLORED} Service"
+                    f" {service_info.name} was NOT initialized properly into"
+                    f" the {service_path.name} file")
+                service_included_output = (
+                    f"\n {FAIL_COLORED} Service {service_info.name} was NOT"
+                    " added to be compiled into the CMakeLists.txt file")
                 if service.exists():
                     with service.open() as service_file:
                         for line, line_content in enumerate(
                                 service_file.readlines()):
-                            # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
+                            # @todo: check it with an regex. Maybe the line is
+                            # comment out and it will not be true that it is setup ok
                             if f"ZT_SERVICE_INIT({service_info.name}," in line_content:
-                                service_init_output = f"        - {OK_COLORED}: Service {service_info.name} was initialized properly ({service_path}:{line + 1})"
+                                service_init_output = (
+                                    f" {OK_COLORED} Service "
+                                    f"{service_info.name} was initialized"
+                                    f" properly ({service_path}:{line + 1})")
                                 break
-                    cmakelists = Path('./CMakeLists.txt')
-                    cmakelists_path = cmakelists.resolve()
-                    if cmakelists.exists():
-                        with cmakelists.open() as cmakelists_file:
-                            # @todo: check it with an regex. Maybe the line is comment out and it will not be true that it is setup ok
-                            sources = re.search(
-                                'list\(APPEND SOURCES(\s*\n?\".*\"\s*\n?)+\)',
-                                cmakelists_file.read()).group()
-                            if sources and f"{service_info.name.lower()}.c" in sources:
-                                service_included_output = f"\n        - {OK_COLORED}: {service_info.name.lower()}.c added to be compiled at the CMakeLists.txt file"
-                            else:
-                                service_included_output = f"\n        - {FAIL_COLORED}: {service_info.name.lower()}.c was NOT added to be compiled at the CMakeLists.txt file"
+                    with zeta_cmake.open() as zeta_cmake_file:
+                        sources = re.search(
+                            r'list\(APPEND SOURCES(\s*\n?\".*\"\s*\n?)+\)',
+                            zeta_cmake_file.read())
+                        if sources and f"{service_info.name.lower()}.c" in sources.group(
+                        ):
+                            service_included_output = (
+                                f"\n {OK_COLORED}"
+                                f" {service_info.name.lower()}.c added to be"
+                                f" compiled at the zeta.cmake file")
+                        else:
+                            cmakelists = Path('./CMakeLists.txt')
+                            cmakelists_path = cmakelists.resolve()
+                            if cmakelists.exists():
+                                with cmakelists.open() as cmakelists_file:
+                                    sources = re.search(
+                                        r'list\(APPEND SOURCES(\s*\n?\".*\"\s*\n?)+\)',
+                                        cmakelists_file.read())
+                                    if sources and f"{service_info.name.lower()}.c" in sources.group(
+                                    ):
+                                        service_included_output = (
+                                            f"\n {OK_COLORED}"
+                                            " {service_info.name.lower()}.c"
+                                            " added to be compiled at the"
+                                            " CMakeLists.txt file")
+                                    else:
+                                        service_included_output = (
+                                            f"\n {FAIL_COLORED}"
+                                            " {service_info.name.lower()}.c"
+                                            " was NOT added to be compiled")
                 else:
-                    service_init_output = f"        - {FAIL_COLORED}: Service {service_info.name} file was NOT found"
+                    service_init_output = (
+                        f" {FAIL_COLORED} Service"
+                        " {service_info.name} file was NOT found")
                     service_included_output = ""
-                services_output += f"""
-    {service_info.name}
-{service_init_output}{service_included_output}"""
-        print(f'''
- \033[1;37mZeta project configuration check\033[0m
-===================================================
-## \033[1;37mZeta files\033[0m
-    - {zeta_cmake_output}
-    - {zeta_yaml_output}
-## \033[1;37mZephyr setup\033[0m
-    - {prj_conf_output}
-    - {cmakelists_output}
-{services_output}
-''')
+                services_output_list.append(
+                    f"""{service_init_output}{service_included_output}""")
+        services_output = "\n" + "\n".join(services_output_list)
+        check_output = textwrap.dedent(f'''\
+                [ZETA]: Zeta project configuration check...
+                {zeta_cmake_output}
+                {zeta_yaml_output}
+                {prj_conf_output}
+                {cmakelists_output}''') + services_output
+        print(check_output)
 
-    def services(self):
+    def services(self) -> None:
+        """Called when the user type "zeta services" and is responsible
+        for generates files template-based with the services initialized.
+
+        :returns: None
+        :rtype: None
+        :raise ZetaCLIError: Error opening or reading files
+
+        """
         parser = argparse.ArgumentParser(
             description='Verify or create services files on the src folder',
             usage='zeta services [-g] <src dir>')
@@ -512,8 +765,8 @@ class ZetaCLI(object):
             '-g',
             '--generate',
             action='store_true',
-            help=
-            'Generate services minimal implementation on the [src_dir] directory',
+            help=('Generate services minimal implementation'
+                  ' on the [src_dir] directory'),
         )
         parser.add_argument(
             '-s',
@@ -524,21 +777,25 @@ class ZetaCLI(object):
         )
         project_dir = "."
         args = parser.parse_args(sys.argv[2:])
-        global ZETA_DIR
-        ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
+        global ZETA_MODULE_DIR
+        ZETA_MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
         global PROJECT_DIR
         PROJECT_DIR = project_dir
         global ZETA_TEMPLATES_DIR
-        ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+        ZETA_TEMPLATES_DIR = f"{ZETA_MODULE_DIR}/templates"
         zeta = None
-        with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
-            zeta = Zeta(f)
+        try:
+            with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
+                zeta = Zeta(f)
+        except FileNotFoundError:
+            raise ZetaCLIError("Error opening zeta.yaml file, file not found",
+                               EZTFILE)
         services_sources = []
         for service in zeta.services:
             service_name = service.name.strip().lower()
-            services_sources.append(
+            services_sources.append((
                 f'"{str(Path("${CMAKE_CURRENT_LIST_DIR}/", f"{args.src_dir}", f"{service_name}.c"))}"'
-            )
+            ))
             if args.generate:
                 if not os.path.exists(f'{args.src_dir}/{service_name}.c'):
                     try:
@@ -548,26 +805,40 @@ class ZetaCLI(object):
                         service_file.substitutions[
                             'service_name'] = service.name.upper()
                         service_file.run()
-                        print(
-                            f"[ZETA]: Generating service {service_name}.c file on the folder {args.src_dir}"
-                        )
+                        print((
+                            f"[ZETA]: Generating service {service_name}.c file"
+                            " on the folder {args.src_dir}"))
                     except FileNotFoundError:
-                        print(
-                            f"[ZETA ERROR]: Failed to generate service files. Destination folder {args.src_dir} does not exists."
-                        )
-                        return
+                        raise ZetaCLIError(
+                            f"Failed to generate service files. Destination folder {args.src_dir} does not exists",
+                            EZTFILE)
+
             else:
                 """@todo: check implementations on the src folder (maybe in the future)"""
                 pass
         if len(services_sources) > 0:
-            cmake_services_file = FileFactory(
-                ".", "zeta_with_services.template.cmake", zeta, f"zeta.cmake")
-            cmake_services_file.substitutions['services_sources'] = " ".join(
-                services_sources)
-            cmake_services_file.run()
-            print(f"[ZETA]: Inject services sources into the zeta.cmake file")
+            try:
+                cmake_services_file = FileFactory(
+                    ".", "zeta_with_services.template.cmake", zeta,
+                    "zeta.cmake")
+                cmake_services_file.substitutions[
+                    'services_sources'] = " ".join(services_sources)
+                cmake_services_file.run()
+                print(
+                    "[ZETA]: Inject services sources into the zeta.cmake file")
+            except FileNotFoundError:
+                raise ZetaCLIError(
+                    "Failed to generate service files. Error opening and creating zeta.cmake",
+                    EZTFILE)
 
-    def gen(self):
+    def gen(self) -> None:
+        """Generate all the internal files that represents Zeta system
+        like channels, Zeta threads, Zeta API, and others.
+
+        :returns: None
+        :rtype: None
+
+        """
         parser = argparse.ArgumentParser(
             description='Generate zeta files on the build folder',
             usage='zeta gen [-p] yamlfile')
@@ -584,12 +855,15 @@ class ZetaCLI(object):
         args = parser.parse_args(sys.argv[2:])
         if os.path.exists(args.yamlfile):
             print("[ZETA]: Current dir =", os.getcwd())
-            global ZETA_DIR
-            ZETA_DIR = os.path.dirname(os.path.realpath(__file__))
-            print("[ZETA]: ZETA_DIR =", ZETA_DIR)
+            global ZETA_MODULE_DIR
+            ZETA_MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
+            print("[ZETA]: ZETA_MODULE_DIR =", ZETA_MODULE_DIR)
             global PROJECT_DIR
             PROJECT_DIR = args.build_dir
             print("[ZETA]: PROJECT_DIR =", PROJECT_DIR)
+            global ZETA_DIR
+            ZETA_DIR = f"{PROJECT_DIR}/zeta"
+            print("[ZETA]: ZETA_DIR = ", ZETA_DIR)
             global ZETA_SRC_DIR
             ZETA_SRC_DIR = f"{PROJECT_DIR}/zeta/src"
             print("[ZETA]: ZETA_SRC_DIR =", ZETA_SRC_DIR)
@@ -597,19 +871,19 @@ class ZetaCLI(object):
             ZETA_INCLUDE_DIR = f"{PROJECT_DIR}/zeta/include"
             print("[ZETA]: ZETA_INCLUDE_DIR =", ZETA_INCLUDE_DIR)
             global ZETA_TEMPLATES_DIR
-            ZETA_TEMPLATES_DIR = f"{ZETA_DIR}/templates"
+            ZETA_TEMPLATES_DIR = f"{ZETA_MODULE_DIR}/templates"
             print("[ZETA]: ZETA_TEMPLATES_DIR =", ZETA_TEMPLATES_DIR)
 
             try:
                 os.makedirs(PROJECT_DIR)
-            except FileExistsError as fe_error:
+            except FileExistsError:
                 pass
 
             try:
                 print("[ZETA]: Creating Zeta project folder")
                 shutil.copytree(f"{ZETA_TEMPLATES_DIR}/zeta",
                                 f"{PROJECT_DIR}/zeta")
-            except FileExistsError as fe_error:
+            except FileExistsError:
                 pass
 
             YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
@@ -621,16 +895,22 @@ class ZetaCLI(object):
                 print("[ZETA]: Generating zeta.c...", end="")
                 ZetaSource(zeta).run()
                 print("[OK]")
-                print("[ZETA]: Generating zeta_custom_functions.c...", end="")
-                ZetaCustomFunctionsHeader(zeta).run()
+                print("[ZETA]: Generating zeta.conf...", end="")
+                ZetaConf(zeta).run()
                 print("[OK]")
         else:
             print("[ZETA]: Error. Zeta YAML file does not exist!")
 
 
 def run():
-    ZetaCLI()
-
-
-if __name__ == "__main__":
-    ZetaCLI()
+    try:
+        ZetaCLI()
+        exit(0)
+    except ZetaCLIError as zterr:
+        zterr.handle()
+    except Exception as err:
+        print(
+            f"[ZetaCLI Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred."
+        )
+        print(err.with_traceback())
+        exit(EZTUNEXP)

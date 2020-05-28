@@ -15,37 +15,32 @@ K_SEM_DEFINE(zt_app_pend_evt, 0, 1);
 zt_channel_e zt_core_evt_id;
 zt_channel_e zt_app_evt_id;
 
-int zeta_validator_different_of_zero(u8_t *data, size_t size)
-{
-    return 1;
-}
-
 void HAL_task(void)
 {
-    u8_t data = 1;
+    zt_data_t *data = ZT_DATA_U8(1);
     while (1) {
-        zt_chan_raw_pub(ZT_SENSOR_VAL_CHANNEL, (u8_t *) &data, sizeof(data));
+        zt_chan_pub(ZT_SENSOR_VAL_CHANNEL, data);
         k_sleep(K_SECONDS(3));
-        data = (data + 1 <= 15) ? data + 1 : 1;
+        data->u8.value = (data->u8.value + 1 <= 15) ? data->u8.value + 1 : 1;
     }
 }
 
 void CORE_task(void)
 {
-    u8_t data  = 0;
-    u8_t power = 2;
+    zt_data_t *data = ZT_DATA_U8(1);
+    u8_t power      = 2;
 
     while (1) {
-        u16_t result = 1;
+        zt_data_t *result = ZT_DATA_U16(1);
         k_sem_take(&zt_core_pend_evt, K_FOREVER);
         switch (zt_core_evt_id) {
         case ZT_SENSOR_VAL_CHANNEL:
-            zt_chan_raw_read(zt_core_evt_id, (u8_t *) &data, sizeof(data));
-            printk("[CORE_service_callback] Getting data value %02X\n", data);
-            for (u8_t i = 1; i <= data; ++i) {
-                result = result * power;
+            zt_chan_read(zt_core_evt_id, data);
+            printk("[CORE_service_callback] Getting data value %02X\n", data->u8.value);
+            for (u8_t i = 1; i <= data->u8.value; ++i) {
+                result->u16.value = result->u16.value * power;
             }
-            zt_chan_raw_pub(ZT_POWER_VAL_CHANNEL, (u8_t *) &result, sizeof(result));
+            zt_chan_pub(ZT_POWER_VAL_CHANNEL, result);
             break;
         default:
             printk("[CORE_service_callback] receiving an unexpected id channel\n");
@@ -56,17 +51,18 @@ void CORE_task(void)
 
 void APP_task(void)
 {
-    u8_t fv[4] = {0};
+    zt_data_t *fv = ZT_DATA_BYTES(4, 0);
     printk("Hello APP task!\n");
-    zt_chan_raw_read(ZT_FIRMWARE_VERSION_CHANNEL, fv, sizeof(fv));
-    printk("Firmware version 0x%02X%02X%02X%02X\n", fv[0], fv[1], fv[2], fv[3]);
-    u16_t data = 0;
+    zt_chan_read(ZT_FIRMWARE_VERSION_CHANNEL, fv);
+    printk("Firmware version 0x%02X%02X%02X%02X\n", fv->bytes.value[0],
+           fv->bytes.value[1], fv->bytes.value[2], fv->bytes.value[3]);
+    zt_data_t *data = ZT_DATA_U16(0);
     while (1) {
         k_sem_take(&zt_app_pend_evt, K_FOREVER);
         switch (zt_app_evt_id) {
         case ZT_POWER_VAL_CHANNEL:
-            zt_chan_raw_read(zt_app_evt_id, (u8_t *) &data, sizeof(data));
-            printk("[APP_service_callback] Power val is: %04X\n", data);
+            zt_chan_read(zt_app_evt_id, data);
+            printk("[APP_service_callback] Power val is: %04X\n", data->u16.value);
             break;
         default:
             printk("[APP_service_callback] receiving an unexpected id channel\n");

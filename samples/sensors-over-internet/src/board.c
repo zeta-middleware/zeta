@@ -56,7 +56,7 @@ void BOARD_task()
 
         data_c->u32.value = get_sensor_c();
         zt_chan_pub(ZT_SENSOR_C_CHANNEL, data_c);
-        k_sleep(K_SECONDS(10));
+        k_sleep(K_SECONDS(3));
     }
 }
 

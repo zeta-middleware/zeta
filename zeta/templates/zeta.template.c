@@ -14,44 +14,39 @@
 #include "zeta.h"
 
 
+#include <drivers/flash.h>
 #include <fs/nvs.h>
 #include <logging/log.h>
+#include <storage/flash_map.h>
 #include <string.h>
 #include <zephyr.h>
 
 #include "devicetree_fixups.h"
-#include "zeta_custom_functions.h"
 
 
 LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 // <ZT_CODE_INJECTION>$arrays_init// </ZT_CODE_INJECTION>
 
-#define NVS_SECTOR_SIZE $sector_size
 #define NVS_SECTOR_COUNT $sector_count
-#define NVS_STORAGE_OFFSET $storage_offset
+#define NVS_STORAGE_PARTITION $storage_partition
 
 // <ZT_CODE_INJECTION>$channels_sems// </ZT_CODE_INJECTION>
 
 static void __zt_channels_thread(void);
-static void __zt_storage_thread(void);
-static int __zt_chan_raw_read_private(zt_channel_e id, u8_t *channel_value, size_t size);
-static int __zt_chan_raw_private(zt_channel_e id, u8_t *channel_value, size_t size);
-
 K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
                 __zt_channels_thread, NULL, NULL, NULL, ZT_CHANNELS_THREAD_PRIORITY, 0,
-                K_NO_WAIT);
+                0);
 
+#ifdef CONFIG_ZETA_STORAGE
+static void __zt_storage_thread(void);
 K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage_thread,
-                NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, K_NO_WAIT);
+                NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, 0);
+#endif
+
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
 
-
-static struct nvs_fs zt_fs = {
-    .sector_size  = NVS_SECTOR_SIZE,
-    .sector_count = NVS_SECTOR_COUNT,
-    .offset       = NVS_STORAGE_OFFSET,
-};
+static struct nvs_fs zt_fs;
 
 // <ZT_CODE_INJECTION>$channels_creation// </ZT_CODE_INJECTION>
 
@@ -91,63 +86,28 @@ size_t zt_channel_size(zt_channel_e id, int *error)
 
 int zt_chan_read(zt_channel_e id, zt_data_t *channel_data)
 {
-    return zt_chan_raw_read(id, channel_data->bytes.value, channel_data->bytes.size);
-}
-
-int zt_chan_raw_read(zt_channel_e id, u8_t *channel_value, size_t size)
-{
     if (id < ZT_CHANNEL_COUNT) {
-        int error             = 0;
         zt_channel_t *channel = &__zt_channels[id];
-        ZT_CHECK_VAL(channel_value, NULL, -EFAULT,
-                     "read function was called with channel_value parameter as NULL!");
-        ZT_CHECK_VAL(channel->read, NULL, -EPERM,
-                     "channel #%d does not have read implementation!", id);
-        ZT_CHECK(size != channel->size, -EINVAL,
-                 "channel #%d has a different size!(%d)(%d)", id, size, channel->size);
-        if (channel->pre_read) {
-            error = channel->pre_read(id, channel_value, size);
-            ZT_CHECK(error, error, "Error(code %d) in pre-read function of channel #%d",
-                     error, id);
-        }
-        error = channel->read(id, channel_value, size);
-        ZT_CHECK(error, error, "Current channel #%d, error code: %d", id, error);
-        if (channel->pos_read) {
-            error = channel->pos_read(id, channel_value, size);
-            ZT_CHECK(error, error, "Error(code %d) in pos-read function of channel #%d!",
-                     error, id);
-        }
-        return error;
+        ZT_CHECK_VAL(channel_data, NULL, -EFAULT,
+                     "publish function was called with channel_value paramater as NULL!");
+        ZT_CHECK(channel_data->bytes.size != channel->size, -EINVAL,
+                 "channel #%d has a different size!(%d)(%d)", id,
+                 channel_data->bytes.size, channel->size);
+        ZT_CHECK(k_sem_take(channel->sem, K_MSEC(200)) != 0, -EBUSY,
+                 "Could not read the channel. Channel is busy");
+        memcpy(channel_data->bytes.value, channel->data, channel->size);
+        k_sem_give(channel->sem);
+        return 0;
     } else {
         LOG_INF("The channel #%d was not found!", id);
         return -ENODATA;
     }
 }
 
-static int __zt_chan_raw_read_private(zt_channel_e id, u8_t *channel_value, size_t size)
-{
-    int ret               = 0;
-    zt_channel_t *channel = &__zt_channels[id];
-    if (k_sem_take(channel->sem, K_MSEC(200))) {
-        LOG_INF("Could not read the channel. Channel is busy");
-        ret = -EBUSY;
-    } else {
-        memcpy(channel_value, channel->data, channel->size);
-        k_sem_give(channel->sem);
-    }
-    return ret;
-}
-
 int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
-{
-    return zt_chan_raw_pub(id, channel_data->bytes.value, channel_data->bytes.size);
-}
-
-int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size)
 {
     if (id < ZT_CHANNEL_COUNT) {
         int error             = 0;
-        int valid             = 1;
         zt_channel_t *channel = &__zt_channels[id];
         zt_service_t **pub;
 
@@ -159,26 +119,30 @@ int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size)
         ZT_CHECK_VAL(*pub, NULL, -EACCES,
                      "The current thread has not the permission to change channel #%d!",
                      id);
-        ZT_CHECK_VAL(channel_value, NULL, -EFAULT,
+        ZT_CHECK_VAL(channel_data, NULL, -EFAULT,
                      "publish function was called with channel_value paramater as NULL!");
-        ZT_CHECK_VAL(channel->publish, NULL, -EPERM, "The channel #%d is read only!", id);
-        ZT_CHECK(size != channel->size, -EINVAL, "The channel #%d has a different size!",
-                 id);
-        if (channel->validate) {
-            valid = channel->validate(channel_value, size);
+        ZT_CHECK(channel->read_only != 0, -EPERM, "The channel #%d is read only!", id);
+        ZT_CHECK(channel_data->bytes.size != channel->size, -EINVAL,
+                 "The channel #%d has a different size!", id);
+        ZT_CHECK(k_sem_take(channel->sem, K_MSEC(200)) != 0, -EBUSY,
+                 "Could not publish the channel. Channel is busy");
+        if (channel->flag.field.on_changed) {  // CHANGE
+            if (memcmp(channel->data, channel_data->bytes.value, channel->size) == 0) {
+                channel->flag.field.pend_callback = 0;
+                k_sem_give(channel->sem);
+                return 0;
+            }
         }
-        ZT_CHECK(!valid, -EAGAIN,
-                 "The value doesn't satisfy valid function of channel #%d!", id);
-        if (channel->pre_publish) {
-            error = channel->pre_publish(id, channel_value, size);
-            ZT_CHECK(error, error, "Error on pre_publish function of channel #%d!", id);
+        channel->flag.field.pend_callback = 1;
+        memcpy(channel->data, channel_data->bytes.value, channel->size);
+        error = k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500));
+        if (error != 0) {
+            LOG_INF("[Channel #%d] Error sending channels change message to ZT "
+                    "thread!",
+                    id);
         }
-        error = channel->publish(id, channel_value, size);
-        ZT_CHECK(error, error, "Current channel #%d, error code: %d!", id, error);
-        if (channel->pos_publish) {
-            error = channel->pos_publish(id, channel_value, size);
-            ZT_CHECK(error, error, "Error on pos_publish function of channel #%d!", id);
-        }
+        channel->flag.field.pend_persistent = (channel->persistent) ? 1 : 0;
+        k_sem_give(channel->sem);
         return error;
     } else {
         LOG_INF("The channel #%d was not found!", id);
@@ -186,39 +150,33 @@ int zt_chan_raw_pub(zt_channel_e id, u8_t *channel_value, size_t size)
     }
 }
 
-static int __zt_chan_raw_private(zt_channel_e id, u8_t *channel_value, size_t size)
+void __zt_channels_thread(void)
 {
-    int ret               = 0;
-    zt_channel_t *channel = &__zt_channels[id];
-    if (k_sem_take(channel->sem, K_MSEC(200))) {
-        LOG_INF("Could not publish the channel. Channel is busy");
-        ret = -EBUSY;
-    } else {
-        channel->flag.field.pend_callback = 1;
-        if (memcmp(channel->data, channel_value, size)) {
-            memcpy(channel->data, channel_value, channel->size);
-            if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                LOG_INF("[Channel #%d] Error sending channels change message to ZT "
-                        "thread!",
+    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
+
+    // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
+
+    u8_t id = 0;
+    while (1) {
+        k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
+        if (id < ZT_CHANNEL_COUNT) {
+            if (__zt_channels[id].flag.field.pend_callback) {
+                for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
+                    (*s)->cb(id);
+                }
+                __zt_channels[id].flag.field.pend_callback = 0;
+            } else {
+                LOG_INF("[ZT-THREAD]: Received pend_callback from a channel(#%d) "
+                        "without changes!",
                         id);
             }
-            channel->flag.field.pend_persistent = (channel->persistent) ? 1 : 0;
-            k_sem_give(channel->sem);
         } else {
-            if (!channel->flag.field.react_on) {
-                if (k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500))) {
-                    LOG_INF("[Channel #%d] Error sending channels change message to ZT "
-                            "thread!",
-                            id);
-                }
-            } else {
-                channel->flag.field.pend_callback = 0;
-            }
-            k_sem_give(channel->sem);
+            LOG_INF("[ZT-THREAD]: Received an invalid ID channel #%d", id);
         }
     }
-    return ret;
 }
+
+#ifdef CONFIG_ZETA_STORAGE
 
 static void __zt_recover_data_from_flash(void)
 {
@@ -250,7 +208,6 @@ static void __zt_persist_data_on_flash(void)
     for (u16_t id = 0; id < ZT_CHANNEL_COUNT; ++id) {
         if (__zt_channels[id].persistent
             && __zt_channels[id].flag.field.pend_persistent) {
-            // LOG_INF("Store changes for channel #%d", id);
             bytes_written =
                 nvs_write(&zt_fs, id, __zt_channels[id].data, __zt_channels[id].size);
             if (bytes_written > 0) { /* item was found and updated*/
@@ -265,36 +222,19 @@ static void __zt_persist_data_on_flash(void)
     }
 }
 
-void __zt_channels_thread(void)
-{
-    // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
-
-    // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
-
-    u8_t id = 0;
-    while (1) {
-        k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
-        if (id < ZT_CHANNEL_COUNT) {
-            if (__zt_channels[id].flag.field.pend_callback) {
-                for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
-                    (*s)->cb(id);
-                }
-                __zt_channels[id].flag.field.pend_callback = 0;
-            } else {
-                LOG_INF("[ZT-THREAD]: Received pend_callback from a channel(#%d) "
-                        "without changes!",
-                        id);
-            }
-        } else {
-            LOG_INF("[ZT-THREAD]: Received an invalid ID channel #%d", id);
-        }
-    }
-}
-
 void __zt_storage_thread(void)
 {
-    int error = nvs_init(&zt_fs, DT_FLASH_DEV_NAME);
-    if (error) {
+    struct flash_pages_info info;
+    zt_fs.offset = FLASH_AREA_OFFSET(NVS_STORAGE_PARTITION);
+    int rc       = flash_get_page_info_by_offs(
+        device_get_binding(DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL), zt_fs.offset, &info);
+    if (rc) {
+        printk("Unable to get page info");
+    }
+    zt_fs.sector_size  = info.size;
+    zt_fs.sector_count = NVS_SECTOR_COUNT;
+    rc                 = nvs_init(&zt_fs, DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
+    if (rc) {
         LOG_INF("Flash Init failed");
     } else {
         LOG_INF("NVS started...[OK]");
@@ -306,3 +246,5 @@ void __zt_storage_thread(void)
         __zt_persist_data_on_flash();
     }
 }
+
+#endif

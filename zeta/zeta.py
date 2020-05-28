@@ -157,7 +157,10 @@ class Zeta(object):
         """
         YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
         yaml_dict = yaml.load(yamlfile, Loader=YamlRefLoader)
-        self.config = Config(**yaml_dict['Config'])
+        try:
+            self.config = Config(**yaml_dict['Config'])
+        except KeyError:
+            self.config = Config()
         self.channels = []
         for channel_description in yaml_dict['Channels']:
             for name, fields in channel_description.items():

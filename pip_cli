@@ -30,6 +30,7 @@ def generate_file_version(inc=True):
             "__version__: str = " +
             f"'{v['major']}.{v['minor']}.{v['build']}{release_candidate}'")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-v",

@@ -1,19 +1,20 @@
 #!/usr/bin/python3
 
-from _io import TextIOWrapper
 import argparse
 import os
 import re
 import shutil
 import sys
 import textwrap
-from .zeta_errors import *
 from pathlib import Path
 from string import Template
 
 import yaml
 
+from _io import TextIOWrapper
+
 from ._version import __version__
+from .zeta_errors import *
 
 ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."
@@ -574,27 +575,33 @@ class ZetaCLI(object):
         PROJECT_DIR = project_dir
         global ZETA_TEMPLATES_DIR
         ZETA_TEMPLATES_DIR = f"{ZETA_MODULE_DIR}/templates"
-        print("[ZETA]: Generating cmake file on", project_dir)
+
         try:
-            with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.cmake',
-                      'r') as cmake_template:
-                t = cmake_template.read()
-                with open(f'{PROJECT_DIR}/zeta.cmake', 'w') as cmake:
-                    cmake.write(t)
-        except FileNotFoundError:
-            raise ZetaCLIError(
-                "Error in such file or directory related to zeta.cmake",
-                EZTFILE)
-        try:
-            if not os.path.exists(f'{PROJECT_DIR}/zeta.yaml'):
-                print("[ZETA]: Generating yaml file on", project_dir)
-                with open(f'{ZETA_TEMPLATES_DIR}/zeta.emplate.yaml',
+            zeta_yaml_path = Path(f'{PROJECT_DIR}/zeta.yaml')
+            if not zeta_yaml_path.exists():
+                with open(f'{ZETA_TEMPLATES_DIR}/zeta.template.yaml',
                           'r') as header_template:
-                    with open(f'{PROJECT_DIR}/zeta.yaml', 'w') as cmake:
-                        cmake.write(header_template.read())
+                    with zeta_yaml_path.open(mode='w') as zeta_yaml:
+                        zeta_yaml.write(header_template.read())
+                print("[ZETA]: Generating yaml file on", project_dir)
         except FileNotFoundError:
             raise ZetaCLIError(
                 "Error in such file or directory related to zeta.yaml",
+                EZTFILE)
+        zeta = None
+        zeta_yaml_path = Path('./zeta.yaml')
+        if zeta_yaml_path.exists():
+            with zeta_yaml_path.open() as zeta_yaml:
+                zeta = Zeta(zeta_yaml)
+        try:
+            cmake_file = FileFactory(".", "zeta.template.cmake", zeta,
+                                     "zeta.cmake")
+            cmake_file.substitutions['services_sources'] = ""
+            cmake_file.run()
+            print("[ZETA]: Generating cmake file on", project_dir)
+        except FileNotFoundError:
+            raise ZetaCLIError(
+                "Failed to generate service files. Error opening and creating zeta.cmake",
                 EZTFILE)
 
     def check(self) -> None:
@@ -818,12 +825,12 @@ class ZetaCLI(object):
                 pass
         if len(services_sources) > 0:
             try:
-                cmake_services_file = FileFactory(
-                    ".", "zeta_with_services.template.cmake", zeta,
-                    "zeta.cmake")
-                cmake_services_file.substitutions[
-                    'services_sources'] = " ".join(services_sources)
-                cmake_services_file.run()
+                cmake_file = FileFactory(".", "zeta.template.cmake", zeta,
+                                         "zeta.cmake")
+                cmake_file.substitutions[
+                    'services_sources'] = "list(APPEND SOURCES {})".format(
+                        " ".join(services_sources))
+                cmake_file.run()
                 print(
                     "[ZETA]: Inject services sources into the zeta.cmake file")
             except FileNotFoundError:

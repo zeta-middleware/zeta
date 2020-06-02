@@ -6,6 +6,7 @@ import re
 import shutil
 import sys
 import textwrap
+import traceback
 from pathlib import Path
 from string import Template
 
@@ -643,22 +644,6 @@ class ZetaCLI(object):
         else:
             zeta_yaml_output = f" {FAIL_COLORED} zeta.yaml not found"
 
-        prj_conf = Path('./prj.conf')
-        prj_conf_path = prj_conf.resolve()
-        if prj_conf.exists():
-            with prj_conf.open() as prj_conf_file:
-                for line, line_content in enumerate(prj_conf_file.readlines()):
-                    # @todo: check it with an regex. Maybe the line is comment
-                    # out and it will not be true that it is setup ok
-                    if "CONFIG_ZETA=y" in line_content:
-                        prj_conf_output = (
-                            f" {OK_COLORED} CONFIG_ZETA=y added to the prj"
-                            f" ({prj_conf_path}:{line + 1})")
-                        break
-                else:
-                    prj_conf_output = (
-                        f" {FAIL_COLORED} CONFIG_ZETA=y NOT added to the prj")
-
         cmakelists = Path('./CMakeLists.txt')
         cmakelists_path = cmakelists.resolve()
         if cmakelists.exists():
@@ -743,7 +728,7 @@ class ZetaCLI(object):
                 else:
                     service_init_output = (
                         f" {FAIL_COLORED} Service"
-                        " {service_info.name} file was NOT found")
+                        f" {service_info.name} file was NOT found")
                     service_included_output = ""
                 services_output_list.append(
                     f"""{service_init_output}{service_included_output}""")
@@ -752,7 +737,6 @@ class ZetaCLI(object):
                 [ZETA]: Zeta project configuration check...
                 {zeta_cmake_output}
                 {zeta_yaml_output}
-                {prj_conf_output}
                 {cmakelists_output}''') + services_output
         print(check_output)
 
@@ -804,6 +788,8 @@ class ZetaCLI(object):
                 f'"{str(Path("${CMAKE_CURRENT_LIST_DIR}/", f"{args.src_dir}", f"{service_name}.c"))}"'
             ))
             if args.generate:
+                if not os.path.exists(f'{args.src_dir}'):
+                    os.makedirs(f'{args.src_dir}')
                 if not os.path.exists(f'{args.src_dir}/{service_name}.c'):
                     try:
                         service_file = FileFactory(args.src_dir,
@@ -814,7 +800,7 @@ class ZetaCLI(object):
                         service_file.run()
                         print((
                             f"[ZETA]: Generating service {service_name}.c file"
-                            " on the folder {args.src_dir}"))
+                            f" on the folder {args.src_dir}"))
                     except FileNotFoundError:
                         raise ZetaCLIError(
                             f"Failed to generate service files. Destination folder {args.src_dir} does not exists",
@@ -919,5 +905,5 @@ def run():
         print(
             f"[ZetaCLI Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred."
         )
-        print(err.with_traceback())
+        print(traceback.print_exc())
         exit(EZTUNEXP)

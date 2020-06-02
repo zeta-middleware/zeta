@@ -728,7 +728,7 @@ class ZetaCLI(object):
                 else:
                     service_init_output = (
                         f" {FAIL_COLORED} Service"
-                        " {service_info.name} file was NOT found")
+                        f" {service_info.name} file was NOT found")
                     service_included_output = ""
                 services_output_list.append(
                     f"""{service_init_output}{service_included_output}""")

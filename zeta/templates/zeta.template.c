@@ -42,11 +42,10 @@ K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
 static void __zt_storage_thread(void);
 K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage_thread,
                 NULL, NULL, NULL, ZT_STORAGE_THREAD_PRIORITY, 0, 0);
+static struct nvs_fs zt_fs;
 #endif
 
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
-
-static struct nvs_fs zt_fs;
 
 // <ZT_CODE_INJECTION>$channels_creation// </ZT_CODE_INJECTION>
 

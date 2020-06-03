@@ -18,6 +18,4 @@ extern void posix_exit(int error);
 void main(void)
 {
     printk("Started the main thread running on a %s board.\n", CONFIG_BOARD);
-    k_sleep(K_SECONDS(120));
-    posix_exit(0);
 }

@@ -553,15 +553,15 @@ class ZetaCLI(object):
             parser.print_help()
             exit(1)
         # use dispatch pattern to invoke method with same name
-        getattr(self, args.command)()
+        exit(getattr(self, args.command)())
 
-    def init(self) -> None:
+    def init(self) -> int:
         """Called when the user type "zeta init" and is responsible for
         generates the minimum requirements in order to Zeta works
         properly.
 
-        :returns: None
-        :rtype: None
+        :returns: Exit code
+        :rtype: int
         :raise ZetaCLIError: Error in zeta.cmake or zeta.yaml file path
 
         """
@@ -604,16 +604,18 @@ class ZetaCLI(object):
             raise ZetaCLIError(
                 "Failed to generate service files. Error opening and creating zeta.cmake",
                 EZTFILE)
+        return 0
 
-    def check(self) -> None:
+    def check(self) -> int:
         """Called when the user type "zeta check" and is responsible for
         checks if the needed steps were made by user in order to Zeta
         works properly.
 
-        :returns: None
-        :rtype: None
+        :returns: Exit code
+        :rtype: int
 
         """
+        ecode = 0
         OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
         FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
         parser = argparse.ArgumentParser(
@@ -634,6 +636,7 @@ class ZetaCLI(object):
             zeta_cmake_output = (
                 f" {OK_COLORED} zeta.cmake found ({zeta_cmake_path})")
         else:
+            ecode = EZTCHECKFAILED
             zeta_cmake_output = f" {FAIL_COLORED} zeta.cmake not found"
 
         zeta_yaml = Path('./zeta.yaml')
@@ -642,6 +645,7 @@ class ZetaCLI(object):
             zeta_yaml_output = (
                 f" {OK_COLORED} zeta.yaml found ({zeta_yaml_path})")
         else:
+            ecode = EZTCHECKFAILED
             zeta_yaml_output = f" {FAIL_COLORED} zeta.yaml not found"
 
         cmakelists = Path('./CMakeLists.txt')
@@ -658,6 +662,7 @@ class ZetaCLI(object):
                             f" ({cmakelists_path}:{line + 1})")
                         break
                 else:
+                    ecode = EZTCHECKFAILED
                     cmakelists_output = (
                         f" {FAIL_COLORED} zeta.cmake NOT included properly"
                         " into the CMakeLists.txt file")
@@ -676,6 +681,7 @@ class ZetaCLI(object):
                 service = Path(f'{args.src_dir}',
                                f"{service_info.name.lower()}.c")
                 service_path = service.resolve()
+                ok_hit = 0
                 service_init_output = (
                     f" {FAIL_COLORED} Service"
                     f" {service_info.name} was NOT initialized properly into"
@@ -690,6 +696,7 @@ class ZetaCLI(object):
                             # @todo: check it with an regex. Maybe the line is
                             # comment out and it will not be true that it is setup ok
                             if f"ZT_SERVICE_INIT({service_info.name}," in line_content:
+                                ok_hit += 1
                                 service_init_output = (
                                     f" {OK_COLORED} Service "
                                     f"{service_info.name} was initialized"
@@ -701,6 +708,7 @@ class ZetaCLI(object):
                             zeta_cmake_file.read())
                         if sources and f"{service_info.name.lower()}.c" in sources.group(
                         ):
+                            ok_hit += 1
                             service_included_output = (
                                 f"\n {OK_COLORED}"
                                 f" {service_info.name.lower()}.c added to be"
@@ -715,6 +723,7 @@ class ZetaCLI(object):
                                         cmakelists_file.read())
                                     if sources and f"{service_info.name.lower()}.c" in sources.group(
                                     ):
+                                        ok_hit += 1
                                         service_included_output = (
                                             f"\n {OK_COLORED}"
                                             " {service_info.name.lower()}.c"
@@ -730,6 +739,8 @@ class ZetaCLI(object):
                         f" {FAIL_COLORED} Service"
                         f" {service_info.name} file was NOT found")
                     service_included_output = ""
+                ecode = 0 if ((ecode != EZTCHECKFAILED) and
+                              (ok_hit == 2)) else EZTCHECKFAILED
                 services_output_list.append(
                     f"""{service_init_output}{service_included_output}""")
         services_output = "\n" + "\n".join(services_output_list)
@@ -739,13 +750,14 @@ class ZetaCLI(object):
                 {zeta_yaml_output}
                 {cmakelists_output}''') + services_output
         print(check_output)
+        return ecode
 
-    def services(self) -> None:
+    def services(self) -> int:
         """Called when the user type "zeta services" and is responsible
         for generates files template-based with the services initialized.
 
-        :returns: None
-        :rtype: None
+        :returns: Exit code
+        :rtype: int
         :raise ZetaCLIError: Error opening or reading files
 
         """
@@ -823,13 +835,14 @@ class ZetaCLI(object):
                 raise ZetaCLIError(
                     "Failed to generate service files. Error opening and creating zeta.cmake",
                     EZTFILE)
+            return 0
 
-    def gen(self) -> None:
+    def gen(self) -> int:
         """Generate all the internal files that represents Zeta system
         like channels, Zeta threads, Zeta API, and others.
 
-        :returns: None
-        :rtype: None
+        :returns: Exit code
+        :rtype: int
 
         """
         parser = argparse.ArgumentParser(
@@ -893,12 +906,12 @@ class ZetaCLI(object):
                 print("[OK]")
         else:
             print("[ZETA]: Error. Zeta YAML file does not exist!")
+        return 0
 
 
 def run():
     try:
         ZetaCLI()
-        exit(0)
     except ZetaCLIError as zterr:
         zterr.handle()
     except Exception as err:

@@ -83,4 +83,4 @@ WORKDIR ${APP}
 COPY zeta-run-tests.sh /zeta-run-tests.sh
 COPY . .
 
-CMD ["/zeta-run-tests.sh"]
+CMD ["/zeta-tests"]

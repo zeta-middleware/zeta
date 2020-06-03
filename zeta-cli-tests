@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-import argparse
 import subprocess
 import os
+import traceback
 
 
 def sh(args, timeout=None, check_result=True, cd=False):
@@ -26,7 +26,7 @@ def creating_project():
 def test_zeta_cli():
     sh("zeta init")
     sh("zeta services -g")
-    code = sh("zeta check")
+    sh("zeta check")
 
 
 def running_project():
@@ -44,6 +44,13 @@ def cleaning_workdir():
 
 if __name__ == "__main__":
     creating_project()
-    test_zeta_cli()
-    running_project()
-    cleaning_workdir()
+    code = 0
+    try:
+        test_zeta_cli()
+        running_project()
+    except:
+        print(traceback.print_exc())
+        code = 1
+    finally:
+        cleaning_workdir()
+        exit(code)

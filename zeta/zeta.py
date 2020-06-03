@@ -636,6 +636,7 @@ class ZetaCLI(object):
         ecode = 0
         OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
         FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
+        WARNING_COLORED = "\033[1;43m \033[1;97mWARNING \033[0m"
         parser = argparse.ArgumentParser(
             description=
             '''Run this command to check all the zeta configuration''',
@@ -754,7 +755,7 @@ class ZetaCLI(object):
                                             " was NOT added to be compiled")
                 else:
                     service_init_output = (
-                        f" {FAIL_COLORED} Service"
+                        f" {WARNING_COLORED} Service"
                         f" {service_info.name} file was NOT found")
                     service_included_output = ""
                 ecode = 0 if ((ecode != EZTCHECKFAILED) and

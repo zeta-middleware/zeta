@@ -3,14 +3,6 @@
 /*                         DON'T EDIT THIS FILE                      */
 /* ***************************************************************** */
 
-/**
- * @file   zeta.template.c
- * @author Rodrigo Peixoto
- * @author Lucas Peixoto <lucaspeixotoac@gmail.com>
- *
- *
- *
- */
 #include "zeta.h"
 
 

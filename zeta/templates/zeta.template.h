@@ -3,17 +3,6 @@
 /*                         DON'T EDIT THIS FILE                      */
 /* ***************************************************************** */
 
-/**
- * @file   zeta.template.h
- * @author Rodrigo Peixoto
- * @author Lucas Peixoto <lucaspeixotoac@gmail.com>
- *
- * @brief Zeta header file
- *
- *
- */
-
-
 #ifndef ZETA_H_
 #define ZETA_H_
 

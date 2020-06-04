@@ -1,0 +1,55 @@
+#!/usr/bin/python3
+import subprocess
+import os
+import signal
+from time import sleep
+
+
+def sh(args, timeout=None, check_result=True, cd=False):
+    print(f" >>> {args}")
+    res = subprocess.run(args, shell=True, timeout=timeout)
+    if check_result:
+        assert res.returncode == 0, res.returncode
+    if cd:
+        directory = args.split()
+        os.chdir(directory[1])
+    return res
+
+
+def execution_routine():
+    # Testing routine in native_posix
+    sh("rm -rf build")
+    sh("west build -b native_posix")
+    process = subprocess.Popen("west build -t run",
+                               shell=True,
+                               preexec_fn=os.setsid)
+    sleep(7)
+    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+    process.wait()
+    assert process.returncode == 0 or process.returncode == -15, process.returncode
+    sh("rm -rf build")
+
+    # Testing routine in nrf52_pca10040
+    sh("west build -b nrf52_pca10040")
+    sh("rm -rf build")
+
+    # Go back to samples folder
+    sh("cd ../", cd=True)
+
+
+def run_test(folder):
+    sh(f"cd {folder}", cd=True)
+    execution_routine()
+
+
+def test_samples():
+    sh("cd samples/", cd=True)
+    run_test("basic")
+    run_test("light_control")
+    run_test("sensors-over-internet")
+    run_test("pub_cb_o2n_performance")
+    run_test("pub_cb_o2o_performance")
+
+
+if __name__ == "__main__":
+    test_samples()

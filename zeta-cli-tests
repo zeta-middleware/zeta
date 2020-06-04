@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+import subprocess
+import os
+import traceback
+
+
+def sh(args, timeout=None, check_result=True, cd=False):
+    print(f" >>> {args}")
+    res = subprocess.run(args, shell=True, timeout=timeout)
+    if check_result:
+        assert res.returncode == 0, res.returncode
+    if cd:
+        directory = args.split()
+        os.chdir(directory[1])
+    return res
+
+
+def creating_project():
+    # Going to samples folder
+    sh("cd samples/", cd=True)
+    # Creating a new folder to test ZetaCLI workflow
+    sh("cp template_project/ test-sample/ -r")
+    sh("cd test-sample/", cd=True)
+
+
+def test_zeta_cli():
+    sh("zeta init")
+    sh("zeta services -g")
+    sh("zeta check")
+
+
+def running_project():
+    sh("west build -b native_posix")
+    try:
+        sh("west build -t run", timeout=2)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def cleaning_workdir():
+    sh("cd ../", cd=True)
+    sh("rm -rf test-sample/")
+
+
+if __name__ == "__main__":
+    creating_project()
+    code = 0
+    try:
+        test_zeta_cli()
+        running_project()
+    except:
+        print(traceback.print_exc())
+        code = 1
+    finally:
+        cleaning_workdir()
+        exit(code)

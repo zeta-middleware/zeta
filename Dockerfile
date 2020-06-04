@@ -80,7 +80,7 @@ ENV LC_ALL en_US.UTF-8
 
 # Going to workdirectory
 WORKDIR ${APP}
-COPY zeta-run-tests.sh /zeta-run-tests.sh
+COPY zeta-tests /zeta-tests
 COPY . .
 
-CMD ["/zeta-run-tests.sh"]
+CMD ["/zeta-tests"]

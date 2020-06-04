@@ -1,5 +1,5 @@
 # action.yml
-name: 'Docker test'
+name: 'Zeta test'
 description: 'Run project tests in docker via github action.'
 runs:
   using: 'docker'

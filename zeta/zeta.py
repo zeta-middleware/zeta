@@ -7,6 +7,7 @@ import shutil
 import sys
 import textwrap
 import traceback
+import subprocess
 from pathlib import Path
 from string import Template
 
@@ -542,10 +543,15 @@ class ZetaCLI(object):
         :rtype: None
 
         """
-        parser = argparse.ArgumentParser(description='ZETA cli tool',
-                                         usage='''zeta <command> [<args>]
-    init - for creating the need files.
-    gen - for generating the zeta code based on the zeta.yaml file.''')
+        parser = argparse.ArgumentParser(
+            description='ZETA cli tool',
+            usage=
+            (f"zeta <command> [<args>]\r\nCommands\r\n"
+             f"  init - for creating the need files.\r\n"
+             f"  gen - for generating the zeta code based on the zeta.yaml file.\r\n"
+             f"  check -  for checking the needed configuration and initialization of zeta.\r\n"
+             f"  services - for generating the code-template based for services defined on the zeta.yaml file.\r\n"
+             f"  version - for getting the current ZetaCLI version."))
         parser.add_argument('command', help='Subcommand to run')
         args = parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):
@@ -606,6 +612,18 @@ class ZetaCLI(object):
                 EZTFILE)
         return 0
 
+    def version(self) -> int:
+        """Called when the user type "zeta version" and is responsible
+        for sends out the ZetaCLI version.
+
+        :returns: Exit code
+        :rtype: int
+
+        """
+        print(f"ZetaCLI version {__version__}")
+        print(f"ZetaCLI is maintained and supported by Zeta-Middleware group.")
+        return 0
+
     def check(self) -> int:
         """Called when the user type "zeta check" and is responsible for
         checks if the needed steps were made by user in order to Zeta
@@ -618,6 +636,7 @@ class ZetaCLI(object):
         ecode = 0
         OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
         FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
+        WARNING_COLORED = "\033[1;43m \033[1;97mWARNING \033[0m"
         parser = argparse.ArgumentParser(
             description=
             '''Run this command to check all the zeta configuration''',
@@ -736,7 +755,7 @@ class ZetaCLI(object):
                                             " was NOT added to be compiled")
                 else:
                     service_init_output = (
-                        f" {FAIL_COLORED} Service"
+                        f" {WARNING_COLORED} Service"
                         f" {service_info.name} file was NOT found")
                     service_included_output = ""
                 ecode = 0 if ((ecode != EZTCHECKFAILED) and
@@ -904,6 +923,7 @@ class ZetaCLI(object):
                 print("[ZETA]: Generating zeta.conf...", end="")
                 ZetaConf(zeta).run()
                 print("[OK]")
+            subprocess.run("zeta check", shell=True)
         else:
             print("[ZETA]: Error. Zeta YAML file does not exist!")
         return 0

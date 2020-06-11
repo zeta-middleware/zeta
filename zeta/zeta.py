@@ -26,7 +26,7 @@ ZETA_SRC_DIR = "."
 ZETA_INCLUDE_DIR = "."
 
 
-class YamlRefLoader(yaml.SafeLoader):
+class ZetaYamlLoader(yaml.SafeLoader):
     """Modifies the SafeLoader object and generates a correct
     dictionary-based in the YAML file.
     """
@@ -38,7 +38,7 @@ class YamlRefLoader(yaml.SafeLoader):
         :rtype: None
 
         """
-        super(YamlRefLoader, self).__init__(stream)
+        super(ZetaYamlLoader, self).__init__(stream)
 
     def ref(self, node):
         """Handles ref statements in YAML file and generate a valid
@@ -50,6 +50,21 @@ class YamlRefLoader(yaml.SafeLoader):
 
         """
         return self.construct_scalar(node)
+
+    def include(self, node):
+        """Handles include statements in YAML file and generate a
+        valid reference
+
+        :param node: Include statement with the reference name
+        :returns: Content of the file passed by include
+        :rtype: dict
+
+        """
+        include_yaml = dict()
+        path = f"{PROJECT_DIR}/../{self.construct_scalar(node)}" if PROJECT_DIR != "." else f"{self.construct_scalar(node)}"
+        with open(path, "r") as f:
+            include_yaml = yaml.load(f, Loader=ZetaYamlLoader)
+        return include_yaml
 
 
 class Channel(object):
@@ -158,8 +173,9 @@ class Zeta(object):
         :raise ZetaCLIError: Error creating Channel object or Service object
 
         """
-        YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
-        yaml_dict = yaml.load(yamlfile, Loader=YamlRefLoader)
+        ZetaYamlLoader.add_constructor('!ref', ZetaYamlLoader.ref)
+        ZetaYamlLoader.add_constructor('!include', ZetaYamlLoader.include)
+        yaml_dict = yaml.load(yamlfile, Loader=ZetaYamlLoader)
         try:
             self.config = Config(**yaml_dict['Config'])
         except KeyError:
@@ -911,7 +927,6 @@ class ZetaCLI(object):
             except FileExistsError:
                 pass
 
-            YamlRefLoader.add_constructor('!ref', YamlRefLoader.ref)
             with open(args.yamlfile, 'r') as f:
                 zeta = Zeta(f)
                 print("[ZETA]: Generating zeta.h...", end="")

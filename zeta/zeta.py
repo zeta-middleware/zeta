@@ -4,10 +4,10 @@ import argparse
 import os
 import re
 import shutil
+import subprocess
 import sys
 import textwrap
 import traceback
-import subprocess
 from pathlib import Path
 from string import Template
 
@@ -160,6 +160,26 @@ class Config(object):
         self.storage_period = storage_period
 
 
+class Message:
+    """This object represents the Message defined by the Zeta yaml file.
+    """
+    def __init__(self,
+                 name: str = "undefined_message_name",
+                 msg_format: dict = None) -> None:
+        """Message constructor.
+
+        :param name: The name of the message, which will be used to reference
+        this message.
+        :param msg_format: The message format definition in terms of type and
+        fields. This can be struct, union and, bitarray.
+        :returns: None
+        :rtype: None
+
+        """
+        self.name = name
+        self.msg_format = msg_format if msg_format else {}
+
+
 class Zeta(object):
     """Represents the Zeta object that has access to services, channels
     and config parameters specified in YAML file.
@@ -198,6 +218,22 @@ class Zeta(object):
                     raise ZetaCLIError(
                         f"Error creating Service object. {terr.__str__()}",
                         EZTFIELD)
+
+        self.messages = []
+        try:
+            for message_description in yaml_dict['Messages']:
+                for name, fields in message_description.items():
+                    print(name, fields)
+                    try:
+                        self.messages.append(Message(name, fields))
+                    except TypeError as terr:
+                        raise ZetaCLIError(
+                            f"Error creating Message object. {terr.__str__()}",
+                            EZTFIELD)
+        except KeyError:
+            pass
+        print(self.messages)
+
         self.__check_service_channel_relation()
 
     def __check_service_channel_relation(self) -> None:
@@ -872,6 +908,16 @@ class ZetaCLI(object):
                     EZTFILE)
             return 0
 
+    def messages(self) -> int:
+        """Generate the messages struct and show them to the user.
+
+        :returns: Exit code
+        :rtype: int
+
+        """
+        #  TODO: parei aqui!
+        return 0
+
     def gen(self) -> int:
         """Generate all the internal files that represents Zeta system
         like channels, Zeta threads, Zeta API, and others.
@@ -882,7 +928,7 @@ class ZetaCLI(object):
         """
         parser = argparse.ArgumentParser(
             description='Generate zeta files on the build folder',
-            usage='zeta gen [-p] yamlfile')
+            usage='zeta gen [-b] yamlfile')
         # prefixing the argument with -- means it's optional
         parser.add_argument(
             '-b',

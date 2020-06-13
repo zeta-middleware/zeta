@@ -1,0 +1,54 @@
+- REQ: 
+    description: "This decribes the request from the server"
+    type: struct
+    fields:
+    - id:
+        description: "The request id"
+        type: u8
+    - flag:
+        type: bitarray
+        fields:
+        - read:
+            size: 1
+        - write:
+            size: 1
+        - erase:
+            size: 1
+        - update:
+            size: 1
+    - data:
+        type: u8
+        size: 32
+- RESP: 
+    type: struct
+    fields:
+    - id:
+        type: u8
+    - null:
+        type: bitarray
+        fields:
+        - ok:
+            size: 1
+        - fail:
+            size: 1
+        - reserved:
+            size: 6
+    - data:
+        type: u8
+        size: 32
+- ARR:
+    type: u32
+    size: 10
+- UNI:
+    description: "This is a union example that contains an anonymous field"
+    type: union
+    fields:
+      - data:
+          type: u32
+      - null:
+          type: struct
+          fields:
+            - a:
+                type: u16
+            - b:
+                type: u16

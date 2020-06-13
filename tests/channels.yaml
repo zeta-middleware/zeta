@@ -13,3 +13,7 @@
     size: 128
 - CH05:
     size: 255
+- MSG_CH01:
+    size: 5
+- MSG_CH02:
+    size: 5

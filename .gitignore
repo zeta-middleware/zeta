@@ -39,4 +39,4 @@ __pycache__/
 .mypy_cache/
 .clangd/
 compile_commands.json
-yapf5LaQIa.py
+yapf*.py

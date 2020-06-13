@@ -1,0 +1,15 @@
+- FIRMWARE_VERSION: !include firmware_version.yaml
+
+- CH01:
+    size: 1
+    read_only: True
+- CH02:
+    size: 2
+    persistent: True
+- CH03:
+    size: 8
+    on_changed: True
+- CH04:
+    size: 128
+- CH05:
+    size: 255

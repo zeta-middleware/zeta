@@ -134,7 +134,7 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
         zt_service_t **pub;
 
         for (pub = channel->publishers; *pub != NULL; ++pub) {
-            if ((*pub)->thread_id == k_current_get()) {
+            if ((*(*pub)->thread_id) == k_current_get()) {
                 break;
             }
         }

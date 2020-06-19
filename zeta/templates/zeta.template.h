@@ -80,7 +80,7 @@
     zt_service_t _name##_service = {.id        = ZT_##_name##_SERVICE,              \
                                     .name      = #_name,                            \
                                     .cb        = _cb,                               \
-                                    .thread_id = _name##_thread_id}
+                                    .thread_id = &_name##_thread_id}
 
 
 /**
@@ -277,9 +277,9 @@ typedef void (*zt_callback_f)(zt_channel_e id);
  */
 struct zt_service {
     zt_service_e id;
-    const char *name;        /**< Service name */
-    const k_tid_t thread_id; /**< Service thread id */
-    zt_callback_f cb;        /**< Service callback */
+    const char *name;         /**< Service name */
+    const k_tid_t *thread_id; /**< Service thread id */
+    zt_callback_f cb;         /**< Service callback */
 };
 typedef struct zt_service zt_service_t;
 

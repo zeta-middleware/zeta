@@ -104,7 +104,7 @@ int zt_chan_read(zt_channel_e id, zt_data_t *channel_data)
 #ifdef CONFIG_ZETA_FORWARDER
         zt_service_t *current_service = NULL;
         for (int i = 0; i < ZT_SERVICE_COUNT; ++i) {
-            if (__zt_services[i]->thread_id == k_current_get()) {
+            if ((*__zt_services[i]->thread_id) == k_current_get()) {
                 current_service = __zt_services[i];
                 break;
             }

@@ -366,6 +366,7 @@ class ZetaHeader(HeaderFileFactory):
         """
         super().__init__('zeta.template.h', zeta)
         self.services_reference = ""
+        self.max_channel_size = 0
 
     def create_substitutions(self) -> None:
         """Responsible for assigns the needed substitutions to be
@@ -375,6 +376,17 @@ class ZetaHeader(HeaderFileFactory):
         :rtype: None
 
         """
+        service_names = ',\n   '.join([
+            f"ZT_{service.name.upper()}_SERVICE"
+            for service in self.zeta.services
+        ])
+        self.substitutions['services_enum'] = textwrap.dedent('''
+        typedef enum {{
+            {service_names},
+            ZT_SERVICE_COUNT
+        }} __attribute__((packed)) zt_service_e;
+        ''').format(service_names=service_names)
+
         channel_names = ',\n    '.join([
             f"ZT_{channel.name.upper()}_CHANNEL"
             for channel in self.zeta.channels
@@ -396,8 +408,13 @@ class ZetaHeader(HeaderFileFactory):
                 #define {name}_STACK_SIZE {stack_size}
                 /* END {name} SECTION */
                 ''')
+
+        for channel in self.zeta.channels:
+            self.max_channel_size = max(self.max_channel_size, channel.size)
+
         self.substitutions['services_reference'] = self.services_reference
         self.substitutions['storage_period'] = self.zeta.config.storage_period
+        self.substitutions['max_channel_size'] = str(self.max_channel_size)
 
 
 class ZetaSource(SourceFileFactory):
@@ -422,6 +439,7 @@ class ZetaSource(SourceFileFactory):
         self.set_publishers = ''
         self.set_subscribers = ''
         self.arrays_init = ''
+        self.services_array_init = ''
 
     def gen_sems(self) -> None:
         """Responsible for assigns the channel semaphores.
@@ -451,6 +469,13 @@ class ZetaSource(SourceFileFactory):
 
         """
         channels = ''
+        services_list = list()
+        for service in self.zeta.services:
+            services_list.append(f'&{service.name}_service')
+        services_joined = ', '.join(services_list)
+        self.services_array_init = textwrap.dedent(f'''
+        zt_service_t *__zt_services[ZT_SERVICE_COUNT] = {{{services_joined}}};
+        ''')
         for channel in self.zeta.channels:
             data_alloc = (f"static u8_t __{channel.name.lower()}_data[] ="
                           f"{{{', '.join(channel.initial_value)}}};")
@@ -546,6 +571,7 @@ class ZetaSource(SourceFileFactory):
         self.substitutions['set_publishers'] = self.set_publishers
         self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init
+        self.substitutions['services_array_init'] = self.services_array_init
 
 
 class ZetaCLI(object):

@@ -12,23 +12,27 @@
 #include <storage/flash_map.h>
 #include <string.h>
 #include <zephyr.h>
+#ifdef CONFIG_ZETA_FORWARDER
+#include <sys/base64.h>
+#endif
 
 #include "devicetree_fixups.h"
 
-
 LOG_MODULE_REGISTER(zeta, CONFIG_ZETA_LOG_LEVEL);
-
-// <ZT_CODE_INJECTION>$arrays_init// </ZT_CODE_INJECTION>
 
 #define NVS_SECTOR_COUNT $sector_count
 #define NVS_STORAGE_PARTITION $storage_partition
 
+
+// <ZT_CODE_INJECTION>$arrays_init// </ZT_CODE_INJECTION>
+
+// <ZT_CODE_INJECTION>$services_array_init// </ZT_CODE_INJECTION>
+
 // <ZT_CODE_INJECTION>$channels_sems// </ZT_CODE_INJECTION>
 
-static void __zt_channels_thread(void);
-K_THREAD_DEFINE(zt_channels_thread_id, ZT_CHANNELS_THREAD_STACK_SIZE,
-                __zt_channels_thread, NULL, NULL, NULL, ZT_CHANNELS_THREAD_PRIORITY, 0,
-                0);
+static void __zt_monitor_thread(void);
+K_THREAD_DEFINE(zt_monitor_thread_id, ZT_MONITOR_THREAD_STACK_SIZE, __zt_monitor_thread,
+                NULL, NULL, NULL, ZT_MONITOR_THREAD_PRIORITY, 0, 0);
 
 #ifdef CONFIG_ZETA_STORAGE
 static void __zt_storage_thread(void);
@@ -37,7 +41,16 @@ K_THREAD_DEFINE(zt_storage_thread_id, ZT_STORAGE_THREAD_STACK_SIZE, __zt_storage
 static struct nvs_fs zt_fs;
 #endif
 
+#ifdef CONFIG_ZETA_FORWARDER
+static void __zt_forwarder_thread(void);
+K_THREAD_DEFINE(zt_forwarder_thread_id, ZT_FORWARDER_THREAD_STACK_SIZE,
+                __zt_forwarder_thread, NULL, NULL, NULL, ZT_FORWARDER_THREAD_PRIORITY, 0,
+                0);
+K_MSGQ_DEFINE(zt_forwarder_msgq, sizeof(zt_isc_packet_t), 30, 4);
+#endif
+
 K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
+
 
 // <ZT_CODE_INJECTION>$channels_creation// </ZT_CODE_INJECTION>
 
@@ -87,6 +100,24 @@ int zt_chan_read(zt_channel_e id, zt_data_t *channel_data)
         ZT_CHECK(k_sem_take(channel->sem, K_MSEC(200)) != 0, -EBUSY,
                  "Could not read the channel. Channel is busy");
         memcpy(channel_data->bytes.value, channel->data, channel->size);
+
+#ifdef CONFIG_ZETA_FORWARDER
+        zt_service_t *current_service = NULL;
+        for (int i = 0; i < ZT_SERVICE_COUNT; ++i) {
+            if (__zt_services[i]->thread_id == k_current_get()) {
+                current_service = __zt_services[i];
+                break;
+            }
+        }
+        if (current_service != NULL) {
+            zt_isc_packet_t packet = {.service_id = current_service->id,
+                                      .channel_id = channel->id,
+                                      .op         = ZT_FWD_OP_READ,
+                                      .size       = channel->size};
+            memcpy(packet.message, channel->data, packet.size);
+            k_msgq_put(&zt_forwarder_msgq, &packet, K_NO_WAIT);
+        }
+#endif
         k_sem_give(channel->sem);
         return 0;
     } else {
@@ -103,7 +134,7 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
         zt_service_t **pub;
 
         for (pub = channel->publishers; *pub != NULL; ++pub) {
-            if ((*(*pub)->thread_id) == k_current_get()) {
+            if ((*pub)->thread_id == k_current_get()) {
                 break;
             }
         }
@@ -117,6 +148,16 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
                  "The channel #%d has a different size!", id);
         ZT_CHECK(k_sem_take(channel->sem, K_MSEC(200)) != 0, -EBUSY,
                  "Could not publish the channel. Channel is busy");
+
+#ifdef CONFIG_ZETA_FORWARDER
+        zt_isc_packet_t packet = {.service_id = (*pub)->id,
+                                  .channel_id = channel->id,
+                                  .op         = ZT_FWD_OP_PUBLISH,
+                                  .size       = channel->size};
+        memcpy(packet.message, channel_data->bytes.value, packet.size);
+        k_msgq_put(&zt_forwarder_msgq, &packet, K_NO_WAIT);
+#endif
+
         if (channel->flag.field.on_changed) {  // CHANGE
             if (memcmp(channel->data, channel_data->bytes.value, channel->size) == 0) {
                 channel->flag.field.pend_callback = 0;
@@ -141,7 +182,7 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
     }
 }
 
-void __zt_channels_thread(void)
+static void __zt_monitor_thread(void)
 {
     // <ZT_CODE_INJECTION>$set_publishers    // </ZT_CODE_INJECTION>
 
@@ -152,6 +193,14 @@ void __zt_channels_thread(void)
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
         if (id < ZT_CHANNEL_COUNT) {
             if (__zt_channels[id].flag.field.pend_callback) {
+#ifdef CONFIG_ZETA_FORWARDER
+                zt_isc_packet_t packet = {
+                    .service_id = ZT_SERVICE_COUNT,
+                    .channel_id = id,
+                    .op         = ZT_FWD_OP_CALLBACK,
+                };
+                k_msgq_put(&zt_forwarder_msgq, &packet, K_NO_WAIT);
+#endif
                 for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
                     (*s)->cb(id);
                 }
@@ -203,6 +252,14 @@ static void __zt_persist_data_on_flash(void)
                 nvs_write(&zt_fs, id, __zt_channels[id].data, __zt_channels[id].size);
             if (bytes_written > 0) { /* item was found and updated*/
                 __zt_channels[id].flag.field.pend_persistent = 0;
+#ifdef CONFIG_ZETA_FORWARDER
+                zt_isc_packet_t packet = {
+                    .service_id = ZT_SERVICE_COUNT,
+                    .channel_id = id,
+                    .op         = ZT_FWD_OP_SAVED,
+                };
+                k_msgq_put(&zt_forwarder_msgq, &packet, K_NO_WAIT);
+#endif
                 LOG_INF("channel #%d value updated on the flash", id);
             } else if (bytes_written == 0) {
                 /* LOG_INF("channel #%d value is already on the flash.", id); */
@@ -213,7 +270,7 @@ static void __zt_persist_data_on_flash(void)
     }
 }
 
-void __zt_storage_thread(void)
+static void __zt_storage_thread(void)
 {
     struct flash_pages_info info;
     zt_fs.offset = FLASH_AREA_OFFSET(NVS_STORAGE_PARTITION);
@@ -238,4 +295,26 @@ void __zt_storage_thread(void)
     }
 }
 
+#endif
+
+#ifdef CONFIG_ZETA_FORWARDER
+static void __zt_forwarder_thread(void)
+{
+    zt_isc_packet_t packet = {0};
+    u32_t packet_counter   = 0;
+    u8_t *data;
+
+    u8_t buffer[50] = {0};
+    size_t len;
+
+    while (1) {
+        k_msgq_get(&zt_forwarder_msgq, &packet, K_FOREVER);
+        data      = (u8_t *) &packet;
+        packet.id = packet_counter++;
+
+        base64_encode(buffer, sizeof(buffer), &len, data, 8 + packet.size);
+
+        printk("@ZT_ISC:%s\n", buffer);
+    }
+}
 #endif

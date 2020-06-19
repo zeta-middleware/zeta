@@ -18,4 +18,8 @@ config ZETA_STORAGE
        select MPU_ALLOW_FLASH_WRITE
        select NVS  
 
+config ZETA_FORWARDER
+       bool "Enable the zeta forwarder thread"
+       select BASE64
+
 endif # ZETA

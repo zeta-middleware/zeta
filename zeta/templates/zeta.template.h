@@ -12,24 +12,12 @@
 #include <zephyr/types.h>
 
 /**
- * @brief Stack size that is used in Zeta thread that manages the
- * persistent data.
- *
- */
-#define ZT_STORAGE_THREAD_STACK_SIZE 512
-
-/**
  * @brief Stack size that is used in Zeta thread that manages
  * channels callback calls.
  *
  */
-#define ZT_CHANNELS_THREAD_STACK_SIZE 512
+#define ZT_MONITOR_THREAD_STACK_SIZE 512
 
-/**
- * @brief Storage thread priority.
- *
- */
-#define ZT_STORAGE_THREAD_PRIORITY 1
 
 /**
  * @brief Storage sleep time.
@@ -41,8 +29,42 @@
  * @brief Channels thread priority
  *
  */
-#define ZT_CHANNELS_THREAD_PRIORITY 0
+#define ZT_MONITOR_THREAD_PRIORITY 0
 
+#ifdef CONFIG_ZETA_STORAGE
+/**
+ * @brief Stack size that is used in Zeta thread that manages the
+ * persistent data.
+ *
+ */
+#define ZT_STORAGE_THREAD_STACK_SIZE 512
+
+/**
+ * @brief Storage thread priority.
+ *
+ */
+#define ZT_STORAGE_THREAD_PRIORITY 1
+#endif
+
+#ifdef CONFIG_ZETA_FORWARDER
+/**
+ * @brief Forwarder thread priority.
+ *
+ */
+#define ZT_FORWARDER_THREAD_PRIORITY 1
+
+/**
+ * @brief Stack size that is used in Zeta thread that manages
+ * the forwarder of messages between services and channels.
+ *
+ */
+#define ZT_FORWARDER_THREAD_STACK_SIZE 512
+
+#define ZT_FWD_OP_READ 0
+#define ZT_FWD_OP_PUBLISH 1
+#define ZT_FWD_OP_CALLBACK 2
+#define ZT_FWD_OP_SAVED 3
+#endif
 
 /**
  * @brief Initialize a zeta service.
@@ -55,8 +77,10 @@
 #define ZT_SERVICE_INIT(_name, _task, _cb)                                          \
     K_THREAD_DEFINE(_name##_thread_id, _name##_STACK_SIZE, _task, NULL, NULL, NULL, \
                     _name##_TASK_PRIORITY, 0, 0);                                   \
-    zt_service_t _name##_service = {                                                \
-        .name = #_name, .cb = _cb, .thread_id = &_name##_thread_id}
+    zt_service_t _name##_service = {.id        = ZT_##_name##_SERVICE,              \
+                                    .name      = #_name,                            \
+                                    .cb        = _cb,                               \
+                                    .thread_id = _name##_thread_id}
 
 
 /**
@@ -238,6 +262,8 @@ typedef union data zt_data_t;
 
 // <ZT_CODE_INJECTION>$channels_enum// </ZT_CODE_INJECTION>
 
+// <ZT_CODE_INJECTION>$services_enum// </ZT_CODE_INJECTION>
+
 /**
  * @brief zeta_callback_f define the callback function type of Zeta.
  *
@@ -250,11 +276,22 @@ typedef void (*zt_callback_f)(zt_channel_e id);
  * @brief Define Zeta service type
  */
 struct zt_service {
-    const char *name;         /**< Service name */
-    const k_tid_t *thread_id; /**< Service thread id */
-    zt_callback_f cb;         /**< Service callback */
+    zt_service_e id;
+    const char *name;        /**< Service name */
+    const k_tid_t thread_id; /**< Service thread id */
+    zt_callback_f cb;        /**< Service callback */
 };
 typedef struct zt_service zt_service_t;
+
+struct zt_isc_packet {
+    u32_t id;
+    u8_t service_id;
+    u8_t channel_id;
+    u8_t op;
+    u8_t size;
+    u8_t message[$max_channel_size];
+} __attribute__((packed));
+typedef struct zt_isc_packet zt_isc_packet_t;
 
 /**
  * @brief Define pendent options that a channel can have.

@@ -102,13 +102,10 @@ int zt_chan_read(zt_channel_e id, zt_data_t *channel_data)
         memcpy(channel_data->bytes.value, channel->data, channel->size);
 
 #ifdef CONFIG_ZETA_FORWARDER
-        zt_service_t *current_service = NULL;
-        for (int i = 0; i < ZT_SERVICE_COUNT; ++i) {
-            if ((*__zt_services[i]->thread_id) == k_current_get()) {
-                current_service = __zt_services[i];
-                break;
-            }
-        }
+        // @TODO: When this function is called by a non Zeta service this part of code
+        // will get Segmentation Fault.
+        zt_service_t *current_service =
+            CONTAINER_OF(k_current_get(), zt_service_t, thread);
         if (current_service != NULL) {
             zt_isc_packet_t packet = {.service_id = current_service->id,
                                       .channel_id = channel->id,
@@ -134,7 +131,7 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
         zt_service_t **pub;
 
         for (pub = channel->publishers; *pub != NULL; ++pub) {
-            if ((*(*pub)->thread_id) == k_current_get()) {
+            if ((&(*pub)->thread) == k_current_get()) {
                 break;
             }
         }
@@ -193,16 +190,16 @@ static void __zt_monitor_thread(void)
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
         if (id < ZT_CHANNEL_COUNT) {
             if (__zt_channels[id].flag.field.pend_callback) {
-#ifdef CONFIG_ZETA_FORWARDER
-                zt_isc_packet_t packet = {
-                    .service_id = ZT_SERVICE_COUNT,
-                    .channel_id = id,
-                    .op         = ZT_FWD_OP_CALLBACK,
-                };
-                k_msgq_put(&zt_forwarder_msgq, &packet, K_NO_WAIT);
-#endif
                 for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {
                     (*s)->cb(id);
+#ifdef CONFIG_ZETA_FORWARDER
+                    zt_isc_packet_t packet = {
+                        .service_id = (*s)->id,
+                        .channel_id = id,
+                        .op         = ZT_FWD_OP_CALLBACK,
+                    };
+                    k_msgq_put(&zt_forwarder_msgq, &packet, K_NO_WAIT);
+#endif
                 }
                 __zt_channels[id].flag.field.pend_callback = 0;
             } else {

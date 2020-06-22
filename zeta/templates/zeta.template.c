@@ -301,7 +301,7 @@ static void __zt_forwarder_thread(void)
     u32_t packet_counter   = 0;
     u8_t *data;
 
-    u8_t buffer[50] = {0};
+    u8_t buffer[272] = {0};
     size_t len;
 
     while (1) {

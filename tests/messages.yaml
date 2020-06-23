@@ -1,54 +1,61 @@
 - REQ: 
     description: "This decribes the request from the server"
-    type: struct
+    mtype: struct
     fields:
     - id:
         description: "The request id"
-        type: u8
+        mtype: u8
     - flag:
-        type: bitarray
+        mtype: bitarray
         fields:
         - read:
+            mtype: bits
             size: 1
         - write:
+            mtype: bits
             size: 1
         - erase:
+            mtype: bits
             size: 1
         - update:
+            mtype: bits
             size: 1
     - data:
-        type: u8
+        mtype: u8
         size: 32
 - RESP: 
-    type: struct
+    mtype: struct
     fields:
     - id:
-        type: u8
+        mtype: u8
     - null:
-        type: bitarray
+        mtype: bitarray
         fields:
         - ok:
+            mtype: bits
             size: 1
         - fail:
+            mtype: bits
             size: 1
         - reserved:
+            mtype: bits
             size: 6
     - data:
-        type: u8
+        mtype: u8
         size: 32
 - ARR:
-    type: u32
+    mtype: u32
     size: 10
 - UNI:
     description: "This is a union example that contains an anonymous field"
-    type: union
+    mtype: union
     fields:
       - data:
-          type: u32
+          mtype: u32
       - null:
-          type: struct
+          mtype: struct
           fields:
             - a:
-                type: u16
+                mtype: u16
             - b:
-                type: u16
+                mtype: u16

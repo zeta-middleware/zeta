@@ -915,7 +915,11 @@ class ZetaCLI(object):
         :rtype: int
 
         """
-        #  TODO: parei aqui!
+        yamlfile_path = Path("./zeta.yaml")
+        with open(yamlfile_path, 'r') as yamlfile:
+            zeta = Zeta(yamlfile)
+            print("[ZETA]: Messages used by Zeta", end="")
+            print("[OK]")
         return 0
 
     def gen(self) -> int:

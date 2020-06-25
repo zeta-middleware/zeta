@@ -4,10 +4,10 @@ import argparse
 import os
 import re
 import shutil
+import subprocess
 import sys
 import textwrap
 import traceback
-import subprocess
 from pathlib import Path
 from string import Template
 

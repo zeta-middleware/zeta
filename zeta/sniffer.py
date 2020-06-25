@@ -58,8 +58,8 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
         self.event_list.append(item)
         self.table_rows.append(
             urwid.AttrMap(urwid.Columns([
-                (8,
-                 urwid.Button("{:0>4}".format(self.event_list[index]['id']))),
+                (9,
+                 urwid.Button("{:0>5}".format(self.event_list[index]['id']))),
                 (1, urwid.Divider('│')),
                 (12,
                  urwid.Text(self.event_list[index]['timestamp'].strftime(
@@ -162,7 +162,7 @@ class ZetaSerialMonitor(asyncio.Protocol):
 
     def connection_made(self, transport):
         self.transport = transport
-        print('port opened', transport)
+        # print('port opened', transport)
         # asyncio.ensure_future(self.send())
         #transport.serial.rts = False  # You can manipulate Serial object via transport
         # transport.write(b'Hello, World!\n')  # Write serial data via transport
@@ -218,16 +218,18 @@ class ZetaSerialMonitor(asyncio.Protocol):
                 self.line_buffer = bytearray()
 
     def connection_lost(self, exc):
-        print('port closed')
+        # print('port closed')
         self.transport.loop.stop()
 
     def pause_writing(self):
-        print('pause writing')
-        print(self.transport.get_write_buffer_size())
+        # print('pause writing')
+        # print(self.transport.get_write_buffer_size())
+        pass
 
     def resume_writing(self):
-        print(self.transport.get_write_buffer_size())
-        print('resume writing')
+        # print(self.transport.get_write_buffer_size())
+        # print('resume writing')
+        pass
 
     async def send(self):
         """Send four newline-terminated messages, one byte at a time.
@@ -236,98 +238,92 @@ class ZetaSerialMonitor(asyncio.Protocol):
         for b in message:
             # await asyncio.sleep(0.5)
             self.transport.serial.write(bytes([b]))
-            print(f'Writer sent: {bytes([b])}')
+            # print(f'Writer sent: {bytes([b])}')
         self.transport.close()
 
 
-def main(serial_port="", baudrate=115200):
-    # palette = [
-    #     ('body', 'black', 'dark green', 'standout'),
-    #     ('foot', 'light gray', 'black'),
-    #     ('key', 'light green', 'black', 'underline'),
-    #     ('selected', 'black', 'light blue'),
-    #     ('cell', 'black', 'light green', 'underline'),
-    #     ('cell2', 'black', 'dark green', 'underline'),
-    #     ('title', 'white', 'black'),
-    # ]
-    palette_dark = [
-        ('body', '', 'black', 'standout'),
-        ('foot', 'light gray', 'black'),
-        ('key', 'light green', 'black', 'underline'),
-        ('selected', 'black', 'light green'),
-        ('cell', 'dark blue', 'black', 'standout'),
-        ('cell2', 'dark magenta', 'black', 'standout'),
-        ('title', 'white', 'black'),
-        ('log', 'dark cyan', 'black'),
-    ]
+class ZetaSniffer:
+    def run(self, serial_port="", baudrate=115200):
+        palette_dark = [
+            ('body', '', 'black', 'standout'),
+            ('foot', 'light gray', 'black'),
+            ('key', 'light green', 'black', 'underline'),
+            ('selected', 'black', 'light green'),
+            ('cell', 'dark blue', 'black', 'standout'),
+            ('cell2', 'dark magenta', 'black', 'standout'),
+            ('title', 'white', 'black'),
+            ('log', 'dark cyan', 'black'),
+        ]
 
-    footer_text = [
-        ('title', "Zeta-CLI ISC sniffer"),
-        "    ",
-        ('key', "UP"),
-        ", ",
-        ('key', "DOWN"),
-        ", ",
-        ('key', "PAGE UP"),
-        " and ",
-        ('key', "PAGE DOWN"),
-        " move view    ",
-        # ('key', "D"),
-        # " change uart device   ",
-        # ('key', "F"),
-        # " Focus on new msg   ",
-        ('key', "Q"),
-        " exits",
-    ]
+        footer_text = [
+            ('title', "Zeta-CLI ISC sniffer"),
+            "    ",
+            ('key', "UP"),
+            ", ",
+            ('key', "DOWN"),
+            ", ",
+            ('key', "PAGE UP"),
+            " and ",
+            ('key', "PAGE DOWN"),
+            " move view    ",
+            # ('key', "D"),
+            # " change uart device   ",
+            # ('key', "F"),
+            # " Focus on new msg   ",
+            ('key', "Q"),
+            " exits",
+        ]
 
-    def handle_key(input):
-        if input in ('q', 'Q'):
-            raise urwid.ExitMainLoop()
-        # if input in ('d', 'D'):
-        #     print("D")
+        def handle_key(input):
+            if input in ('q', 'Q'):
+                raise urwid.ExitMainLoop()
+            # if input in ('d', 'D'):
+            #     print("D")
 
-    event_list = ZetaCLIEventListWalker([])
+        event_list = ZetaCLIEventListWalker([])
 
-    uart_device_header = urwid.Padding(
-        urwid.Columns([('weight', 70, urwid.Text(footer_text)),
-                       ('weight', 30,
-                        urwid.Text(["Serial device: ", ('key', serial_port)],
-                                   align='right'))]),
-        left=1,
-        right=1,
-    )
-    logging = urwid.ListBox(urwid.SimpleFocusListWalker([]))
-    body = urwid.Columns([
-        ('weight', 50, event_list.create_table()),
-        ('weight', 50,
-         urwid.Pile([('weight', 10,
-                      urwid.LineBox(title="Raw data",
-                                    title_align='left',
-                                    original_widget=urwid.Filler(
-                                        event_list.create_data_viewer(),
-                                        valign='top'))),
-                     ('weight', 60,
-                      urwid.LineBox(
-                          original_widget=logging,
-                          title="Device log",
-                          title_align='left',
-                      ))]))
-    ])
+        uart_device_header = urwid.Padding(
+            urwid.Columns([
+                ('weight', 70, urwid.Text(footer_text)),
+                ('weight', 30,
+                 urwid.Text(["Serial device: ", ('key', serial_port)],
+                            align='right'))
+            ]),
+            left=1,
+            right=1,
+        )
+        logging = urwid.ListBox(urwid.SimpleFocusListWalker([]))
+        body = urwid.Columns([
+            ('weight', 50, event_list.create_table()),
+            ('weight', 50,
+             urwid.Pile([('weight', 10,
+                          urwid.LineBox(title="Raw data",
+                                        title_align='left',
+                                        original_widget=urwid.Filler(
+                                            event_list.create_data_viewer(),
+                                            valign='top'))),
+                         ('weight', 60,
+                          urwid.LineBox(
+                              original_widget=logging,
+                              title="Device log",
+                              title_align='left',
+                          ))]))
+        ])
 
-    aloop = asyncio.get_event_loop()
-    monitor = partial(ZetaSerialMonitor, event_list, logging)
-    coro = serial_asyncio.create_serial_connection(aloop, monitor, serial_port,
-                                                   baudrate)
-    aloop.run_until_complete(coro)
+        aloop = asyncio.get_event_loop()
+        monitor = partial(ZetaSerialMonitor, event_list, logging)
+        coro = serial_asyncio.create_serial_connection(aloop, monitor,
+                                                       serial_port, baudrate)
+        aloop.run_until_complete(coro)
 
-    u_event_loop = urwid.AsyncioEventLoop(loop=aloop)
-    view = urwid.Frame(urwid.AttrWrap(body, 'body'),
-                       footer=urwid.AttrMap(uart_device_header, 'foot'))
-    loop = urwid.MainLoop(view,
-                          palette_dark,
-                          unhandled_input=handle_key,
-                          event_loop=u_event_loop)
-    loop.run()
+        u_event_loop = urwid.AsyncioEventLoop(loop=aloop)
+        view = urwid.Frame(urwid.AttrWrap(body, 'body'),
+                           footer=urwid.AttrMap(uart_device_header, 'foot'))
+        loop = urwid.MainLoop(view,
+                              palette_dark,
+                              unhandled_input=handle_key,
+                              event_loop=u_event_loop)
+        loop.run()
 
 
 def terminal_ui():
@@ -336,8 +332,7 @@ def terminal_ui():
     parser.add_argument('baudrate',
                         help='sum the integers (default: find the max)')
     args = parser.parse_args()
-    print(args)
-    main(serial_port=args.serial_port, baudrate=args.baudrate)
+    run(serial_port=args.serial_port, baudrate=args.baudrate)
 
 
 if __name__ == "__main__":

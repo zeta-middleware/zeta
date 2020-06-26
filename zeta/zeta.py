@@ -1,22 +1,8 @@
 #!/usr/bin/python3
 
-import argparse
-import os
-import re
-import shutil
-import subprocess
-import sys
-import textwrap
-import traceback
-from pathlib import Path
-from string import Template
-
 import yaml
 
 from _io import TextIOWrapper
-
-from ._version import __version__
-from .zeta_errors import *
 
 ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."

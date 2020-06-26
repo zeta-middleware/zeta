@@ -18,7 +18,17 @@ from .zeta import Zeta
 
 
 class ZetaCLIEventListWalker(urwid.ListWalker):
-    def __init__(self, event_list=[]):
+    """ Represents the event list. It is used by the ListBox to show
+    the events occurred.
+    """
+    def __init__(self, event_list: list = []):
+        """ZetaCLIEventListWalker constructor.
+
+        :param event_list: list of event items
+        :returns: None
+        :rtype: None
+
+        """
         urwid.ListWalker.__init__(self)
         self.event_list = event_list
         self.table_rows = []
@@ -26,7 +36,14 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
         self.table_title = None
         self.data_viewer = None
 
-    def __create_table_header(self):
+    def __create_table_header(self) -> urwid.AttrMap:
+        """ Create the table header.
+
+        :param event_list: list of event items
+        :returns: table header
+        :rtype: urwid.AttrMap
+
+        """
         return urwid.AttrMap(urwid.Columns([
             (8, urwid.Text("Msg", align='center')),
             (1, urwid.Divider(' ')),
@@ -36,13 +53,20 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
             (1, urwid.Divider(' ')),
             ('weight', 16, urwid.Text("Service", align='center')),
             (1, urwid.Divider(' ')),
-            ('weight', 21, urwid.Text("Channel", align='center')),
+            ('weight', 35, urwid.Text("Channel", align='center')),
             (1, urwid.Divider(' ')),
-            ('weight', 35, urwid.Text('Data', align='center')),
+            ('weight', 21, urwid.Text('Data', align='center')),
         ]),
                              attr_map='key,head')
 
-    def create_table(self, title="[0/0]"):
+    def create_table(self, title="[0/0]") -> urwid.LineBox:
+        """ Create the event table.
+
+        :param title: the table's title
+        :returns: the table container (LineBox)
+        :rtype: urwid.LineBox
+
+        """
         listbox = urwid.ListBox(self)
         self.table_title = urwid.LineBox(urwid.Frame(
             header=self.__create_table_header(), body=listbox),
@@ -50,10 +74,23 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
                                          title_align='right')
         return self.table_title
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """ Len operator overloading
+
+        :returns: the table number of lines
+        :rtype: int
+
+        """
         return len(self.event_list)
 
-    def append(self, item):
+    def append(self, item) -> None:
+        """ Append method overloading
+
+        :param item: dictionary with the data of the new item to be added
+        :returns: None
+        :rtype: None
+
+        """
         index = len(self.event_list)
         self.event_list.append(item)
         self.table_rows.append(
@@ -75,11 +112,11 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
                  urwid.Text(self.event_list[index]['service'],
                             wrap='ellipsis')),
                 (1, urwid.Divider('│')),
-                ('weight', 21,
+                ('weight', 35,
                  urwid.Text(self.event_list[index]['channel'],
                             wrap='ellipsis')),
                 (1, urwid.Divider('│')),
-                ('weight', 35,
+                ('weight', 21,
                  urwid.Text(hexdump.dump(self.event_list[index]['message']),
                             wrap='ellipsis')),
             ]),
@@ -95,19 +132,30 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
         self.table_title.set_title(f"[{self.focus+1}/{len(self.event_list)}]")
         self._modified()
 
-    def create_data_viewer(self):
+    def create_data_viewer(self) -> urwid.Text:
+        """ Create data detail viewer.
+
+        :returns: the data viewer
+        :rtype: urwid.Text
+        """
         if self.data_viewer is None:
             self.data_viewer = urwid.Text("")
         return self.data_viewer
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> urwid.Columns:
+        """ Get item operator overloading
+
+        :param index: index of the desired element
+        :returns: the element at index
+        :rtype: urwid.Columns
+
+        """
         if index > (len(self.event_list) - 1):
             raise IndexError("Event list index out of range")
         return self.table_rows[index]
 
     def set_modified_callback(self, callback):
-        """
-        This function inherited from MonitoredList is not
+        """ This function inherited from MonitoredList is not
         implemented in SimpleFocusListWalker.
         Use connect_signal(list_walker, "modified", ...) instead.
         """
@@ -125,24 +173,19 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
         self._modified()
 
     def next_position(self, position):
-        """
-        Return position after start_from.
-        """
+        """ Return position after start_from. """
         if len(self) - 1 <= position:
             raise IndexError
         return position + 1
 
     def prev_position(self, position):
-        """
-        Return position before start_from.
-        """
+        """ Return position before start_from. """
         if position <= 0:
             raise IndexError
         return position - 1
 
     def positions(self, reverse=False):
-        """
-        Optional method for returning an iterable of positions.
+        """ Optional method for returning an iterable of positions.
         """
         if reverse:
             return range(len(self) - 1, -1, -1)
@@ -150,7 +193,22 @@ class ZetaCLIEventListWalker(urwid.ListWalker):
 
 
 class ZetaSerialMonitor(asyncio.Protocol):
-    def __init__(self, event_list, logging_widget):
+    """ Class that handles the serial connection and updates
+    the interface data related to the income information.
+    """
+    def __init__(self, event_list: dict,
+                 logging_widget: urwid.ListBox) -> None:
+        """ Constructor which needs the event list and logging widget to
+        load content and fill the ui data. It is async and needs to run in
+        an async loop.
+
+        :param event list: the list of events where the incoming events
+        will be stored.
+        :param logging widget: the widget were the log will displayed.
+        :returns: None
+        :rtype: None
+
+        """
         super().__init__()
         self.event_list = event_list
         self.logging_ui = logging_widget
@@ -161,6 +219,7 @@ class ZetaSerialMonitor(asyncio.Protocol):
                 self.zeta = Zeta(zeta_yaml)
 
     def connection_made(self, transport):
+        """Method called when an connection is made"""
         self.transport = transport
         # print('port opened', transport)
         # asyncio.ensure_future(self.send())
@@ -168,6 +227,8 @@ class ZetaSerialMonitor(asyncio.Protocol):
         # transport.write(b'Hello, World!\n')  # Write serial data via transport
 
     def digest_isc_message(self, msg):
+        """Digest the incoming encoded message to extract the message
+        information."""
         msg_raw = base64.b64decode(msg[7:])
 
         mtype = ["READ", "PUBL", "CLBK", "STRG"]
@@ -190,17 +251,14 @@ class ZetaSerialMonitor(asyncio.Protocol):
         except IndexError:
             pass  # Invalid packet
 
+    def data_received(self, data) -> None:
+        """Method called when an a new data is available to be read.
 
-# struct zt_isc_packet {
-#     u32_t id;
-#     u8_t service_id;
-#     u8_t channel_id;
-#     u8_t op;
-#     u8_t size;
-#     u8_t message[$max_channel_size];
-# } __attribute__((packed));
+        :param data: bytes received at the serial.
+        :returns: None
+        :rtype: None
 
-    def data_received(self, data):
+        """
         for c in data:
             if c != 0x0d and c != 0x0a:
                 self.line_buffer.append(c)
@@ -218,15 +276,18 @@ class ZetaSerialMonitor(asyncio.Protocol):
                 self.line_buffer = bytearray()
 
     def connection_lost(self, exc):
+        """Method called when the connection is lost"""
         # print('port closed')
         self.transport.loop.stop()
 
     def pause_writing(self):
+        """Method called when the writing is paused"""
         # print('pause writing')
         # print(self.transport.get_write_buffer_size())
         pass
 
     def resume_writing(self):
+        """Method called when the writing is resumed"""
         # print(self.transport.get_write_buffer_size())
         # print('resume writing')
         pass
@@ -243,7 +304,17 @@ class ZetaSerialMonitor(asyncio.Protocol):
 
 
 class ZetaSniffer:
+    """Class that encapsulates the sniffer execution function."""
     def run(self, serial_port="", baudrate=115200):
+        """Function used to execute the sniffer. It opens the serial at the
+        specified baud rate passed as argument.
+
+        :param serial_port: the serial port description. For example "/dev/ttyUSB0".
+        :param baudrate: the communication frequency. For example 115200.
+        :returns: None
+        :rtype: None
+
+        """
         palette_dark = [
             ('body', '', 'black', 'standout'),
             ('foot', 'light gray', 'black'),
@@ -324,16 +395,3 @@ class ZetaSniffer:
                               unhandled_input=handle_key,
                               event_loop=u_event_loop)
         loop.run()
-
-
-def terminal_ui():
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('serial_port', help='an integer for the accumulator')
-    parser.add_argument('baudrate',
-                        help='sum the integers (default: find the max)')
-    args = parser.parse_args()
-    run(serial_port=args.serial_port, baudrate=args.baudrate)
-
-
-if __name__ == "__main__":
-    terminal_ui()

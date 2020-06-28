@@ -1,4 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from .zeta import run
+from .zeta_cli import run
+
 run()

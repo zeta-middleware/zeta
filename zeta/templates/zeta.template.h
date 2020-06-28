@@ -37,13 +37,13 @@
  * persistent data.
  *
  */
-#define ZT_STORAGE_THREAD_STACK_SIZE 512
+#define ZT_STORAGE_THREAD_STACK_SIZE 1024
 
 /**
  * @brief Storage thread priority.
  *
  */
-#define ZT_STORAGE_THREAD_PRIORITY 1
+#define ZT_STORAGE_THREAD_PRIORITY 2
 #endif
 
 #ifdef CONFIG_ZETA_FORWARDER

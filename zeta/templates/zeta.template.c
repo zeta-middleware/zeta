@@ -312,6 +312,7 @@ static void __zt_forwarder_thread(void)
         base64_encode(buffer, sizeof(buffer), &len, data, 8 + packet.size);
 
         printk("@ZT_ISC:%s\n", buffer);
+        memset(buffer, 0, 272);
     }
 }
 #endif

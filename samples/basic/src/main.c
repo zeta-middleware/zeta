@@ -7,6 +7,8 @@
 #include <zephyr.h>
 
 #include "autoconf.h"
+#include "kernel.h"
+#include "sys/printk.h"
 #include "zeta.h"
 
 K_SEM_DEFINE(zt_core_pend_evt, 0, 1);

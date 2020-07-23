@@ -62,7 +62,8 @@ class Channel(object):
                  read_only: bool = False,
                  on_changed: bool = False,
                  size: int = 1,
-                 persistent: int = 0) -> None:
+                 persistent: int = 0,
+                 message: str = "") -> None:
         """Channel constructor.
 
         :param name: Channel name
@@ -85,6 +86,7 @@ class Channel(object):
         self.sem = f"zt_{name.lower()}_channel_sem"
         self.id = f"ZT_{name.upper()}_CHANNEL"
         self.initial_value = initial_value
+        self.message = message.lower()
         if initial_value is None:
             self.initial_value = [hex(x) for x in [0] * self.size]
         else:
@@ -223,6 +225,36 @@ class Zeta(object):
         self.__check_service_channel_relation()
 
     def __check_service_channel_relation(self) -> None:
+        """Checks if the use of !ref is correct or is used some
+        nonexistent channel.
+
+        :returns: None
+        :rtype: None
+        :raise ZetaCLIError: Channel name doesn't exists in channel list.
+
+        """
+        for service in self.services:
+            for channel_name in service.pub_channels_names:
+                for channel in self.channels:
+                    if channel.name == channel_name:
+                        channel.pub_services_obj.append(service)
+                        service.pub_channels_obj.append(channel)
+                        break
+                else:
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
+            for channel_name in service.sub_channels_names:
+                for channel in self.channels:
+                    if channel.name == channel_name:
+                        channel.sub_services_obj.append(service)
+                        service.sub_channels_obj.append(channel)
+                        break
+                else:
+                    raise ZetaCLIError(
+                        f"Channel {channel_name} does not exists", EZTINVREF)
+
+    #TODO: parei aqui
+    def __check_channel_message_relation(self) -> None:
         """Checks if the use of !ref is correct or is used some
         nonexistent channel.
 

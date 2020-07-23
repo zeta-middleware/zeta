@@ -201,6 +201,9 @@
         }                               \
     }
 
+// <ZT_CODE_INJECTION>$messages_macros// </ZT_CODE_INJECTION>
+
+
 typedef struct {
     size_t size;
     s8_t value;
@@ -246,6 +249,8 @@ typedef struct {
     u8_t value[];
 } zt_data_bytes_t;
 
+// <ZT_CODE_INJECTION>$messages_structs// </ZT_CODE_INJECTION>
+
 union data {
     zt_data_s8_t s8;
     zt_data_u8_t u8;
@@ -255,6 +260,7 @@ union data {
     zt_data_u32_t u32;
     zt_data_s64_t s64;
     zt_data_u64_t u64;
+    // <ZT_CODE_INJECTION>$messages_structs_ref// </ZT_CODE_INJECTION>
     zt_data_bytes_t bytes;
 };
 

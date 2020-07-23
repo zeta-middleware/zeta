@@ -6,7 +6,7 @@
         description: "The request id"
         mtype: u8
     - flag:
-        mtype: bitarray
+        mtype: bitarray_u8
         fields:
         - read:
             mtype: bits
@@ -28,8 +28,8 @@
     fields:
     - id:
         mtype: u8
-    - null:
-        mtype: bitarray
+    - result:
+        mtype: bitarray_u8
         fields:
         - ok:
             mtype: bits
@@ -52,10 +52,23 @@
     fields:
       - data:
           mtype: u32
-      - null:
+      - kind:
           mtype: struct
           fields:
             - a:
                 mtype: u16
             - b:
                 mtype: u16
+- FLAGS:
+    description: "This is only a test"
+    mtype: bitarray_u32
+    fields:
+      - b0:
+          mtype: bits
+          size: 7
+      - b1:
+          mtype: bits
+          size: 20
+      - b3:
+          mtype: bits
+          size: 5

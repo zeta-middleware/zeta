@@ -17,3 +17,7 @@
     size: 5
 - MSG_CH02:
     size: 5
+- MCH01:
+    message: !ref REQ
+- MCH02:
+    message: !ref RESP

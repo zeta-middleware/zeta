@@ -223,6 +223,58 @@ void test_channels_size(void)
                   __FUNCTION__, sz);
 }
 
+void test_channels_messages(void)
+{
+    size_t sz = 0;
+    int error = 0;
+
+    /* Checking an invalid call */
+    sz = zt_channel_size(ZT_CHANNEL_COUNT, &error);
+    zassert_equal(error, -EINVAL,
+                  "[%s] zt_channel_size is not setting error to -EINVAL!\n",
+                  __FUNCTION__);
+    zassert_equal(sz, 0, "[%s] zt_channel_size is not returning 0 in an invalid call!\n",
+                  __FUNCTION__);
+
+    /* Checking FIRMWARE_VERSION size*/
+    sz = zt_channel_size(ZT_FIRMWARE_VERSION_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 4, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+
+    /* Checking CH01 size*/
+    sz = zt_channel_size(ZT_CH01_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 1, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+    /* Checking CH02 size*/
+    sz = zt_channel_size(ZT_CH02_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 2, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+
+    /* Checking CH03 size*/
+    sz = zt_channel_size(ZT_CH03_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 8, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+    /* Checking CH04 size*/
+    sz = zt_channel_size(ZT_CH04_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 128, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+}
+
 void test_channels_routine(void)
 {
     k_sem_take(&ztest_sem, K_FOREVER);

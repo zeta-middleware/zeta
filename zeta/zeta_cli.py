@@ -16,6 +16,7 @@ import yaml
 from _io import TextIOWrapper
 
 from ._version import __version__
+from .messages import ZetaMessage
 from .sniffer import ZetaSniffer
 from .zeta import Channel, Config, Service, Zeta, ZetaYamlLoader
 from .zeta_errors import *
@@ -200,6 +201,44 @@ class ZetaHeader(HeaderFileFactory):
         for channel in self.zeta.channels:
             self.max_channel_size = max(self.max_channel_size, channel.size)
 
+        messages_macros = ""
+        messages_structs = ""
+        messages_structs_ref = "\n"
+        for message in self.zeta.messages:
+            message_code_factory = ZetaMessage(name=message.name,
+                                               **message.msg_format)
+            if message_code_factory.mtype in ["struct", "union", "bitarray"]:
+                messages_macros += textwrap.dedent('''
+                #define ZT_DATA_{0}(data) (zt_data_t *) (zt_data_{1}_t[]) {{{{sizeof(struct {1}), {{data}}}}}}
+                '''.format(message.name.upper(), message.name.lower()))
+                messages_structs += ("\n" + message_code_factory.code())
+                messages_structs += textwrap.dedent(f'''
+
+                typedef struct {{
+                    size_t size;
+                    {message_code_factory.mtype_obj.statement} value;
+                }} zt_data_{message.name.lower()}_t;\n''')
+            else:
+                messages_macros += textwrap.dedent('''
+                #define ZT_DATA_{0}(data) (zt_data_t *) (zt_data_{1}_t[]) {{{{sizeof({2})*{3}, {{data}}}}}}
+                '''.format(
+                    message.name.upper(), message.name.lower(),
+                    message_code_factory.mtype_obj.statement,
+                    message_code_factory.size
+                    if message_code_factory.size else 1))
+                messages_structs += textwrap.dedent(f'''
+
+                typedef struct {{
+                    size_t size;
+                    {message_code_factory.mtype_obj.statement} value {"[{}]".format(message_code_factory.size) if message_code_factory.size else ""};
+                }} zt_data_{message.name.lower()}_t;\n''')
+
+            messages_structs_ref += f"    zt_data_{message.name.lower()}_t {message.name.lower()};\n"
+
+        self.substitutions['messages_macros'] = messages_macros
+        self.substitutions['messages_structs'] = messages_structs
+        self.substitutions['messages_structs_ref'] = messages_structs_ref
+
         self.substitutions['services_reference'] = self.services_reference
         self.substitutions['storage_period'] = self.zeta.config.storage_period
         self.substitutions['max_channel_size'] = str(self.max_channel_size)
@@ -265,8 +304,9 @@ class ZetaSource(SourceFileFactory):
         zt_service_t *__zt_services[ZT_SERVICE_COUNT] = {{{services_joined}}};
         ''')
         for channel in self.zeta.channels:
-            data_alloc = (f"static u8_t __{channel.name.lower()}_data[] ="
-                          f"{{{', '.join(channel.initial_value)}}};")
+            data_alloc = (
+                f"static u8_t __{channel.name.lower()}_data[{channel.size}] ="
+                f"{{{', '.join(channel.initial_value)}}};")
             channel.data = f"__{channel.name.lower()}_data"
             channel.flag = 0x00
             if channel.on_changed:

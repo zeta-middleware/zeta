@@ -304,9 +304,19 @@ class ZetaSource(SourceFileFactory):
         zt_service_t *__zt_services[ZT_SERVICE_COUNT] = {{{services_joined}}};
         ''')
         for channel in self.zeta.channels:
-            data_alloc = (
-                f"static u8_t __{channel.name.lower()}_data[{channel.size}] ="
-                f"{{{', '.join(channel.initial_value)}}};")
+            data_alloc = ""
+            if channel.message_obj:
+                msg_factory = ZetaMessage(channel.message_obj.name,
+                                          **channel.message_obj.msg_format)
+                data_alloc = (
+                    f"static u8_t __{channel.name.lower()}_data[sizeof({msg_factory.mtype_obj.statement}){' * {0}'.format(msg_factory.size) if msg_factory.size else ''}] = "
+                    f"{{0}};")
+                channel.size = f"sizeof({msg_factory.mtype_obj.statement}){' * {0}'.format(msg_factory.size) if msg_factory.size else ''}"
+                channel.data = f"__{channel.name.lower()}_data"
+            else:
+                data_alloc = (
+                    f"static u8_t __{channel.name.lower()}_data[{channel.size}] = "
+                    f"{{{', '.join(channel.initial_value)}}};")
             channel.data = f"__{channel.name.lower()}_data"
             channel.flag = 0x00
             if channel.on_changed:
@@ -350,6 +360,7 @@ class ZetaSource(SourceFileFactory):
                     __zt_channels[{channel.id}].publishers = {name_publishers};
                 /* END {channel.name} PUBLISHERS INIT */
                 ''')
+
             channels += textwrap.indent(
                 '''
                 {{

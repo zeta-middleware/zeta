@@ -21,3 +21,9 @@
     message: !ref REQ
 - MCH02:
     message: !ref RESP
+- MCH03:
+    message: !ref ARR
+- MCH04:
+    message: !ref UNI
+- MCH05:
+    message: !ref FLAGS

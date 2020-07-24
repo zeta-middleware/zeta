@@ -87,8 +87,9 @@ class Channel(object):
         self.id = f"ZT_{name.upper()}_CHANNEL"
         self.initial_value = initial_value
         self.message = message.lower()
+        self.message_obj = None
         if initial_value is None:
-            self.initial_value = [hex(x) for x in [0] * self.size]
+            self.initial_value = ["0"]
         else:
             self.initial_value = [hex(x) for x in initial_value]
 
@@ -220,8 +221,8 @@ class Zeta(object):
                             EZTFIELD)
         except KeyError:
             pass
-        print(self.messages)
 
+        self.__check_channel_message_relation()
         self.__check_service_channel_relation()
 
     def __check_service_channel_relation(self) -> None:
@@ -253,7 +254,6 @@ class Zeta(object):
                     raise ZetaCLIError(
                         f"Channel {channel_name} does not exists", EZTINVREF)
 
-    #TODO: parei aqui
     def __check_channel_message_relation(self) -> None:
         """Checks if the use of !ref is correct or is used some
         nonexistent channel.
@@ -263,25 +263,16 @@ class Zeta(object):
         :raise ZetaCLIError: Channel name doesn't exists in channel list.
 
         """
-        for service in self.services:
-            for channel_name in service.pub_channels_names:
-                for channel in self.channels:
-                    if channel.name == channel_name:
-                        channel.pub_services_obj.append(service)
-                        service.pub_channels_obj.append(channel)
+        for channel in self.channels:
+            if channel.message != "":
+                for message in self.messages:
+                    if channel.message == message.name.lower():
+                        channel.message_obj = message
                         break
                 else:
                     raise ZetaCLIError(
-                        f"Channel {channel_name} does not exists", EZTINVREF)
-            for channel_name in service.sub_channels_names:
-                for channel in self.channels:
-                    if channel.name == channel_name:
-                        channel.sub_services_obj.append(service)
-                        service.sub_channels_obj.append(channel)
-                        break
-                else:
-                    raise ZetaCLIError(
-                        f"Channel {channel_name} does not exists", EZTINVREF)
+                        f"Message format {channel.message} does not exists",
+                        EZTINVREF)
 
     def __process_file(self, yaml_dict: dict):
         """Continues the processing of yamfile

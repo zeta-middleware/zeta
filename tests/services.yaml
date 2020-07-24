@@ -7,6 +7,11 @@
       - !ref CH03
       - !ref CH04
       - !ref CH05
+      - !ref MCH01
+      - !ref MCH02
+      - !ref MCH03
+      - !ref MCH04
+      - !ref MCH05
 - PONG:
     priority: 3
     stack_size: 2048

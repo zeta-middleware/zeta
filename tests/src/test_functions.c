@@ -1,3 +1,4 @@
+#include <string.h>
 #include <ztest.h>
 
 #include "zephyr/types.h"
@@ -158,6 +159,28 @@ void PING_task(void)
     zassert_equal(
         sensor_c_hit, 4,
         "PONG or PONG2 callback was not called on a channel that react on update!\n");
+
+    zt_data_t *mch01 =
+        ZT_DATA_REQ(.id = 10, .flag = {.write = 1},
+                    .data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    zt_chan_pub(ZT_MCH01_CHANNEL, mch01);
+    zt_data_t *dr = ZT_DATA_REQ(0);
+    zt_chan_read(ZT_MCH01_CHANNEL, dr);
+
+    zassert_equal(dr->req.value.id, mch01->req.value.id,
+                  "Error executing reading message! Line %d\n", __LINE__);
+    zassert_true(dr->req.value.flag.write, "Error executing reading message! Line %d\n",
+                 __LINE__);
+    zassert_false(dr->req.value.flag.read, "Error executing reading message! Line %d\n",
+                  __LINE__);
+    zassert_false(dr->req.value.flag.erase, "Error executing reading message! Line %d\n",
+                  __LINE__);
+    zassert_false(dr->req.value.flag.update, "Error executing reading message! Line %d\n",
+                  __LINE__);
+    zassert_true(0 == memcmp(dr->req.value.data, mch01->req.value.data, 32),
+                 "Error executing reading message! Line %d\n", __LINE__);
+
+
     k_sleep(K_MSEC(100));
     k_sem_give(&ztest_sem);
 }

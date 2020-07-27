@@ -24,9 +24,9 @@
         mtype: u8
         size: 32
 - RESP: 
-    mtype: struct
+    mtype: union
     fields:
-    - id:
+    - bits:
         mtype: u8
     - result:
         mtype: bitarray_u8
@@ -40,9 +40,6 @@
         - reserved:
             mtype: bits
             size: 6
-    - data:
-        mtype: u8
-        size: 32
 - ARR:
     mtype: u32
     size: 10
@@ -69,6 +66,34 @@
       - b1:
           mtype: bits
           size: 20
-      - b3:
+      - b2:
           mtype: bits
           size: 5
+- COMPLEX:
+    mtype: union
+    fields:
+      - data:
+          mtype: u8
+          size: 24
+      - sample:
+          mtype: struct
+          fields:
+            - acc:
+                mtype: struct
+                fields:
+                  - x:
+                      mtype: u32
+                  - y:
+                      mtype: u32
+                  - z:
+                      mtype: u32
+            - gyro:
+                mtype: struct
+                fields:
+                  - x:
+                      mtype: u32
+                  - y:
+                      mtype: u32
+                  - z:
+                      mtype: u32
+                  

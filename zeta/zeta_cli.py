@@ -209,8 +209,9 @@ class ZetaHeader(HeaderFileFactory):
                                                **message.msg_format)
             if message_code_factory.mtype in ["struct", "union", "bitarray"]:
                 messages_macros += textwrap.dedent('''
-                #define ZT_DATA_{0}(data, ...) (zt_data_t *) (zt_data_{1}_t[]) {{{{sizeof(struct {1}), {{data, ##__VA_ARGS__}}}}}}
-                '''.format(message.name.upper(), message.name.lower()))
+                #define ZT_DATA_{0}(data, ...) (zt_data_t *) (zt_data_{1}_t[]) {{{{sizeof({2}), {{data, ##__VA_ARGS__}}}}}}
+                '''.format(message.name.upper(), message.name.lower(),
+                           message_code_factory.mtype_obj.statement))
                 messages_structs += ("\n" + message_code_factory.code())
                 messages_structs += textwrap.dedent(f'''
 

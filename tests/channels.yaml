@@ -27,3 +27,5 @@
     message: !ref UNI
 - MCH05:
     message: !ref FLAGS
+- MCH06:
+    message: !ref COMPLEX

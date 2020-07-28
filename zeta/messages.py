@@ -36,9 +36,7 @@ class ZetaMessage:
         self.fields = []
         if fields is not None:
             for field in fields:
-                print(field.items())
                 for item_name, sub_fields in field.items():
-                    print(item_name, sub_fields)
                     self.fields.append(
                         ZetaMessage(item_name,
                                     level=self.level + 1,
@@ -91,6 +89,10 @@ class ZetaMessage:
                     begin="",
                     end="",
                     sizable=f"[{self.size}]" if self.size > 0 else "")
+            else:
+                raise TypeError(
+                    f"The type {self.mtype} of field '{self.name}' is not valid."
+                )
 
     def code(self):
         return textwrap.indent(

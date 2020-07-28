@@ -212,7 +212,7 @@ class Zeta(object):
         try:
             for message_description in yaml_dict['Messages']:
                 for name, fields in message_description.items():
-                    print(name, fields)
+                    # print(name, fields)
                     try:
                         self.messages.append(Message(name, fields))
                     except TypeError as terr:

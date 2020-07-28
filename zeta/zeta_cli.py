@@ -834,9 +834,14 @@ def run():
         ZetaCLI()
     except ZetaCLIError as zterr:
         zterr.handle()
+    except TypeError as err:
+        print(
+            f"\n[ZetaCLI Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred.\n\n *** {err}\n"
+        )
+        exit(EZTUNEXP)
     except Exception as err:
         print(
-            f"[ZetaCLI Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred."
+            f"\n[ZetaCLI Error] [Code: {EZTUNEXP}]: Unexpected exception ocurred."
         )
         print(traceback.print_exc())
         exit(EZTUNEXP)

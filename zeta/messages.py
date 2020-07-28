@@ -8,6 +8,8 @@ MsgType = namedtuple('MsgCode', "statement separator begin end sizable")
 
 
 class ZetaMessage:
+    """Represents the Message to zeta. It holds the messages' information for
+    code generation"""
     def __init__(self,
                  name: str,
                  mtype: str = '',
@@ -16,6 +18,27 @@ class ZetaMessage:
                  fields: list = None,
                  parent: object = None,
                  level: int = 0) -> None:
+        """ZetaMessage constructor.
+
+        :param name: the message name
+        :param mtype: the message type. It can be struct, union,
+        bitarray_<type>, and all the s<size> or u<size>. Where <size> is 8,
+        16, 32 and 64 and <type> is all the possible s<size> or u<size>.
+        For example: a message can have a mtype of u8 or bitarray_s64.
+        :param size: the message size. If you want to define an array message
+        of 5 items of u32 you must define the array size 5 and mtype u32.
+        The result will be an 'u32_t value[5]' as value.
+        :param description: the message description. It is used for
+        documentation only. No code is generated based on this parameter.
+        :param fields: the messagem fields when it is of mtype struct, union or bitarray.
+        :param parent: the message parent to point back up to the parent.
+        For example: an struct field know its parent by this parameter.
+        :param level: the messagem level. When the message is inside another
+        message, it receives the level increment.
+        :returns: None
+        :rtype: None
+
+        """
         self.name = name.lower()
         self.size = size
         self.level = level
@@ -43,7 +66,14 @@ class ZetaMessage:
                                     parent=self,
                                     **sub_fields))
 
-    def digest_type(self):
+    def digest_type(self) -> None:
+        """Digests the mtype and mounts the necessary data to the code
+        generation.
+
+        :returns: None
+        :rtype: None
+
+        """
         if self.mtype == 'struct':
             self.mtype_obj = MsgType(
                 statement="struct"
@@ -94,7 +124,13 @@ class ZetaMessage:
                     f"The type {self.mtype} of field '{self.name}' is not valid."
                 )
 
-    def code(self):
+    def code(self) -> str:
+        """Generates the code for the message.
+
+        :returns: the code generated that represents the message
+        :rtype: str
+
+        """
         return textwrap.indent(
             f"{self.mtype_obj.statement} {self.mtype_obj.begin}{self.mtype_obj.separator.join([x.code() for x in self.fields])}{self.mtype_obj.end}{self.name}{self.mtype_obj.sizable};",
             prefix="    " * (1 if self.level > 0 else 0))

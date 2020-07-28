@@ -43,6 +43,7 @@ static u32_t get_sensor_c(void)
 void BOARD_task()
 {
     LOG_DBG("BOARD Service has started...[OK]");
+
     zt_data_t *data_a = ZT_DATA_U8(0);
     zt_data_t *data_b = ZT_DATA_U8(0);
     zt_data_t *data_c = ZT_DATA_U32(0);

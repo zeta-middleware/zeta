@@ -4,6 +4,8 @@ import yaml
 
 from _io import TextIOWrapper
 
+from .zeta_errors import EZTFIELD, EZTINVREF, ZetaCLIError
+
 ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."
 PROJECT_DIR = "."

@@ -11,15 +11,15 @@ import traceback
 from pathlib import Path
 from string import Template
 
-import yaml
-
 from _io import TextIOWrapper
 
 from ._version import __version__
 from .messages import ZetaMessage
 from .sniffer import ZetaSniffer
-from .zeta import Channel, Config, Service, Zeta, ZetaYamlLoader
+from .zeta import Zeta
 from .zeta_errors import *
+
+# import yaml
 
 ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."
@@ -221,12 +221,13 @@ class ZetaHeader(HeaderFileFactory):
                 }} zt_data_{message.name.lower()}_t;\n''')
             else:
                 messages_macros += textwrap.dedent('''
-                #define ZT_DATA_{0}(data, ...) (zt_data_t *) (zt_data_{1}_t[]) {{{{sizeof({2})*{3}, {{data, ##__VA_ARGS__}}}}}}
+                #define ZT_DATA_{0}(data{5}) (zt_data_t *) (zt_data_{1}_t[]) {{{{sizeof({2})*{3}, {4}}}}}
                 '''.format(
                     message.name.upper(), message.name.lower(),
                     message_code_factory.mtype_obj.statement,
-                    message_code_factory.size
-                    if message_code_factory.size else 1))
+                    message_code_factory.size if message_code_factory.size else
+                    1, "{data, ##__VA_ARGS__}" if message_code_factory.size
+                    else "data", ", ..." if message_code_factory.size else ""))
                 messages_structs += textwrap.dedent(f'''
 
                 typedef struct {{

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-import subprocess
 import os
 import signal
+import subprocess
 from time import sleep
 
 
@@ -47,6 +47,7 @@ def test_samples():
     run_test("basic")
     run_test("light_control")
     run_test("sensors-over-internet")
+    run_test("sensors-over-internet-msg")
     run_test("pub_cb_o2n_performance")
     run_test("pub_cb_o2o_performance")
 

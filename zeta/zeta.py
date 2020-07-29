@@ -4,6 +4,8 @@ import yaml
 
 from _io import TextIOWrapper
 
+from .zeta_errors import EZTFIELD, EZTINVREF, ZetaCLIError
+
 ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."
 PROJECT_DIR = "."
@@ -62,7 +64,8 @@ class Channel(object):
                  read_only: bool = False,
                  on_changed: bool = False,
                  size: int = 1,
-                 persistent: int = 0) -> None:
+                 persistent: int = 0,
+                 message: str = "") -> None:
         """Channel constructor.
 
         :param name: Channel name
@@ -85,8 +88,10 @@ class Channel(object):
         self.sem = f"zt_{name.lower()}_channel_sem"
         self.id = f"ZT_{name.upper()}_CHANNEL"
         self.initial_value = initial_value
+        self.message = message.lower()
+        self.message_obj = None
         if initial_value is None:
-            self.initial_value = [hex(x) for x in [0] * self.size]
+            self.initial_value = ["0"]
         else:
             self.initial_value = [hex(x) for x in initial_value]
 
@@ -146,6 +151,26 @@ class Config(object):
         self.storage_period = storage_period
 
 
+class Message:
+    """This object represents the Message defined by the Zeta yaml file.
+    """
+    def __init__(self,
+                 name: str = "undefined_message_name",
+                 msg_format: dict = None) -> None:
+        """Message constructor.
+
+        :param name: The name of the message, which will be used to reference
+        this message.
+        :param msg_format: The message format definition in terms of type and
+        fields. This can be struct, union and, bitarray.
+        :returns: None
+        :rtype: None
+
+        """
+        self.name = name
+        self.msg_format = msg_format if msg_format else {}
+
+
 class Zeta(object):
     """Represents the Zeta object that has access to services, channels
     and config parameters specified in YAML file.
@@ -184,6 +209,22 @@ class Zeta(object):
                     raise ZetaCLIError(
                         f"Error creating Service object. {terr.__str__()}",
                         EZTFIELD)
+
+        self.messages = []
+        try:
+            for message_description in yaml_dict['Messages']:
+                for name, fields in message_description.items():
+                    # print(name, fields)
+                    try:
+                        self.messages.append(Message(name, fields))
+                    except TypeError as terr:
+                        raise ZetaCLIError(
+                            f"Error creating Message object. {terr.__str__()}",
+                            EZTFIELD)
+        except KeyError:
+            pass
+
+        self.__check_channel_message_relation()
         self.__check_service_channel_relation()
 
     def __check_service_channel_relation(self) -> None:
@@ -214,6 +255,26 @@ class Zeta(object):
                 else:
                     raise ZetaCLIError(
                         f"Channel {channel_name} does not exists", EZTINVREF)
+
+    def __check_channel_message_relation(self) -> None:
+        """Checks if the use of !ref is correct or is used some
+        nonexistent channel.
+
+        :returns: None
+        :rtype: None
+        :raise ZetaCLIError: Channel name doesn't exists in channel list.
+
+        """
+        for channel in self.channels:
+            if channel.message != "":
+                for message in self.messages:
+                    if channel.message == message.name.lower():
+                        channel.message_obj = message
+                        break
+                else:
+                    raise ZetaCLIError(
+                        f"Message format {channel.message} does not exists",
+                        EZTINVREF)
 
     def __process_file(self, yaml_dict: dict):
         """Continues the processing of yamfile

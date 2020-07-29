@@ -8,3 +8,6 @@ Channels:
 
 Services:
   !include services.yaml
+
+Messages:
+  !include messages.yaml

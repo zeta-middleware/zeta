@@ -1,0 +1,55 @@
+Config:
+  sector_count: 4
+
+Channels:
+  - FIRMWARE_VERSION:
+      size: 4
+      read_only: True
+      initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
+  - SENSORS:
+      message: !ref SENSORS_MSG
+      persistent: true
+  - NET_REQUEST:
+      message: !ref NET_REQUEST_MSG
+  - NET_RESPONSE:
+      message: !ref NET_RESPONSE_MSG
+      persistent: true
+        
+Services:
+  - CORE:
+      priority: 2
+      stack_size: 512
+      sub_channels:
+        - !ref SENSORS
+        - !ref NET_REQUEST
+      pub_channels:
+        - !ref NET_RESPONSE
+  - BOARD:
+      priority: 1
+      stack_size: 512
+      pub_channels:
+        - !ref SENSORS
+  - NET:
+      priority: 3
+      stack_size: 512
+      pub_channels:
+        - !ref NET_REQUEST
+      sub_channels:
+        - !ref NET_RESPONSE
+      
+
+Messages:
+  - SENSORS_MSG:
+      mtype: struct
+      fields:
+        - a:
+            mtype: u8
+        - b:
+            mtype: u8
+        - c:
+            mtype: u32
+  - NET_REQUEST_MSG:
+      mtype: u8
+  - NET_RESPONSE_MSG:
+      mtype: u8
+      size: 5

@@ -43,20 +43,22 @@ static u32_t get_sensor_c(void)
 void BOARD_task()
 {
     LOG_DBG("BOARD Service has started...[OK]");
-
-    zt_data_t *data_a = ZT_DATA_U8(0);
-    zt_data_t *data_b = ZT_DATA_U8(0);
-    zt_data_t *data_c = ZT_DATA_U32(0);
+    // zt_data_t *data_a = ZT_DATA_U8(0);
+    // zt_data_t *data_b = ZT_DATA_U8(0);
+    // zt_data_t *data_c = ZT_DATA_U32(0);
 
     while (1) {
-        data_a->u8.value = get_sensor_a();
-        zt_chan_pub(ZT_SENSOR_A_CHANNEL, data_a);
+        // data_a->u8.value = get_sensor_a();
+        // zt_chan_pub(ZT_SENSOR_A_CHANNEL, data_a);
 
-        data_b->u8.value = get_sensor_b();
-        zt_chan_pub(ZT_SENSOR_B_CHANNEL, data_b);
+        // data_b->u8.value = get_sensor_b();
+        // zt_chan_pub(ZT_SENSOR_B_CHANNEL, data_b);
 
-        data_c->u32.value = get_sensor_c();
-        zt_chan_pub(ZT_SENSOR_C_CHANNEL, data_c);
+        // data_c->u32.value = get_sensor_c();
+        // zt_chan_pub(ZT_SENSOR_C_CHANNEL, data_c);
+        zt_chan_pub(ZT_SENSORS_CHANNEL,
+                    ZT_DATA_SENSORS_MSG(.a = get_sensor_a(), .b = get_sensor_b(),
+                                        .c = get_sensor_c()));
         k_sleep(K_SECONDS(3));
     }
 }

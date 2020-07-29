@@ -1,0 +1,99 @@
+- REQ: 
+    description: "This decribes the request from the server"
+    mtype: struct
+    fields:
+    - id:
+        description: "The request id"
+        mtype: u8
+    - flag:
+        mtype: bitarray_u8
+        fields:
+        - read:
+            mtype: bits
+            size: 1
+        - write:
+            mtype: bits
+            size: 1
+        - erase:
+            mtype: bits
+            size: 1
+        - update:
+            mtype: bits
+            size: 1
+    - data:
+        mtype: u8
+        size: 32
+- RESP: 
+    mtype: union
+    fields:
+    - bits:
+        mtype: u8
+    - result:
+        mtype: bitarray_u8
+        fields:
+        - ok:
+            mtype: bits
+            size: 1
+        - fail:
+            mtype: bits
+            size: 1
+        - reserved:
+            mtype: bits
+            size: 6
+- ARR:
+    mtype: u32
+    size: 10
+- UNI:
+    description: "This is a union example that contains an anonymous field"
+    mtype: union
+    fields:
+      - data:
+          mtype: u32
+      - kind:
+          mtype: struct
+          fields:
+            - a:
+                mtype: u16
+            - b:
+                mtype: u16
+- FLAGS:
+    description: "This is only a test"
+    mtype: bitarray_u32
+    fields:
+      - b0:
+          mtype: bits
+          size: 7
+      - b1:
+          mtype: bits
+          size: 20
+      - b2:
+          mtype: bits
+          size: 5
+- COMPLEX:
+    mtype: union
+    fields:
+      - data:
+          mtype: u8
+          size: 24
+      - sample:
+          mtype: struct
+          fields:
+            - acc:
+                mtype: struct
+                fields:
+                  - x:
+                      mtype: u32
+                  - y:
+                      mtype: u32
+                  - z:
+                      mtype: u32
+            - gyro:
+                mtype: struct
+                fields:
+                  - x:
+                      mtype: u32
+                  - y:
+                      mtype: u32
+                  - z:
+                      mtype: u32
+                  

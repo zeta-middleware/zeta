@@ -22,10 +22,10 @@ class ZetaMessage:
 
         :param name: the message name
         :param mtype: the message type. It can be struct, union,
-        bitarray_<type>, and all the s<size> or u<size>. Where <size> is 8,
+        bitarray_<type>, bits and all the s<size> or u<size>. Where <size> is 8,
         16, 32 and 64 and <type> is all the possible s<size> or u<size>.
         For example: a message can have a mtype of u8 or bitarray_s64.
-        :param size: the message size. If you want to define an array message
+        :param size: the message size in bytes. If you want to define an array message
         of 5 items of u32 you must define the array size 5 and mtype u32.
         The result will be an 'u32_t value[5]' as value.
         :param description: the message description. It is used for

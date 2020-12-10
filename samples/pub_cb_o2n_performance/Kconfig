@@ -1,8 +1,8 @@
 # Copyright (c) 2019 Nordic Semiconductor ASA
 # SPDX-License-Identifier: Apache-2.0
 
-# if BOARD_NRF52840DONGLE_NRF52840
+if BOARD_NRF52840DONGLE_NRF52840
 config USB_DEVICE_PID
 	default USB_PID_CONSOLE_SAMPLE
-# endif
+endif
 source "Kconfig.zephyr"

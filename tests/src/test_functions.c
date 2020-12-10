@@ -266,6 +266,6 @@ void PONG2_task(void)
 {
 }
 
-ZT_SERVICE_INIT(PING, PING_task, PING_service_callback);
-ZT_SERVICE_INIT(PONG, PONG_task, PONG_service_callback);
-ZT_SERVICE_INIT(PONG2, PONG2_task, PONG2_service_callback);
+ZT_SERVICE_DECLARE(PING, PING_task, PING_service_callback);
+ZT_SERVICE_DECLARE(PONG, PONG_task, PONG_service_callback);
+ZT_SERVICE_DECLARE(PONG2, PONG2_task, PONG2_service_callback);

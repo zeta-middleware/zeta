@@ -600,7 +600,7 @@ class ZetaCLI(object):
                                 service_file.readlines()):
                             # @todo: check it with an regex. Maybe the line is
                             # comment out and it will not be true that it is setup ok
-                            if f"ZT_SERVICE_INIT({service_info.name}," in line_content:
+                            if f"ZT_SERVICE_DECLARE({service_info.name}," in line_content:
                                 ok_hit += 1
                                 service_init_output = (
                                     f" {OK_COLORED} Service "
@@ -631,7 +631,7 @@ class ZetaCLI(object):
                                         ok_hit += 1
                                         service_included_output = (
                                             f"\n {OK_COLORED}"
-                                            " {service_info.name.lower()}.c"
+                                            f" {service_info.name.lower()}.c"
                                             " added to be compiled at the"
                                             " CMakeLists.txt file")
                                     else:

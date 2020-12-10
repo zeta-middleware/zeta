@@ -2,7 +2,13 @@
 import argparse
 import subprocess
 
-import yaml
+from yaml import dump as ydump
+from yaml import load as yload
+
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 
 def sh(args, timeout=None, check_result=True):
@@ -16,11 +22,11 @@ def sh(args, timeout=None, check_result=True):
 def generate_file_version(inc=True):
     v = None
     with open("version.yaml", "r+") as pkg_version_file:
-        v = yaml.load(pkg_version_file)
+        v = yload(pkg_version_file, Loader=Loader)
         if inc:
             v['build'] += 1
             pkg_version_file.seek(0)
-            pkg_version_file.write(yaml.dump(v))
+            pkg_version_file.write(ydump(v, Dumper=Dumper))
             pkg_version_file.truncate()
     with open("zeta/_version.py", "w") as version_file:
         release_candidate = ""

@@ -269,6 +269,7 @@ class ZetaSource(SourceFileFactory):
         self.set_subscribers = ''
         self.arrays_init = ''
         self.services_array_init = ''
+        self.run_services = '\n'
 
     def gen_sems(self) -> None:
         """Responsible for assigns the channel semaphores.
@@ -301,6 +302,7 @@ class ZetaSource(SourceFileFactory):
         services_list = list()
         for service in self.zeta.services:
             services_list.append(f'&{service.name}_service')
+            self.run_services += f'    ZT_SERVICE_RUN({service.name});\n'
         services_joined = ', '.join(services_list)
         self.services_array_init = textwrap.dedent(f'''
         zt_service_t *__zt_services[ZT_SERVICE_COUNT] = {{{services_joined}}};
@@ -413,6 +415,7 @@ class ZetaSource(SourceFileFactory):
         self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init
         self.substitutions['services_array_init'] = self.services_array_init
+        self.substitutions['run_services'] = self.run_services
 
 
 class ZetaCLI(object):
@@ -699,7 +702,7 @@ class ZetaCLI(object):
         for service in zeta.services:
             service_name = service.name.strip().lower()
             services_sources.append((
-                f'"{str(Path("${CMAKE_CURRENT_LIST_DIR}/", f"{args.src_dir}", f"{service_name}.c"))}"'
+                f'\n    "{str(Path("${CMAKE_CURRENT_LIST_DIR}/", f"{args.src_dir}", f"{service_name}.c"))}"'
             ))
             if args.generate:
                 if not os.path.exists(f'{args.src_dir}'):
@@ -728,8 +731,8 @@ class ZetaCLI(object):
                 cmake_file = FileFactory(".", "zeta.template.cmake", zeta,
                                          "zeta.cmake")
                 cmake_file.substitutions[
-                    'services_sources'] = "list(APPEND SOURCES {})".format(
-                        " ".join(services_sources))
+                    'services_sources'] = "list(APPEND SOURCES {}\n)".format(
+                        "".join(services_sources))
                 cmake_file.run()
                 print(
                     "[ZETA]: Inject services sources into the zeta.cmake file")

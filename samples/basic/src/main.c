@@ -17,21 +17,23 @@ K_SEM_DEFINE(zt_app_pend_evt, 0, 1);
 zt_channel_e zt_core_evt_id;
 zt_channel_e zt_app_evt_id;
 
-void HAL_task(void)
+void HAL_task(void *p1, void *p2, void *p3)
 {
     zt_data_t *data = ZT_DATA_U8(1);
     while (1) {
+        printk("******** sensor *******\n");
         zt_chan_pub(ZT_SENSOR_VAL_CHANNEL, data);
         k_sleep(K_SECONDS(3));
         data->u8.value = (data->u8.value + 1 <= 15) ? data->u8.value + 1 : 1;
     }
 }
 
-void CORE_task(void)
+void CORE_task(void *p1, void *p2, void *p3)
 {
     zt_data_t *data = ZT_DATA_U8(1);
     u8_t power      = 2;
 
+    printk("******** CORE task ready *******\n");
     while (1) {
         zt_data_t *result = ZT_DATA_U16(1);
         k_sem_take(&zt_core_pend_evt, K_FOREVER);
@@ -51,7 +53,7 @@ void CORE_task(void)
     }
 }
 
-void APP_task(void)
+void APP_task(void *p1, void *p2, void *p3)
 {
     zt_data_t *fv = ZT_DATA_BYTES(4, 0);
     printk("Hello APP task!\n");
@@ -90,9 +92,12 @@ void APP_service_callback(zt_channel_e id)
 
 void main(void)
 {
-    printk("******** ZETA BASIC SAMPLE! *******\n");
+    while (1) {
+        printk("******** ZETA BASIC SAMPLE! *******\n");
+        k_msleep(5000);
+    }
 }
 
-ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);
-ZT_SERVICE_INIT(HAL, HAL_task, HAL_service_callback);
-ZT_SERVICE_INIT(APP, APP_task, APP_service_callback);
+ZT_SERVICE_DECLARE(CORE, CORE_task, CORE_service_callback);
+ZT_SERVICE_DECLARE(HAL, HAL_task, HAL_service_callback);
+ZT_SERVICE_DECLARE(APP, APP_task, APP_service_callback);

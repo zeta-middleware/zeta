@@ -34,4 +34,4 @@ void S04_task()
     }
 }
 
-ZT_SERVICE_INIT(S04, S04_task, S04_service_callback);
+ZT_SERVICE_DECLARE(S04, S04_task, S04_service_callback);

@@ -16,7 +16,7 @@
  * channels callback calls.
  *
  */
-#define ZT_MONITOR_THREAD_STACK_SIZE 512
+#define ZT_MONITOR_THREAD_STACK_SIZE 4096
 
 
 /**
@@ -67,28 +67,41 @@
 #endif
 
 /**
- * @brief Initialize a zeta service.
+ * @brief Declare a zeta service.
  *
  * @param _name Service name
  * @param _task Task pointer function
  * @param _cb Callback to be called when some subscribed channel change
  *
  */
-#define ZT_SERVICE_INIT(_name, _task, _cb)                                     \
-    zt_service_t _name##_service = {                                           \
-        .id = ZT_##_name##_SERVICE, .name = #_name, .cb = _cb};                \
-    K_THREAD_STACK_DEFINE(_k_thread_stack_##_name, _name##_STACK_SIZE);        \
-    Z_STRUCT_SECTION_ITERABLE(_static_thread_data, _k_thread_data_##_name) =   \
-        Z_THREAD_INITIALIZER(&_name##_service.thread, _k_thread_stack_##_name, \
-                             _name##_STACK_SIZE, _task, NULL, NULL, NULL,      \
-                             _name##_TASK_PRIORITY, 0, 0, NULL, _name);
+#define ZT_SERVICE_DECLARE(_name, _task, _cb)                           \
+    K_THREAD_STACK_DEFINE(_k_thread_stack_##_name, _name##_STACK_SIZE); \
+    zt_service_t _name##_service = {                                    \
+        .id          = ZT_##_name##_SERVICE,                            \
+        .name        = #_name,                                          \
+        .cb          = _cb,                                             \
+        .entry_point = (k_thread_entry_t) _task,                        \
+        .stack       = _k_thread_stack_##_name,                         \
+        .stack_size  = K_THREAD_STACK_SIZEOF(_k_thread_stack_##_name)}
 
 /**
- * @brief Read variable reference and size easily to use in
- * Zeta API.
+ * @brief Run a zeta service.
  *
- * @param x variable name
+ * @param _name Service name
  *
+ */
+#define ZT_SERVICE_RUN(_name)                                                            \
+    k_thread_create(&_name##_service.thread, _name##_service.stack,                      \
+                    _name##_service.stack_size, _name##_service.entry_point, NULL, NULL, \
+                    NULL, _name##_TASK_PRIORITY, 0, K_NO_WAIT)
+
+/**
+ * \
+ * @brief Read variable reference and size easily \
+ * to use in Zeta API.                            \
+ *                                                \
+ * @param x variable name                         \
+ *                                                \
  */
 #define ZT_VARIABLE_REF_SIZE(x) (u8_t *) (&x), sizeof(x)
 
@@ -282,10 +295,13 @@ typedef void (*zt_callback_f)(zt_channel_e id);
  * @brief Define Zeta service type
  */
 struct zt_service {
-    zt_service_e id;        /**< Service ID */
-    const char *name;       /**< Service name */
-    struct k_thread thread; /**< Service RTOS thread */
-    zt_callback_f cb;       /**< Service callback */
+    zt_service_e id;              /**< Service ID */
+    const char *name;             /**< Service name */
+    struct k_thread thread;       /**< Service RTOS thread */
+    zt_callback_f cb;             /**< Service callback */
+    k_thread_entry_t entry_point; /**< Service thread function (entry point) */
+    k_thread_stack_t *stack;      /**< Service thread stack */
+    size_t stack_size;            /**< Service thread stack size */
 };
 typedef struct zt_service zt_service_t;
 

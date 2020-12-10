@@ -62,4 +62,4 @@ void CORE_task()
     }
 }
 
-ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);
+ZT_SERVICE_DECLARE(CORE, CORE_task, CORE_service_callback);

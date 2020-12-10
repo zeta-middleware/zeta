@@ -46,4 +46,4 @@ void NET_task()
     }
 }
 
-ZT_SERVICE_INIT(NET, NET_task, NET_service_callback);
+ZT_SERVICE_DECLARE(NET, NET_task, NET_service_callback);

@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     if args.install:
         print("[PIP cli]: install or update zeta python package")
-        sh("pip3 uninstall zeta-cli -y")
+        sh("pip3 uninstall zeta-cli -y", check_result=False)
         sh("pip3 install ./dist/zeta_cli-*.whl")
         clean()
 

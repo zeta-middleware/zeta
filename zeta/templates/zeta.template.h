@@ -16,7 +16,7 @@
  * channels callback calls.
  *
  */
-#define ZT_MONITOR_THREAD_STACK_SIZE 4096
+#define ZT_MONITOR_THREAD_STACK_SIZE 1024
 
 
 /**

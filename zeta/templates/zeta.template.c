@@ -185,9 +185,7 @@ static void __zt_monitor_thread(void)
 
     // <ZT_CODE_INJECTION>$set_subscribers    // </ZT_CODE_INJECTION>
 
-    printk("[printk]: MONITOR STARTED\n");
     // <ZT_CODE_INJECTION>$run_services    // </ZT_CODE_INJECTION>
-    printk("[printk]: MONITOR STARTED 2\n");
 
     u8_t id = 0;
     while (1) {

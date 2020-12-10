@@ -16,7 +16,7 @@ def sh(args, timeout=None, check_result=True):
 def generate_file_version(inc=True):
     v = None
     with open("version.yaml", "r+") as pkg_version_file:
-        v = yaml.load(pkg_version_file, Loader=yaml.CLoader)
+        v = yaml.load(pkg_version_file)
         if inc:
             v['build'] += 1
             pkg_version_file.seek(0)

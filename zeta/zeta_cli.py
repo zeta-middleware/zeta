@@ -651,7 +651,6 @@ class ZetaCLI(object):
         :rtype: int
 
         """
-        ecode = 0
         parser = argparse.ArgumentParser(
             description=
             '''Run this command to check all the zeta configuration''',

@@ -8,6 +8,7 @@
 
 #include <sys/printk.h>
 #include <zephyr.h>
+#include "kernel.h"
 #include "zeta.h"
 
 extern void posix_exit(int error);
@@ -17,5 +18,8 @@ extern void posix_exit(int error);
  */
 void main(void)
 {
-    printk("Started the main thread running on a %s board.\n", CONFIG_BOARD);
+    while (1) {
+        printk("Started the main thread running on a %s board.\n", CONFIG_BOARD);
+        k_msleep(5000);
+    }
 }

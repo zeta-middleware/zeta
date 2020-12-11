@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-import subprocess
 import os
+import subprocess
 import traceback
 
 

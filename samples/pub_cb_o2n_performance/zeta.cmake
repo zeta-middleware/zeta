@@ -10,7 +10,8 @@ execute_process(COMMAND zeta gen -b "${CMAKE_CURRENT_LIST_DIR}/build"
 if(ztcli_gen_exit_code GREATER 0)
   message( FATAL_ERROR "ZetaCli generation failed with exit code: ${ztcli_gen_exit_code}")
 endif()
-                      
+
+
 if(CONF_FILE)
   # CONF_FILE has either been specified on the cmake CLI or is already
   # in the CMakeCache.txt. This has precedence over the environment
@@ -25,8 +26,20 @@ elseif(EXISTS   ${CMAKE_CURRENT_SOURCE_DIR}/prj.conf)
   set(CONF_FILE ${CMAKE_CURRENT_SOURCE_DIR}/prj.conf)
 endif()
 
-list(APPEND CONF_FILE "${CMAKE_CURRENT_LIST_DIR}/build/zeta/zeta.conf")                      
+list(APPEND CONF_FILE "${CMAKE_CURRENT_LIST_DIR}/build/zeta/zeta.conf")
 list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/build/zeta/include/")
-list(APPEND SOURCES "${CMAKE_CURRENT_LIST_DIR}/src/ping.c" "${CMAKE_CURRENT_LIST_DIR}/src/s02.c" "${CMAKE_CURRENT_LIST_DIR}/src/s03.c" "${CMAKE_CURRENT_LIST_DIR}/src/s04.c" "${CMAKE_CURRENT_LIST_DIR}/src/s05.c" "${CMAKE_CURRENT_LIST_DIR}/src/s06.c" "${CMAKE_CURRENT_LIST_DIR}/src/s07.c" "${CMAKE_CURRENT_LIST_DIR}/src/s08.c" "${CMAKE_CURRENT_LIST_DIR}/src/s09.c" "${CMAKE_CURRENT_LIST_DIR}/src/s10.c" "${CMAKE_CURRENT_LIST_DIR}/src/pong.c")
+list(APPEND SOURCES 
+    "${CMAKE_CURRENT_LIST_DIR}/src/ping.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s02.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s03.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s04.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s05.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s06.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s07.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s08.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s09.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/s10.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/pong.c"
+)
 
 set(ZEPHYR_EXTRA_MODULES "${CMAKE_CURRENT_LIST_DIR}/build/zeta")

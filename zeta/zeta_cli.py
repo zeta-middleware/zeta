@@ -269,6 +269,7 @@ class ZetaSource(SourceFileFactory):
         self.set_subscribers = ''
         self.arrays_init = ''
         self.services_array_init = ''
+        self.run_services = '\n'
 
     def gen_sems(self) -> None:
         """Responsible for assigns the channel semaphores.
@@ -301,6 +302,7 @@ class ZetaSource(SourceFileFactory):
         services_list = list()
         for service in self.zeta.services:
             services_list.append(f'&{service.name}_service')
+            self.run_services += f'    ZT_SERVICE_RUN({service.name});\n'
         services_joined = ', '.join(services_list)
         self.services_array_init = textwrap.dedent(f'''
         zt_service_t *__zt_services[ZT_SERVICE_COUNT] = {{{services_joined}}};
@@ -413,6 +415,12 @@ class ZetaSource(SourceFileFactory):
         self.substitutions['set_subscribers'] = self.set_subscribers
         self.substitutions['arrays_init'] = self.arrays_init
         self.substitutions['services_array_init'] = self.services_array_init
+        self.substitutions['run_services'] = self.run_services
+
+
+OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
+FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
+WARNING_COLORED = "\033[1;43m \033[1;97mWARNING \033[0m"
 
 
 class ZetaCLI(object):
@@ -507,48 +515,27 @@ class ZetaCLI(object):
         print(f"ZetaCLI is maintained and supported by Zeta-Middleware group.")
         return 0
 
-    def check(self) -> int:
-        """Called when the user type "zeta check" and is responsible for
-        checks if the needed steps were made by user in order to Zeta
-        works properly.
-
-        :returns: Exit code
-        :rtype: int
-
-        """
+    def check_files(self) -> dict:
+        output = {}
         ecode = 0
-        OK_COLORED = "\033[0;42m \033[1;97mOK \033[0m"
-        FAIL_COLORED = "\033[0;41m \033[1;97mFAIL \033[0m"
-        WARNING_COLORED = "\033[1;43m \033[1;97mWARNING \033[0m"
-        parser = argparse.ArgumentParser(
-            description=
-            '''Run this command to check all the zeta configuration''',
-            usage='zeta check')
-        parser.add_argument(
-            '-s',
-            '--src_dir',
-            type=str,
-            default="./src/",
-            help='Services source directory',
-        )
-        args = parser.parse_args(sys.argv[2:])
         zeta_cmake = Path('./zeta.cmake')
         zeta_cmake_path = zeta_cmake.resolve()
         if zeta_cmake.exists():
-            zeta_cmake_output = (
+            output["zeta_cmake_output"] = (
                 f" {OK_COLORED} zeta.cmake found ({zeta_cmake_path})")
         else:
             ecode = EZTCHECKFAILED
-            zeta_cmake_output = f" {FAIL_COLORED} zeta.cmake not found"
+            output[
+                "zeta_cmake_output"] = f" {FAIL_COLORED} zeta.cmake not found"
 
         zeta_yaml = Path('./zeta.yaml')
         zeta_yaml_path = zeta_yaml.resolve()
         if zeta_yaml.exists():
-            zeta_yaml_output = (
+            output["zeta_yaml_output"] = (
                 f" {OK_COLORED} zeta.yaml found ({zeta_yaml_path})")
         else:
             ecode = EZTCHECKFAILED
-            zeta_yaml_output = f" {FAIL_COLORED} zeta.yaml not found"
+            output["zeta_yaml_output"] = f" {FAIL_COLORED} zeta.yaml not found"
 
         cmakelists = Path('./CMakeLists.txt')
         cmakelists_path = cmakelists.resolve()
@@ -559,19 +546,26 @@ class ZetaCLI(object):
                     # @todo: check it with an regex. Maybe the line is comment
                     # out and it will not be true that it is setup ok
                     if "include(zeta.cmake NO_POLICY_SCOPE)" in line_content:
-                        cmakelists_output = (
+                        output["cmakelists_output"] = (
                             f" {OK_COLORED} zeta.cmake included properly"
                             f" ({cmakelists_path}:{line + 1})")
                         break
                 else:
                     ecode = EZTCHECKFAILED
-                    cmakelists_output = (
+                    output["cmakelists_output"] = (
                         f" {FAIL_COLORED} zeta.cmake NOT included properly"
                         " into the CMakeLists.txt file")
+        output["ecode"] = ecode
+        return output
+
+    def check_code(self, src_dir) -> dict:
+        output = {}
+        ecode = 0
         services_output = ""
         services_output_list = []
 
         zeta = None
+        zeta_cmake = Path('./zeta.cmake')
         try:
             with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
                 zeta = Zeta(f)
@@ -580,8 +574,7 @@ class ZetaCLI(object):
             pass
         if zeta and zeta_cmake.exists():
             for service_info in zeta.services:
-                service = Path(f'{args.src_dir}',
-                               f"{service_info.name.lower()}.c")
+                service = Path(f'{src_dir}', f"{service_info.name.lower()}.c")
                 service_path = service.resolve()
                 ok_hit = 0
                 service_init_output = (
@@ -597,7 +590,7 @@ class ZetaCLI(object):
                                 service_file.readlines()):
                             # @todo: check it with an regex. Maybe the line is
                             # comment out and it will not be true that it is setup ok
-                            if f"ZT_SERVICE_INIT({service_info.name}," in line_content:
+                            if f"ZT_SERVICE_DECLARE({service_info.name}," in line_content:
                                 ok_hit += 1
                                 service_init_output = (
                                     f" {OK_COLORED} Service "
@@ -628,7 +621,7 @@ class ZetaCLI(object):
                                         ok_hit += 1
                                         service_included_output = (
                                             f"\n {OK_COLORED}"
-                                            " {service_info.name.lower()}.c"
+                                            f" {service_info.name.lower()}.c"
                                             " added to be compiled at the"
                                             " CMakeLists.txt file")
                                     else:
@@ -645,14 +638,41 @@ class ZetaCLI(object):
                               (ok_hit == 2)) else EZTCHECKFAILED
                 services_output_list.append(
                     f"""{service_init_output}{service_included_output}""")
-        services_output = "\n" + "\n".join(services_output_list)
+        output["services_output"] = "\n" + "\n".join(services_output_list)
+        output["ecode"] = ecode
+        return output
+
+    def check(self) -> int:
+        """Called when the user type "zeta check" and is responsible for
+        checks if the needed steps were made by user in order to Zeta
+        works properly.
+
+        :returns: Exit code
+        :rtype: int
+
+        """
+        parser = argparse.ArgumentParser(
+            description=
+            '''Run this command to check all the zeta configuration''',
+            usage='zeta check')
+        parser.add_argument(
+            '-s',
+            '--src_dir',
+            type=str,
+            default="./src/",
+            help='Services source directory',
+        )
+        args = parser.parse_args(sys.argv[2:])
+        check_files = self.check_files()
+        check_code = self.check_code(args.src_dir)
         check_output = textwrap.dedent(f'''\
                 [ZETA]: Zeta project configuration check...
-                {zeta_cmake_output}
-                {zeta_yaml_output}
-                {cmakelists_output}''') + services_output
+                {check_files["zeta_cmake_output"]}
+                {check_files["zeta_yaml_output"]}
+                {check_files["cmakelists_output"]}'''
+                                       ) + check_code["services_output"]
         print(check_output)
-        return ecode
+        return check_files["ecode"] + check_code["ecode"]
 
     def services(self) -> int:
         """Called when the user type "zeta services" and is responsible
@@ -699,7 +719,7 @@ class ZetaCLI(object):
         for service in zeta.services:
             service_name = service.name.strip().lower()
             services_sources.append((
-                f'"{str(Path("${CMAKE_CURRENT_LIST_DIR}/", f"{args.src_dir}", f"{service_name}.c"))}"'
+                f'\n    "{str(Path("${CMAKE_CURRENT_LIST_DIR}/", f"{args.src_dir}", f"{service_name}.c"))}"'
             ))
             if args.generate:
                 if not os.path.exists(f'{args.src_dir}'):
@@ -728,8 +748,8 @@ class ZetaCLI(object):
                 cmake_file = FileFactory(".", "zeta.template.cmake", zeta,
                                          "zeta.cmake")
                 cmake_file.substitutions[
-                    'services_sources'] = "list(APPEND SOURCES {})".format(
-                        " ".join(services_sources))
+                    'services_sources'] = "list(APPEND SOURCES {}\n)".format(
+                        "".join(services_sources))
                 cmake_file.run()
                 print(
                     "[ZETA]: Inject services sources into the zeta.cmake file")

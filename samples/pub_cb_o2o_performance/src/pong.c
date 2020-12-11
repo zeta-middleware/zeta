@@ -55,4 +55,4 @@ void PONG_task()
     }
 }
 
-ZT_SERVICE_INIT(PONG, PONG_task, PONG_service_callback);
+ZT_SERVICE_DECLARE(PONG, PONG_task, PONG_service_callback);

@@ -67,4 +67,4 @@ void PING_task()
     }
 }
 
-ZT_SERVICE_INIT(PING, PING_task, PING_service_callback);
+ZT_SERVICE_DECLARE(PING, PING_task, PING_service_callback);

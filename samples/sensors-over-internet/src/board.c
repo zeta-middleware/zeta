@@ -61,4 +61,4 @@ void BOARD_task()
     }
 }
 
-ZT_SERVICE_INIT(BOARD, BOARD_task, NULL);
+ZT_SERVICE_DECLARE(BOARD, BOARD_task, NULL);

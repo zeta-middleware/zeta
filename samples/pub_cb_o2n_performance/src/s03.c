@@ -6,8 +6,8 @@ LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 K_SEM_DEFINE(S03_callback_sem, 0, 1);
 
-extern uint32_t total_cycles;
-extern uint32_t start_cycles;
+extern u32_t total_cycles;
+extern u32_t start_cycles;
 
 /**
  * @brief This is the function used by Zeta to tell the S03 that one(s) of the
@@ -34,4 +34,4 @@ void S03_task()
     }
 }
 
-ZT_SERVICE_DECLARE(S03, S03_task, S03_service_callback);
+ZT_SERVICE_INIT(S03, S03_task, S03_service_callback);

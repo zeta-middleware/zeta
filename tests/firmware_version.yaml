@@ -1,3 +1,0 @@
-size: 4
-read_only: True
-initial_value: [0xF1, 0xF2, 0xF3, 0xF4]

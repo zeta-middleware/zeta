@@ -26,9 +26,9 @@ void CORE_service_callback(zt_channel_e id)
 }
 
 struct version {
-    uint16_t build;
-    uint8_t minor;
-    uint8_t major;
+    u16_t build;
+    u8_t minor;
+    u8_t major;
 };
 
 
@@ -62,4 +62,4 @@ void CORE_task()
     }
 }
 
-ZT_SERVICE_DECLARE(CORE, CORE_task, CORE_service_callback);
+ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);

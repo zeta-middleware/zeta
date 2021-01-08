@@ -12,12 +12,24 @@
 #include <zephyr/types.h>
 
 /**
+ * @brief Stack size that is used in Zeta thread that manages the
+ * persistent data.
+ *
+ */
+#define ZT_STORAGE_THREAD_STACK_SIZE 512
+
+/**
  * @brief Stack size that is used in Zeta thread that manages
  * channels callback calls.
  *
  */
-#define ZT_MONITOR_THREAD_STACK_SIZE 1024
+#define ZT_CHANNELS_THREAD_STACK_SIZE 512
 
+/**
+ * @brief Storage thread priority.
+ *
+ */
+#define ZT_STORAGE_THREAD_PRIORITY 1
 
 /**
  * @brief Storage sleep time.
@@ -29,81 +41,32 @@
  * @brief Channels thread priority
  *
  */
-#define ZT_MONITOR_THREAD_PRIORITY 0
+#define ZT_CHANNELS_THREAD_PRIORITY 0
 
-#ifdef CONFIG_ZETA_STORAGE
-/**
- * @brief Stack size that is used in Zeta thread that manages the
- * persistent data.
- *
- */
-#define ZT_STORAGE_THREAD_STACK_SIZE 1024
 
 /**
- * @brief Storage thread priority.
- *
- */
-#define ZT_STORAGE_THREAD_PRIORITY 2
-#endif
-
-#ifdef CONFIG_ZETA_FORWARDER
-/**
- * @brief Forwarder thread priority.
- *
- */
-#define ZT_FORWARDER_THREAD_PRIORITY 1
-
-/**
- * @brief Stack size that is used in Zeta thread that manages
- * the forwarder of messages between services and channels.
- *
- */
-#define ZT_FORWARDER_THREAD_STACK_SIZE 512
-
-#define ZT_FWD_OP_READ 0
-#define ZT_FWD_OP_PUBLISH 1
-#define ZT_FWD_OP_CALLBACK 2
-#define ZT_FWD_OP_SAVED 3
-#endif
-
-/**
- * @brief Declare a zeta service.
+ * @brief Initialize a zeta service.
  *
  * @param _name Service name
  * @param _task Task pointer function
  * @param _cb Callback to be called when some subscribed channel change
  *
  */
-#define ZT_SERVICE_DECLARE(_name, _task, _cb)                           \
-    K_THREAD_STACK_DEFINE(_k_thread_stack_##_name, _name##_STACK_SIZE); \
-    zt_service_t _name##_service = {                                    \
-        .id          = ZT_##_name##_SERVICE,                            \
-        .name        = #_name,                                          \
-        .cb          = _cb,                                             \
-        .entry_point = (k_thread_entry_t) _task,                        \
-        .stack       = _k_thread_stack_##_name,                         \
-        .stack_size  = K_THREAD_STACK_SIZEOF(_k_thread_stack_##_name)}
+#define ZT_SERVICE_INIT(_name, _task, _cb)                                          \
+    K_THREAD_DEFINE(_name##_thread_id, _name##_STACK_SIZE, _task, NULL, NULL, NULL, \
+                    _name##_TASK_PRIORITY, 0, 0);                                   \
+    zt_service_t _name##_service = {                                                \
+        .name = #_name, .cb = _cb, .thread_id = &_name##_thread_id}
+
 
 /**
- * @brief Run a zeta service.
+ * @brief Read variable reference and size easily to use in
+ * Zeta API.
  *
- * @param _name Service name
+ * @param x variable name
  *
  */
-#define ZT_SERVICE_RUN(_name)                                                            \
-    k_thread_create(&_name##_service.thread, _name##_service.stack,                      \
-                    _name##_service.stack_size, _name##_service.entry_point, NULL, NULL, \
-                    NULL, _name##_TASK_PRIORITY, 0, K_NO_WAIT)
-
-/**
- * \
- * @brief Read variable reference and size easily \
- * to use in Zeta API.                            \
- *                                                \
- * @param x variable name                         \
- *                                                \
- */
-#define ZT_VARIABLE_REF_SIZE(x) (uint8_t *) (&x), sizeof(x)
+#define ZT_VARIABLE_REF_SIZE(x) (u8_t *) (&x), sizeof(x)
 
 /**
  * @brief Check if _v value is equal to _c, otherwise _err will be
@@ -136,74 +99,74 @@
     }
 
 
-#define ZT_DATA_S8(data)                   \
-    (zt_data_t *) (zt_data_int8_t[])       \
-    {                                      \
-        {                                  \
-            sizeof(int8_t), (int8_t)(data) \
-        }                                  \
+#define ZT_DATA_S8(data)               \
+    (zt_data_t *) (zt_data_s8_t[])     \
+    {                                  \
+        {                              \
+            sizeof(s8_t), (s8_t)(data) \
+        }                              \
     }
 
-#define ZT_DATA_U8(data)                     \
-    (zt_data_t *) (zt_data_uint8_t[])        \
-    {                                        \
-        {                                    \
-            sizeof(uint8_t), (uint8_t)(data) \
-        }                                    \
+#define ZT_DATA_U8(data)               \
+    (zt_data_t *) (zt_data_u8_t[])     \
+    {                                  \
+        {                              \
+            sizeof(u8_t), (u8_t)(data) \
+        }                              \
     }
 
-#define ZT_DATA_S16(data)                    \
-    (zt_data_t *) (zt_data_int16_t[])        \
-    {                                        \
-        {                                    \
-            sizeof(int16_t), (int16_t)(data) \
-        }                                    \
+#define ZT_DATA_S16(data)                \
+    (zt_data_t *) (zt_data_s16_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s16_t), (s16_t)(data) \
+        }                                \
     }
 
-#define ZT_DATA_U16(data)                      \
-    (zt_data_t *) (zt_data_uint16_t[])         \
-    {                                          \
-        {                                      \
-            sizeof(uint16_t), (uint16_t)(data) \
-        }                                      \
+#define ZT_DATA_U16(data)                \
+    (zt_data_t *) (zt_data_u16_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u16_t), (u16_t)(data) \
+        }                                \
     }
 
-#define ZT_DATA_S32(data)                    \
-    (zt_data_t *) (zt_data_int32_t[])        \
-    {                                        \
-        {                                    \
-            sizeof(int32_t), (int32_t)(data) \
-        }                                    \
+#define ZT_DATA_S32(data)                \
+    (zt_data_t *) (zt_data_s32_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s32_t), (s32_t)(data) \
+        }                                \
     }
 
-#define ZT_DATA_U32(data)                      \
-    (zt_data_t *) (zt_data_uint32_t[])         \
-    {                                          \
-        {                                      \
-            sizeof(uint32_t), (uint32_t)(data) \
-        }                                      \
+#define ZT_DATA_U32(data)                \
+    (zt_data_t *) (zt_data_u32_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u32_t), (u32_t)(data) \
+        }                                \
     }
 
-#define ZT_DATA_S64(data)                    \
-    (zt_data_t *) (zt_data_int64_t[])        \
-    {                                        \
-        {                                    \
-            sizeof(int64_t), (int64_t)(data) \
-        }                                    \
+#define ZT_DATA_S64(data)                \
+    (zt_data_t *) (zt_data_s64_t[])      \
+    {                                    \
+        {                                \
+            sizeof(s64_t), (s64_t)(data) \
+        }                                \
     }
 
-#define ZT_DATA_U64(data)                      \
-    (zt_data_t *) (zt_data_uint64_t[])         \
-    {                                          \
-        {                                      \
-            sizeof(uint64_t), (uint64_t)(data) \
-        }                                      \
+#define ZT_DATA_U64(data)                \
+    (zt_data_t *) (zt_data_u64_t[])      \
+    {                                    \
+        {                                \
+            sizeof(u64_t), (u64_t)(data) \
+        }                                \
     }
 
 #define ZT_DATA_BYTES(_size, data, ...) \
     (zt_data_t *) (struct {             \
         size_t size;                    \
-        uint8_t value[_size];           \
+        u8_t value[_size];              \
     }[])                                \
     {                                   \
         {                               \
@@ -214,74 +177,66 @@
         }                               \
     }
 
-// <ZT_CODE_INJECTION>$messages_macros// </ZT_CODE_INJECTION>
-
+typedef struct {
+    size_t size;
+    s8_t value;
+} zt_data_s8_t;
 
 typedef struct {
     size_t size;
-    int8_t value;
-} zt_data_int8_t;
+    u8_t value;
+} zt_data_u8_t;
 
 typedef struct {
     size_t size;
-    uint8_t value;
-} zt_data_uint8_t;
+    s16_t value;
+} zt_data_s16_t;
 
 typedef struct {
     size_t size;
-    int16_t value;
-} zt_data_int16_t;
+    u16_t value;
+} zt_data_u16_t;
 
 typedef struct {
     size_t size;
-    uint16_t value;
-} zt_data_uint16_t;
+    s32_t value;
+} zt_data_s32_t;
 
 typedef struct {
     size_t size;
-    int32_t value;
-} zt_data_int32_t;
+    u32_t value;
+} zt_data_u32_t;
 
 typedef struct {
     size_t size;
-    uint32_t value;
-} zt_data_uint32_t;
+    s64_t value;
+} zt_data_s64_t;
 
 typedef struct {
     size_t size;
-    int64_t value;
-} zt_data_int64_t;
+    u64_t value;
+} zt_data_u64_t;
 
 typedef struct {
     size_t size;
-    uint64_t value;
-} zt_data_uint64_t;
-
-typedef struct {
-    size_t size;
-    uint8_t value[];
+    u8_t value[];
 } zt_data_bytes_t;
 
-// <ZT_CODE_INJECTION>$messages_structs// </ZT_CODE_INJECTION>
-
 union data {
-    zt_data_int8_t s8;
-    zt_data_uint8_t u8;
-    zt_data_int16_t s16;
-    zt_data_uint16_t u16;
-    zt_data_int32_t s32;
-    zt_data_uint32_t u32;
-    zt_data_int64_t s64;
-    zt_data_uint64_t u64;
-    // <ZT_CODE_INJECTION>$messages_structs_ref// </ZT_CODE_INJECTION>
+    zt_data_s8_t s8;
+    zt_data_u8_t u8;
+    zt_data_s16_t s16;
+    zt_data_u16_t u16;
+    zt_data_s32_t s32;
+    zt_data_u32_t u32;
+    zt_data_s64_t s64;
+    zt_data_u64_t u64;
     zt_data_bytes_t bytes;
 };
 
 typedef union data zt_data_t;
 
 // <ZT_CODE_INJECTION>$channels_enum// </ZT_CODE_INJECTION>
-
-// <ZT_CODE_INJECTION>$services_enum// </ZT_CODE_INJECTION>
 
 /**
  * @brief zeta_callback_f define the callback function type of Zeta.
@@ -295,39 +250,25 @@ typedef void (*zt_callback_f)(zt_channel_e id);
  * @brief Define Zeta service type
  */
 struct zt_service {
-    zt_service_e id;              /**< Service ID */
-    const char *name;             /**< Service name */
-    struct k_thread thread;       /**< Service RTOS thread */
-    zt_callback_f cb;             /**< Service callback */
-    k_thread_entry_t entry_point; /**< Service thread function (entry point) */
-    k_thread_stack_t *stack;      /**< Service thread stack */
-    size_t stack_size;            /**< Service thread stack size */
+    const char *name;         /**< Service name */
+    const k_tid_t *thread_id; /**< Service thread id */
+    zt_callback_f cb;         /**< Service callback */
 };
 typedef struct zt_service zt_service_t;
-
-struct zt_isc_packet {
-    uint32_t id;
-    uint8_t service_id;
-    uint8_t channel_id;
-    uint8_t op;
-    uint8_t size;
-    uint8_t message[$max_channel_size];
-} __attribute__((packed));
-typedef struct zt_isc_packet zt_isc_packet_t;
 
 /**
  * @brief Define pendent options that a channel can have.
  */
 union flag_data {
     struct {
-        uint8_t pend_persistent : 1; /**< Active represent that channel must be saved in
+        u8_t pend_persistent : 1; /**< Active represent that channel must be saved in
                                      flash by zeta_thread_nvs */
-        uint8_t pend_callback : 1;   /**< Active represent that services callbacks from
+        u8_t pend_callback : 1;   /**< Active represent that services callbacks from
                                      subscribers must be called by zeta_thread */
-        uint8_t on_changed : 1;      /**< Active represent that the service callback will
+        u8_t on_changed : 1;      /**< Active represent that the service callback will
                                             be called on change and not on update */
     } field;
-    uint8_t data; /**< Raw data */
+    u8_t data; /**< Raw data */
 };
 
 /**
@@ -335,10 +276,10 @@ union flag_data {
  */
 struct zt_channel {
     const char *name; /**< Channel name */
-    uint8_t *data;    /**< Channel raw data */
-    uint8_t read_only;
-    uint8_t size;               /**< Channel size */
-    uint8_t persistent;         /**< Persistent type */
+    u8_t *data;       /**< Channel raw data */
+    u8_t read_only;
+    u8_t size;                  /**< Channel size */
+    u8_t persistent;            /**< Persistent type */
     zt_channel_e id;            /**< Channel Id */
     union flag_data flag;       /**< Options */
     struct k_sem *sem;          /**< Preserve shared-memory */

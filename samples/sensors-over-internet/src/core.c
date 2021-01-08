@@ -4,21 +4,21 @@
 
 LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
 
-K_MSGQ_DEFINE(CORE_callback_msgq, sizeof(uint8_t), 30, 4);
+K_MSGQ_DEFINE(CORE_callback_msgq, sizeof(u8_t), 30, 4);
 
 #define MAX_RING_SIZE 11
 
-static uint8_t ring_data_a[MAX_RING_SIZE];
-static uint8_t ring_data_b[MAX_RING_SIZE];
-static uint32_t ring_data_c[MAX_RING_SIZE];
-static uint8_t id_a;
-static uint8_t id_b;
-static uint8_t id_c;
+static u8_t ring_data_a[MAX_RING_SIZE];
+static u8_t ring_data_b[MAX_RING_SIZE];
+static u32_t ring_data_c[MAX_RING_SIZE];
+static u8_t id_a;
+static u8_t id_b;
+static u8_t id_c;
 
-static uint16_t sensor_a_mean(void)
+static u16_t sensor_a_mean(void)
 {
-    uint16_t sum = 0;
-    int i        = 0;
+    u16_t sum = 0;
+    int i     = 0;
     for (i = 0; i < MAX_RING_SIZE && ring_data_a[i] != 0; i++) {
         sum += ring_data_a[i];
     }
@@ -27,10 +27,10 @@ static uint16_t sensor_a_mean(void)
     return sum / i;
 }
 
-static uint16_t sensor_b_mean(void)
+static u16_t sensor_b_mean(void)
 {
-    uint16_t sum = 0;
-    int i        = 0;
+    u16_t sum = 0;
+    int i     = 0;
     for (i = 0; i < MAX_RING_SIZE && ring_data_b[i] != 0; i++) {
         sum += ring_data_b[i];
     }
@@ -39,10 +39,10 @@ static uint16_t sensor_b_mean(void)
     return sum / i;
 }
 
-static uint32_t sensor_c_mean(void)
+static u32_t sensor_c_mean(void)
 {
-    uint32_t sum = 0;
-    int i        = 0;
+    u32_t sum = 0;
+    int i     = 0;
     for (i = 0; i < MAX_RING_SIZE && ring_data_c[i] != 0; i++) {
         sum += ring_data_c[i];
     }
@@ -51,7 +51,7 @@ static uint32_t sensor_c_mean(void)
     return sum / i;
 }
 
-static void core_handle_channel_callback(uint8_t channel_id)
+static void core_handle_channel_callback(u8_t channel_id)
 {
     zt_data_t *data_u8      = ZT_DATA_U8(0);
     zt_data_t *data_u32     = ZT_DATA_U32(0);
@@ -86,17 +86,16 @@ static void core_handle_channel_callback(uint8_t channel_id)
                 ring_data_b[(id_b == 0) ? MAX_RING_SIZE : id_b - 1];
         } else if (data_u8->u8.value == 0xA2) {  // Requesting last C data
             memcpy(net_response->bytes.value + 1,
-                   &ring_data_c[(id_c == 0) ? MAX_RING_SIZE : id_c - 1],
-                   sizeof(uint32_t));
+                   &ring_data_c[(id_c == 0) ? MAX_RING_SIZE : id_c - 1], sizeof(u32_t));
         } else if (data_u8->u8.value == 0xA3) {  // Requesting A mean
-            uint16_t a_mean = sensor_a_mean();
-            memcpy(net_response->bytes.value + 1, &a_mean, sizeof(uint16_t));
+            u16_t a_mean = sensor_a_mean();
+            memcpy(net_response->bytes.value + 1, &a_mean, sizeof(u16_t));
         } else if (data_u8->u8.value == 0xA4) {  // Requesting B mean
-            uint16_t b_mean = sensor_b_mean();
-            memcpy(net_response->bytes.value + 1, &b_mean, sizeof(uint16_t));
+            u16_t b_mean = sensor_b_mean();
+            memcpy(net_response->bytes.value + 1, &b_mean, sizeof(u16_t));
         } else if (data_u8->u8.value == 0xA5) {  // Requesting C mean
-            uint32_t c_mean = sensor_c_mean();
-            memcpy(net_response->bytes.value + 1, &c_mean, sizeof(uint32_t));
+            u32_t c_mean = sensor_c_mean();
+            memcpy(net_response->bytes.value + 1, &c_mean, sizeof(u32_t));
         } else {
             LOG_DBG("Net request sent is invalid!");
         }
@@ -128,11 +127,11 @@ void CORE_service_callback(zt_channel_e id)
 void CORE_task()
 {
     LOG_DBG("CORE Service has started...[OK]");
-    uint8_t channel_id = 0;
+    u8_t channel_id = 0;
     while (1) {
         k_msgq_get(&CORE_callback_msgq, &channel_id, K_FOREVER);
         core_handle_channel_callback(channel_id);
     }
 }
 
-ZT_SERVICE_DECLARE(CORE, CORE_task, CORE_service_callback);
+ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);

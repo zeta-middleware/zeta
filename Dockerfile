@@ -8,7 +8,7 @@ ENV PATH="/home/${user}/.local/bin:${PATH}"
 ENV ZEPHYR_BASE=/home/${user}/zephyrproject/zephyr
 ENV APP=/home/${user}/workdir
 ENV ZEPHYR_TOOLCHAIN_VARIANT=zephyr
-ENV ZEPHYR_SDK_INSTALL_DIR=/home/${user}/toolchains/zephyr-sdk-0.11.1 
+ENV ZEPHYR_SDK_INSTALL_DIR=/home/${user}/.local/zephyr-sdk 
 ENV USER_HOME=/home/${user}
 
 # Creating directories
@@ -46,9 +46,13 @@ RUN wget -q https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.1
 	rm -f ./cmake-3.16.2-Linux-x86_64.sh
 
 ## Installing zephyr sdk
-RUN wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.11.1/zephyr-sdk-0.11.1-setup.run"
-RUN sh "zephyr-sdk-0.11.1-setup.run" --quiet -- -d ${ZEPHYR_SDK_INSTALL_DIR} -y
-RUN rm "zephyr-sdk-0.11.1-setup.run"
+RUN wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.12.0/zephyr-toolchain-arm-0.12.0-x86_64-linux-setup.run"
+RUN sh "zephyr-toolchain-arm-0.12.0-x86_64-linux-setup.run" --quiet -- -d ${ZEPHYR_SDK_INSTALL_DIR} -y
+RUN rm "zephyr-toolchain-arm-0.12.0-x86_64-linux-setup.run"
+
+RUN wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.12.0/zephyr-toolchain-x86_64-0.12.0-x86_64-linux-setup.run"
+RUN sh "zephyr-toolchain-x86_64-0.12.0-x86_64-linux-setup.run" --quiet -- -d ${ZEPHYR_SDK_INSTALL_DIR} -y
+RUN rm "zephyr-toolchain-x86_64-0.12.0-x86_64-linux-setup.run"
 
 ## Installing GCC_ARM
 RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/RC2.1/gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2  && \
@@ -59,11 +63,7 @@ RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/RC
 # Getting zephyr and creating the environment 
 #TODO: Ponto de falha por sempre utilizar o requirements do master. Isso foi feito pois em versões antigas do zephyr os requirements estavam quebrados.
 # RUN git clone -q -b v2.3.0-rc1 --single-branch https://github.com/zephyrproject-rtos/zephyr ${ZEPHYR_BASE}
-RUN git clone -q https://github.com/zephyrproject-rtos/zephyr ${ZEPHYR_BASE}
-RUN cd ${ZEPHYR_BASE} && \
-        git fetch     && \
-        git checkout tags/v2.3.0-rc2 && \
-        cd ${ZEPHYR_BASE}/..
+RUN git clone -q https://github.com/zephyrproject-rtos/zephyr --branch v2.4.0 --single-branch ${ZEPHYR_BASE}
 
 RUN pip3 install wheel && \
         #wget -q https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/master/scripts/requirements.txt && \

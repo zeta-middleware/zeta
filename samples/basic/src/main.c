@@ -31,7 +31,7 @@ void HAL_task(void *p1, void *p2, void *p3)
 void CORE_task(void *p1, void *p2, void *p3)
 {
     zt_data_t *data = ZT_DATA_U8(1);
-    u8_t power      = 2;
+    uint8_t power   = 2;
 
     printk("******** CORE task ready *******\n");
     while (1) {
@@ -41,7 +41,7 @@ void CORE_task(void *p1, void *p2, void *p3)
         case ZT_SENSOR_VAL_CHANNEL:
             zt_chan_read(zt_core_evt_id, data);
             printk("[CORE_service_callback] Getting data value %02X\n", data->u8.value);
-            for (u8_t i = 1; i <= data->u8.value; ++i) {
+            for (uint8_t i = 1; i <= data->u8.value; ++i) {
                 result->u16.value = result->u16.value * power;
             }
             zt_chan_pub(ZT_POWER_VAL_CHANNEL, result);

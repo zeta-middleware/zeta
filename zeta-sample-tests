@@ -19,7 +19,7 @@ def sh(args, timeout=None, check_result=True, cd=False):
 def execution_routine():
     # Testing routine in native_posix
     sh("rm -rf build")
-    sh("west build -b native_posix")
+    sh("west build -p auto -b native_posix")
     process = subprocess.Popen("west build -t run",
                                shell=True,
                                preexec_fn=os.setsid)

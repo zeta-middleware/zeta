@@ -23,7 +23,7 @@ from .zeta_errors import *
 
 ZETA_MODULE_DIR = "."
 ZETA_TEMPLATES_DIR = "."
-PROJECT_DIR = "."
+PROJECT_DIR = str(Path(".").resolve())
 ZETA_DIR = "."
 ZETA_SRC_DIR = "."
 ZETA_INCLUDE_DIR = "."
@@ -313,13 +313,13 @@ class ZetaSource(SourceFileFactory):
                 msg_factory = ZetaMessage(channel.message_obj.name,
                                           **channel.message_obj.msg_format)
                 data_alloc = (
-                    f"static u8_t __{channel.name.lower()}_data[sizeof({msg_factory.mtype_obj.statement}){' * {0}'.format(msg_factory.size) if msg_factory.size else ''}] = "
+                    f"static uint8_t __{channel.name.lower()}_data[sizeof({msg_factory.mtype_obj.statement}){' * {0}'.format(msg_factory.size) if msg_factory.size else ''}] = "
                     f"{{0}};")
                 channel.size = f"sizeof({msg_factory.mtype_obj.statement}){' * {0}'.format(msg_factory.size) if msg_factory.size else ''}"
                 channel.data = f"__{channel.name.lower()}_data"
             else:
                 data_alloc = (
-                    f"static u8_t __{channel.name.lower()}_data[{channel.size}] = "
+                    f"static uint8_t __{channel.name.lower()}_data[{channel.size}] = "
                     f"{{{', '.join(channel.initial_value)}}};")
             channel.data = f"__{channel.name.lower()}_data"
             channel.flag = 0x00
@@ -528,7 +528,7 @@ class ZetaCLI(object):
             output[
                 "zeta_cmake_output"] = f" {FAIL_COLORED} zeta.cmake not found"
 
-        zeta_yaml = Path('./zeta.yaml')
+        zeta_yaml = Path(f'{PROJECT_DIR}/zeta.yaml')
         zeta_yaml_path = zeta_yaml.resolve()
         if zeta_yaml.exists():
             output["zeta_yaml_output"] = (
@@ -567,7 +567,8 @@ class ZetaCLI(object):
         zeta = None
         zeta_cmake = Path('./zeta.cmake')
         try:
-            with open(f'{PROJECT_DIR}/zeta.yaml', 'r') as f:
+            zeta_yaml = Path(f'{PROJECT_DIR}/zeta.yaml')
+            with zeta_yaml.open() as f:
                 zeta = Zeta(f)
         except ZetaCLIError as zerr:
             #  print("[ZETA]: Could not found zeta.yaml file. Maybe it is not a zeta project.")

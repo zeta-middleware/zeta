@@ -9,31 +9,31 @@
 void test_data()
 {
     zt_data_t *data0 = ZT_DATA_S8(-1);
-    zassert_equal(data0->s8.size, sizeof(s8_t),
+    zassert_equal(data0->s8.size, sizeof(int8_t),
                   "[%s] zt_data size %d is wrong. It must be 1!\n", __FUNCTION__,
                   data0->s8.size);
     zt_data_t *data1 = ZT_DATA_U8(-1);
-    zassert_equal(data1->u8.size, sizeof(u8_t),
+    zassert_equal(data1->u8.size, sizeof(uint8_t),
                   "[%s] zt_data size %d is wrong. It must be 1!\n", __FUNCTION__,
                   data1->u8.size);
     zt_data_t *data2 = ZT_DATA_S16(-1);
-    zassert_equal(data2->s16.size, sizeof(s16_t),
+    zassert_equal(data2->s16.size, sizeof(int16_t),
                   "[%s] zt_data size %d is wrong. It must be 2!\n", __FUNCTION__,
                   data2->s16.size);
     zt_data_t *data3 = ZT_DATA_U16(-1);
-    zassert_equal(data3->u16.size, sizeof(u16_t),
+    zassert_equal(data3->u16.size, sizeof(uint16_t),
                   "[%s] zt_data size %d is wrong. It must be 2!\n", __FUNCTION__,
                   data3->u16.size);
     zt_data_t *data4 = ZT_DATA_S32(-1);
-    zassert_equal(data4->s32.size, sizeof(s32_t),
+    zassert_equal(data4->s32.size, sizeof(int32_t),
                   "[%s] zt_data size %d is wrong. It must be 4!\n", __FUNCTION__,
                   data4->s32.size);
     zt_data_t *data5 = ZT_DATA_U32(-1);
-    zassert_equal(data5->u32.size, sizeof(u32_t),
+    zassert_equal(data5->u32.size, sizeof(uint32_t),
                   "[%s] zt_data size %d is wrong. It must be 4!\n", __FUNCTION__,
                   data5->s32.size);
     zt_data_t *data6 = ZT_DATA_S64(-1);
-    zassert_equal(data6->s64.size, sizeof(s64_t),
+    zassert_equal(data6->s64.size, sizeof(int64_t),
                   "[%s] zt_data size %d is wrong. It must be 8!\n", __FUNCTION__,
                   data6->s64.size);
     zt_data_t *data7 = ZT_DATA_BYTES(64, 0);
@@ -78,7 +78,7 @@ void test_data()
                   data8->u64.value);
 
     zt_data_t *data = ZT_DATA_U64(-1);
-    zassert_equal(data->s8.size, sizeof(u64_t),
+    zassert_equal(data->s8.size, sizeof(uint64_t),
                   "[%s] zt_data size %d is wrong. It must be 8!\n", __FUNCTION__,
                   data->s8.size);
     zassert_equal(data->s8.value, -1, "[%s] zt_data value is wrong %d. It must be -1!\n",

@@ -49,7 +49,7 @@ K_THREAD_DEFINE(zt_forwarder_thread_id, ZT_FORWARDER_THREAD_STACK_SIZE,
 K_MSGQ_DEFINE(zt_forwarder_msgq, sizeof(zt_isc_packet_t), 30, 4);
 #endif
 
-K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(u8_t), 30, 4);
+K_MSGQ_DEFINE(zt_channels_changed_msgq, sizeof(uint8_t), 30, 4);
 
 
 // <ZT_CODE_INJECTION>$channels_creation// </ZT_CODE_INJECTION>
@@ -164,7 +164,7 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
         }
         channel->flag.field.pend_callback = 1;
         memcpy(channel->data, channel_data->bytes.value, channel->size);
-        error = k_msgq_put(&zt_channels_changed_msgq, (u8_t *) &id, K_MSEC(500));
+        error = k_msgq_put(&zt_channels_changed_msgq, (uint8_t *) &id, K_MSEC(500));
         if (error != 0) {
             LOG_INF("[Channel #%d] Error sending channels change message to ZT "
                     "thread!",
@@ -187,7 +187,7 @@ static void __zt_monitor_thread(void)
 
     // <ZT_CODE_INJECTION>$run_services    // </ZT_CODE_INJECTION>
 
-    u8_t id = 0;
+    uint8_t id = 0;
     while (1) {
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
         printk("[printk]: monitor...\n");
@@ -222,7 +222,7 @@ static void __zt_recover_data_from_flash(void)
 {
     int rc = 0;
     LOG_INF("[ ] Recovering data from flash");
-    for (u16_t id = 0; id < ZT_CHANNEL_COUNT; ++id) {
+    for (uint16_t id = 0; id < ZT_CHANNEL_COUNT; ++id) {
         if (__zt_channels[id].persistent) {
             if (!k_sem_take(__zt_channels[id].sem, K_SECONDS(5))) {
                 rc = nvs_read(&zt_fs, id, __zt_channels[id].data, __zt_channels[id].size);
@@ -245,7 +245,7 @@ static void __zt_recover_data_from_flash(void)
 static void __zt_persist_data_on_flash(void)
 {
     int bytes_written = 0;
-    for (u16_t id = 0; id < ZT_CHANNEL_COUNT; ++id) {
+    for (uint16_t id = 0; id < ZT_CHANNEL_COUNT; ++id) {
         if (__zt_channels[id].persistent
             && __zt_channels[id].flag.field.pend_persistent) {
             bytes_written =
@@ -300,16 +300,16 @@ static void __zt_storage_thread(void)
 #ifdef CONFIG_ZETA_FORWARDER
 static void __zt_forwarder_thread(void)
 {
-    zt_isc_packet_t packet = {0};
-    u32_t packet_counter   = 0;
-    u8_t *data;
+    zt_isc_packet_t packet  = {0};
+    uint32_t packet_counter = 0;
+    uint8_t *data;
 
-    u8_t buffer[272] = {0};
+    uint8_t buffer[272] = {0};
     size_t len;
 
     while (1) {
         k_msgq_get(&zt_forwarder_msgq, &packet, K_FOREVER);
-        data      = (u8_t *) &packet;
+        data      = (uint8_t *) &packet;
         packet.id = packet_counter++;
 
         base64_encode(buffer, sizeof(buffer), &len, data, 8 + packet.size);

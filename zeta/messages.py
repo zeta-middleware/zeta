@@ -27,7 +27,7 @@ class ZetaMessage:
         For example: a message can have a mtype of u8 or bitarray_s64.
         :param size: the message size in bytes. If you want to define an array message
         of 5 items of u32 you must define the array size 5 and mtype u32.
-        The result will be an 'u32_t value[5]' as value.
+        The result will be an 'uint32_t value[5]' as value.
         :param description: the message description. It is used for
         documentation only. No code is generated based on this parameter.
         :param fields: the messagem fields when it is of mtype struct, union or bitarray.
@@ -102,9 +102,12 @@ class ZetaMessage:
             self.name = "" if self.level == 0 else " " + self.name
 
         elif self.mtype == "bits":
+            radical = "uint{}_t"
+            if self.mtype.startswith('s'):
+                radical = "int{}_t"
             self.mtype_obj = MsgType(
-                statement=self.parent.mtype_base_type +
-                "_t" if self.parent else "u32_t",
+                statement=radical.format(self.parent.mtype_base_type[1::])
+                if self.parent else "uint32_t",
                 separator="",
                 begin="",
                 end="",
@@ -113,8 +116,11 @@ class ZetaMessage:
             if self.mtype in [
                     'u8', 's8', 'u16', 's16', 'u32', 's32', 'u64', 's64'
             ]:
+                radical = "uint{}_t"
+                if self.mtype.startswith('s'):
+                    radical = "int{}_t"
                 self.mtype_obj = MsgType(
-                    statement=self.mtype + "_t",
+                    statement=radical.format(self.mtype[1::]),
                     separator="",
                     begin="",
                     end="",
@@ -139,68 +145,68 @@ class ZetaMessage:
 class TestStringMethods(unittest.TestCase):
     def test_primitives(self):
         self.assertEqual(
-            "u32_t var:1;",
+            "uint32_t var:1;",
             ZetaMessage('var', **{
                 'mtype': 'bits',
                 'size': 1
             }).code())
         self.assertEqual(
-            "u32_t var:10;",
+            "uint32_t var:10;",
             ZetaMessage('var', **{
                 'mtype': 'bits',
                 'size': 10
             }).code())
         self.assertEqual(
-            "s8_t vars8b;",
+            "int8_t vars8b;",
             ZetaMessage('vars8b', **{
                 'mtype': 's8',
                 'size': 0
             }).code())
         self.assertEqual(
-            "u8_t var8b;",
+            "uint8_t var8b;",
             ZetaMessage('var8b', **{
                 'mtype': 'u8',
                 'size': 0
             }).code())
         self.assertEqual(
-            "s16_t erwoeiruwoeirs16b;",
+            "int16_t erwoeiruwoeirs16b;",
             ZetaMessage('erwoeiruwoeirs16b', **{
                 'mtype': 's16',
                 'size': 0
             }).code())
         self.assertEqual(
-            "u16_t var16bfff;",
+            "uint16_t var16bfff;",
             ZetaMessage('var16bfff', **{
                 'mtype': 'u16',
                 'size': 0
             }).code())
         self.assertEqual(
-            "s32_t erwoeiru32b;",
+            "int32_t erwoeiru32b;",
             ZetaMessage('erwoeiru32b', **{
                 'mtype': 's32',
                 'size': 0
             }).code())
         self.assertEqual(
-            "u32_t var32fdd;",
+            "uint32_t var32fdd;",
             ZetaMessage('var32fdd', **{
                 'mtype': 'u32',
                 'size': 0
             }).code())
         self.assertEqual(
-            "s64_t erw64iru32b;",
+            "int64_t erw64iru32b;",
             ZetaMessage('erw64iru32b', **{
                 'mtype': 's64',
                 'size': 0
             }).code())
 
         self.assertEqual(
-            "    s64_t erw64iru32b;",
+            "    int64_t erw64iru32b;",
             ZetaMessage('erw64iru32b', **{
                 'mtype': 's64',
                 'size': 0
             }, level=1).code())
         self.assertEqual(
-            "    s64_t erw64iru32b;",
+            "    int64_t erw64iru32b;",
             ZetaMessage('erw64iru32b', **{
                 'mtype': 's64',
                 'size': 0
@@ -214,7 +220,7 @@ class TestStringMethods(unittest.TestCase):
                 'fields': []
             }).code())
         self.assertEqual(
-            "struct my_struct {\n    s64_t var64bits;\n};",
+            "struct my_struct {\n    int64_t var64bits;\n};",
             ZetaMessage(
                 'my_struct', **{
                     'mtype': 'struct',
@@ -225,7 +231,7 @@ class TestStringMethods(unittest.TestCase):
                     }]
                 }).code())
         self.assertEqual(
-            "struct my_struct {\n    s64_t var64bits;\n    u32_t var32;\n    s16_t var16s;\n};",
+            "struct my_struct {\n    int64_t var64bits;\n    uint32_t var32;\n    int16_t var16s;\n};",
             ZetaMessage(
                 'my_struct', **{
                     'mtype':
@@ -244,7 +250,7 @@ class TestStringMethods(unittest.TestCase):
                 }).code())
         self.assertEqual(
             textwrap.indent(
-                "struct {\n    s64_t var64bits;\n    u32_t var32;\n    s16_t var16s;\n} my_struct;",
+                "struct {\n    int64_t var64bits;\n    uint32_t var32;\n    int16_t var16s;\n} my_struct;",
                 prefix="    "),
             ZetaMessage('my_struct',
                         level=1,
@@ -265,7 +271,7 @@ class TestStringMethods(unittest.TestCase):
                         }).code())
         self.assertEqual(
             textwrap.indent(
-                "struct {\n    s64_t var64bits;\n    u32_t var32;\n    s16_t var16s;\n} my_struct[128];",
+                "struct {\n    int64_t var64bits;\n    uint32_t var32;\n    int16_t var16s;\n} my_struct[128];",
                 prefix="    "),
             ZetaMessage('my_struct',
                         level=1,
@@ -295,7 +301,7 @@ class TestStringMethods(unittest.TestCase):
                 'fields': []
             }).code())
         self.assertEqual(
-            "union my_union {\n    s64_t v64s;\n};",
+            "union my_union {\n    int64_t v64s;\n};",
             ZetaMessage(
                 'my_union', **{
                     'mtype': 'union',
@@ -306,7 +312,7 @@ class TestStringMethods(unittest.TestCase):
                     }]
                 }).code())
         self.assertEqual(
-            "union my_union {\n    s64_t v64s;\n    u32_t v32;\n};",
+            "union my_union {\n    int64_t v64s;\n    uint32_t v32;\n};",
             ZetaMessage(
                 'my_union', **{
                     'mtype': 'union',
@@ -320,7 +326,7 @@ class TestStringMethods(unittest.TestCase):
                     }]
                 }).code())
         self.assertEqual(
-            textwrap.indent("union {\n    s64_t v64s;\n} my_union;",
+            textwrap.indent("union {\n    int64_t v64s;\n} my_union;",
                             prefix="    "),
             ZetaMessage(
                 'my_union', **{
@@ -334,7 +340,7 @@ class TestStringMethods(unittest.TestCase):
                 }).code())
         self.assertEqual(
             textwrap.indent(
-                "union {\n    s64_t v64s;\n    u32_t v32;\n} my_union;",
+                "union {\n    int64_t v64s;\n    uint32_t v32;\n} my_union;",
                 prefix="    "),
             ZetaMessage(
                 'my_union', **{
@@ -358,7 +364,7 @@ class TestStringMethods(unittest.TestCase):
                 'fields': []
             }).code())
         self.assertEqual(
-            "struct my_bitarray {\n    u32_t b2:2;\n};",
+            "struct my_bitarray {\n    uint32_t b2:2;\n};",
             ZetaMessage(
                 'my_bitarray', **{
                     'mtype': 'bitarray_u32',
@@ -370,7 +376,7 @@ class TestStringMethods(unittest.TestCase):
                     }]
                 }).code())
         self.assertEqual(
-            "struct my_bitarray {\n    u32_t b2:2;\n    u32_t b8:8;\n};",
+            "struct my_bitarray {\n    uint32_t b2:2;\n    uint32_t b8:8;\n};",
             ZetaMessage(
                 'my_bitarray', **{
                     'mtype':
@@ -388,7 +394,7 @@ class TestStringMethods(unittest.TestCase):
                 }).code())
         self.assertEqual(
             textwrap.indent(
-                "struct {\n    u32_t b2:2;\n    u32_t b8:8;\n} my_bitarray;",
+                "struct {\n    uint32_t b2:2;\n    uint32_t b8:8;\n} my_bitarray;",
                 prefix="    "),
             ZetaMessage('my_bitarray',
                         level=1,
@@ -408,7 +414,7 @@ class TestStringMethods(unittest.TestCase):
                         }).code())
         self.assertEqual(
             textwrap.indent(
-                "struct {\n    u32_t b2:2;\n    u32_t b8:8;\n} my_bitarray[64];",
+                "struct {\n    uint32_t b2:2;\n    uint32_t b8:8;\n} my_bitarray[64];",
                 prefix="    "),
             ZetaMessage('my_bitarray',
                         level=1,
@@ -430,50 +436,50 @@ class TestStringMethods(unittest.TestCase):
 
     def test_array_simple(self):
         self.assertEqual(
-            "s8_t vars8b[1];",
+            "int8_t vars8b[1];",
             ZetaMessage('vars8b', **{
                 'mtype': 's8',
                 'size': 1
             }).code())
         self.assertEqual(
-            "u8_t var8b[10];",
+            "uint8_t var8b[10];",
             ZetaMessage('var8b', **{
                 'mtype': 'u8',
                 'size': 10
             }).code())
         self.assertEqual(
-            "s16_t erwoeiruwoeirs16b[128];",
+            "int16_t erwoeiruwoeirs16b[128];",
             ZetaMessage('erwoeiruwoeirs16b', **{
                 'mtype': 's16',
                 'size': 128
             }).code())
         self.assertEqual(
-            "    u16_t var16bfff[1000];",
+            "    uint16_t var16bfff[1000];",
             ZetaMessage('var16bfff', level=5, **{
                 'mtype': 'u16',
                 'size': 1000
             }).code())
         self.assertEqual(
-            "s32_t erwoeiru32b[7];",
+            "int32_t erwoeiru32b[7];",
             ZetaMessage('erwoeiru32b', **{
                 'mtype': 's32',
                 'size': 7
             }).code())
         self.assertEqual(
-            "u32_t var32fdd[35];",
+            "uint32_t var32fdd[35];",
             ZetaMessage('var32fdd', **{
                 'mtype': 'u32',
                 'size': 35
             }).code())
         self.assertEqual(
-            "s64_t erw64iru32b[44];",
+            "int64_t erw64iru32b[44];",
             ZetaMessage('erw64iru32b', **{
                 'mtype': 's64',
                 'size': 44
             }).code())
 
         self.assertEqual(
-            "    s64_t erw64iru32b[9999];",
+            "    int64_t erw64iru32b[9999];",
             ZetaMessage('erw64iru32b',
                         **{
                             'mtype': 's64',
@@ -481,7 +487,7 @@ class TestStringMethods(unittest.TestCase):
                         },
                         level=1).code())
         self.assertEqual(
-            "    s64_t erw64iru32b[157869];",
+            "    int64_t erw64iru32b[157869];",
             ZetaMessage('erw64iru32b',
                         **{
                             'mtype': 's64',

@@ -28,7 +28,7 @@ RUN DEBIAN_FRONTEND="noninteractive" TZ="America/New_York" sudo apt-get install 
 RUN sudo apt-get install -y --no-install-recommends git ninja-build gperf \
 	ccache dfu-util wget \
 	python3-pip python3-setuptools python3-tk python3-wheel xz-utils file \
-	make gcc gcc-multilib g++-multilib libsdl2-dev build-essential python3-dev
+	make gcc gcc-multilib g++-multilib libsdl2-dev build-essential python3-dev cmake
 
 ## Changing workspace to tmp
 RUN mkdir -p ${USER_HOME}/tmp
@@ -63,8 +63,6 @@ RUN sudo locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-
-RUN sudo apt-get install cmake -y
 
 # Going to workdirectory
 WORKDIR ${APP}

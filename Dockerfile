@@ -56,7 +56,6 @@ RUN export PATH=~/.local/bin:$PATH
 
 ## Initializing west environment
 RUN (cd ${ZEPHYR_BASE}/.. && west init -l ${ZEPHYR_BASE} && west update)
-RUN /home/user/zephyrproject/zephyr/zephyr-env.sh
 
 # Setting locales and language
 RUN sudo apt-get install -y locales
@@ -64,6 +63,8 @@ RUN sudo locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
+
+RUN sudo apt-get install cmake -y
 
 # Going to workdirectory
 WORKDIR ${APP}

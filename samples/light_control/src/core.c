@@ -26,9 +26,9 @@ void CORE_service_callback(zt_channel_e id)
 }
 
 struct version {
-    u16_t build;
-    u8_t minor;
-    u8_t major;
+    uint16_t build;
+    uint8_t minor;
+    uint8_t major;
 };
 
 

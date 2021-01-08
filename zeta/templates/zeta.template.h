@@ -103,7 +103,7 @@
  * @param x variable name                         \
  *                                                \
  */
-#define ZT_VARIABLE_REF_SIZE(x) (u8_t *) (&x), sizeof(x)
+#define ZT_VARIABLE_REF_SIZE(x) (uint8_t *) (&x), sizeof(x)
 
 /**
  * @brief Check if _v value is equal to _c, otherwise _err will be
@@ -136,74 +136,74 @@
     }
 
 
-#define ZT_DATA_S8(data)               \
-    (zt_data_t *) (zt_data_s8_t[])     \
-    {                                  \
-        {                              \
-            sizeof(s8_t), (s8_t)(data) \
-        }                              \
+#define ZT_DATA_S8(data)                   \
+    (zt_data_t *) (zt_data_int8_t[])       \
+    {                                      \
+        {                                  \
+            sizeof(int8_t), (int8_t)(data) \
+        }                                  \
     }
 
-#define ZT_DATA_U8(data)               \
-    (zt_data_t *) (zt_data_u8_t[])     \
-    {                                  \
-        {                              \
-            sizeof(u8_t), (u8_t)(data) \
-        }                              \
+#define ZT_DATA_U8(data)                     \
+    (zt_data_t *) (zt_data_uint8_t[])        \
+    {                                        \
+        {                                    \
+            sizeof(uint8_t), (uint8_t)(data) \
+        }                                    \
     }
 
-#define ZT_DATA_S16(data)                \
-    (zt_data_t *) (zt_data_s16_t[])      \
-    {                                    \
-        {                                \
-            sizeof(s16_t), (s16_t)(data) \
-        }                                \
+#define ZT_DATA_S16(data)                    \
+    (zt_data_t *) (zt_data_int16_t[])        \
+    {                                        \
+        {                                    \
+            sizeof(int16_t), (int16_t)(data) \
+        }                                    \
     }
 
-#define ZT_DATA_U16(data)                \
-    (zt_data_t *) (zt_data_u16_t[])      \
-    {                                    \
-        {                                \
-            sizeof(u16_t), (u16_t)(data) \
-        }                                \
+#define ZT_DATA_U16(data)                      \
+    (zt_data_t *) (zt_data_uint16_t[])         \
+    {                                          \
+        {                                      \
+            sizeof(uint16_t), (uint16_t)(data) \
+        }                                      \
     }
 
-#define ZT_DATA_S32(data)                \
-    (zt_data_t *) (zt_data_s32_t[])      \
-    {                                    \
-        {                                \
-            sizeof(s32_t), (s32_t)(data) \
-        }                                \
+#define ZT_DATA_S32(data)                    \
+    (zt_data_t *) (zt_data_int32_t[])        \
+    {                                        \
+        {                                    \
+            sizeof(int32_t), (int32_t)(data) \
+        }                                    \
     }
 
-#define ZT_DATA_U32(data)                \
-    (zt_data_t *) (zt_data_u32_t[])      \
-    {                                    \
-        {                                \
-            sizeof(u32_t), (u32_t)(data) \
-        }                                \
+#define ZT_DATA_U32(data)                      \
+    (zt_data_t *) (zt_data_uint32_t[])         \
+    {                                          \
+        {                                      \
+            sizeof(uint32_t), (uint32_t)(data) \
+        }                                      \
     }
 
-#define ZT_DATA_S64(data)                \
-    (zt_data_t *) (zt_data_s64_t[])      \
-    {                                    \
-        {                                \
-            sizeof(s64_t), (s64_t)(data) \
-        }                                \
+#define ZT_DATA_S64(data)                    \
+    (zt_data_t *) (zt_data_int64_t[])        \
+    {                                        \
+        {                                    \
+            sizeof(int64_t), (int64_t)(data) \
+        }                                    \
     }
 
-#define ZT_DATA_U64(data)                \
-    (zt_data_t *) (zt_data_u64_t[])      \
-    {                                    \
-        {                                \
-            sizeof(u64_t), (u64_t)(data) \
-        }                                \
+#define ZT_DATA_U64(data)                      \
+    (zt_data_t *) (zt_data_uint64_t[])         \
+    {                                          \
+        {                                      \
+            sizeof(uint64_t), (uint64_t)(data) \
+        }                                      \
     }
 
 #define ZT_DATA_BYTES(_size, data, ...) \
     (zt_data_t *) (struct {             \
         size_t size;                    \
-        u8_t value[_size];              \
+        uint8_t value[_size];           \
     }[])                                \
     {                                   \
         {                               \
@@ -219,60 +219,60 @@
 
 typedef struct {
     size_t size;
-    s8_t value;
-} zt_data_s8_t;
+    int8_t value;
+} zt_data_int8_t;
 
 typedef struct {
     size_t size;
-    u8_t value;
-} zt_data_u8_t;
+    uint8_t value;
+} zt_data_uint8_t;
 
 typedef struct {
     size_t size;
-    s16_t value;
-} zt_data_s16_t;
+    int16_t value;
+} zt_data_int16_t;
 
 typedef struct {
     size_t size;
-    u16_t value;
-} zt_data_u16_t;
+    uint16_t value;
+} zt_data_uint16_t;
 
 typedef struct {
     size_t size;
-    s32_t value;
-} zt_data_s32_t;
+    int32_t value;
+} zt_data_int32_t;
 
 typedef struct {
     size_t size;
-    u32_t value;
-} zt_data_u32_t;
+    uint32_t value;
+} zt_data_uint32_t;
 
 typedef struct {
     size_t size;
-    s64_t value;
-} zt_data_s64_t;
+    int64_t value;
+} zt_data_int64_t;
 
 typedef struct {
     size_t size;
-    u64_t value;
-} zt_data_u64_t;
+    uint64_t value;
+} zt_data_uint64_t;
 
 typedef struct {
     size_t size;
-    u8_t value[];
+    uint8_t value[];
 } zt_data_bytes_t;
 
 // <ZT_CODE_INJECTION>$messages_structs// </ZT_CODE_INJECTION>
 
 union data {
-    zt_data_s8_t s8;
-    zt_data_u8_t u8;
-    zt_data_s16_t s16;
-    zt_data_u16_t u16;
-    zt_data_s32_t s32;
-    zt_data_u32_t u32;
-    zt_data_s64_t s64;
-    zt_data_u64_t u64;
+    zt_data_int8_t s8;
+    zt_data_uint8_t u8;
+    zt_data_int16_t s16;
+    zt_data_uint16_t u16;
+    zt_data_int32_t s32;
+    zt_data_uint32_t u32;
+    zt_data_int64_t s64;
+    zt_data_uint64_t u64;
     // <ZT_CODE_INJECTION>$messages_structs_ref// </ZT_CODE_INJECTION>
     zt_data_bytes_t bytes;
 };
@@ -306,12 +306,12 @@ struct zt_service {
 typedef struct zt_service zt_service_t;
 
 struct zt_isc_packet {
-    u32_t id;
-    u8_t service_id;
-    u8_t channel_id;
-    u8_t op;
-    u8_t size;
-    u8_t message[$max_channel_size];
+    uint32_t id;
+    uint8_t service_id;
+    uint8_t channel_id;
+    uint8_t op;
+    uint8_t size;
+    uint8_t message[$max_channel_size];
 } __attribute__((packed));
 typedef struct zt_isc_packet zt_isc_packet_t;
 
@@ -320,14 +320,14 @@ typedef struct zt_isc_packet zt_isc_packet_t;
  */
 union flag_data {
     struct {
-        u8_t pend_persistent : 1; /**< Active represent that channel must be saved in
+        uint8_t pend_persistent : 1; /**< Active represent that channel must be saved in
                                      flash by zeta_thread_nvs */
-        u8_t pend_callback : 1;   /**< Active represent that services callbacks from
+        uint8_t pend_callback : 1;   /**< Active represent that services callbacks from
                                      subscribers must be called by zeta_thread */
-        u8_t on_changed : 1;      /**< Active represent that the service callback will
+        uint8_t on_changed : 1;      /**< Active represent that the service callback will
                                             be called on change and not on update */
     } field;
-    u8_t data; /**< Raw data */
+    uint8_t data; /**< Raw data */
 };
 
 /**
@@ -335,10 +335,10 @@ union flag_data {
  */
 struct zt_channel {
     const char *name; /**< Channel name */
-    u8_t *data;       /**< Channel raw data */
-    u8_t read_only;
-    u8_t size;                  /**< Channel size */
-    u8_t persistent;            /**< Persistent type */
+    uint8_t *data;    /**< Channel raw data */
+    uint8_t read_only;
+    uint8_t size;               /**< Channel size */
+    uint8_t persistent;         /**< Persistent type */
     zt_channel_e id;            /**< Channel Id */
     union flag_data flag;       /**< Options */
     struct k_sem *sem;          /**< Preserve shared-memory */

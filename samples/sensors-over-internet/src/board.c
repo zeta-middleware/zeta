@@ -4,9 +4,9 @@
 
 LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
 
-static u8_t get_sensor_a(void)
+static uint8_t get_sensor_a(void)
 {
-    static u8_t data_a = 20;
+    static uint8_t data_a = 20;
 
     data_a++;
     if (data_a > 40) {
@@ -16,9 +16,9 @@ static u8_t get_sensor_a(void)
     return data_a;
 }
 
-static u8_t get_sensor_b(void)
+static uint8_t get_sensor_b(void)
 {
-    static u8_t data_b = 90;
+    static uint8_t data_b = 90;
 
     data_b--;
     if (data_b < 40) {
@@ -28,9 +28,9 @@ static u8_t get_sensor_b(void)
     return data_b;
 }
 
-static u32_t get_sensor_c(void)
+static uint32_t get_sensor_c(void)
 {
-    static u32_t data_c = 101325;
+    static uint32_t data_c = 101325;
 
     data_c += 27;
     if (data_c > 102000) {

@@ -10,16 +10,16 @@ K_SEM_DEFINE(ztest_sem, 0, 1);
 K_SEM_DEFINE(zt_core_pend_evt, 0, 1);
 K_SEM_DEFINE(zt_app_pend_evt, 0, 1);
 
-u8_t sensor_a_hit = 0;
-u8_t sensor_b_hit = 0;
-u8_t sensor_c_hit = 0;
+uint8_t sensor_a_hit = 0;
+uint8_t sensor_b_hit = 0;
+uint8_t sensor_c_hit = 0;
 zt_channel_e zt_core_evt_id;
 
 void PONG_task(void)
 {
-    int error      = 0;
-    int count      = 0;
-    u16_t expected = 0;
+    int error         = 0;
+    int count         = 0;
+    uint16_t expected = 0;
     while (1) {
         zt_data_t *data = ZT_DATA_U16(0);
         k_sem_take(&zt_core_pend_evt, K_FOREVER);
@@ -201,7 +201,7 @@ void PING_task(void)
     zt_data_t *mch03_r = ZT_DATA_ARR(0, 1, 2, 3, 4, 5, 6, 7, 8);
     //@TODO: warning developers to see size as byte count and not items count. It can be
     // confusing.
-    for (int i = 0; i < (mch03->arr.size / sizeof(u32_t)); ++i) {
+    for (int i = 0; i < (mch03->arr.size / sizeof(uint32_t)); ++i) {
         zassert_true(mch03->arr.value[i] == mch03_r->arr.value[i],
                      "Error executing reading message! Line %d, index %d -> 0x%02X\n",
                      __LINE__, i, mch03->arr.value[10]);

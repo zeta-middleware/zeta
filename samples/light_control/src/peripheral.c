@@ -7,7 +7,7 @@
  */
 #include <zephyr.h>
 #include "zeta.h"
-u8_t light_level_sensor_fetch()
+uint8_t light_level_sensor_fetch()
 {
     return k_uptime_get();
 }

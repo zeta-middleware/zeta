@@ -7,8 +7,6 @@
 #include <zephyr.h>
 
 #include "autoconf.h"
-#include "kernel.h"
-#include "sys/printk.h"
 #include "zeta.h"
 
 K_SEM_DEFINE(zt_core_pend_evt, 0, 1);
@@ -17,23 +15,21 @@ K_SEM_DEFINE(zt_app_pend_evt, 0, 1);
 zt_channel_e zt_core_evt_id;
 zt_channel_e zt_app_evt_id;
 
-void HAL_task(void *p1, void *p2, void *p3)
+void HAL_task(void)
 {
     zt_data_t *data = ZT_DATA_U8(1);
     while (1) {
-        printk("******** sensor *******\n");
         zt_chan_pub(ZT_SENSOR_VAL_CHANNEL, data);
         k_sleep(K_SECONDS(3));
         data->u8.value = (data->u8.value + 1 <= 15) ? data->u8.value + 1 : 1;
     }
 }
 
-void CORE_task(void *p1, void *p2, void *p3)
+void CORE_task(void)
 {
     zt_data_t *data = ZT_DATA_U8(1);
-    uint8_t power   = 2;
+    u8_t power      = 2;
 
-    printk("******** CORE task ready *******\n");
     while (1) {
         zt_data_t *result = ZT_DATA_U16(1);
         k_sem_take(&zt_core_pend_evt, K_FOREVER);
@@ -41,7 +37,7 @@ void CORE_task(void *p1, void *p2, void *p3)
         case ZT_SENSOR_VAL_CHANNEL:
             zt_chan_read(zt_core_evt_id, data);
             printk("[CORE_service_callback] Getting data value %02X\n", data->u8.value);
-            for (uint8_t i = 1; i <= data->u8.value; ++i) {
+            for (u8_t i = 1; i <= data->u8.value; ++i) {
                 result->u16.value = result->u16.value * power;
             }
             zt_chan_pub(ZT_POWER_VAL_CHANNEL, result);
@@ -53,7 +49,7 @@ void CORE_task(void *p1, void *p2, void *p3)
     }
 }
 
-void APP_task(void *p1, void *p2, void *p3)
+void APP_task(void)
 {
     zt_data_t *fv = ZT_DATA_BYTES(4, 0);
     printk("Hello APP task!\n");
@@ -92,12 +88,9 @@ void APP_service_callback(zt_channel_e id)
 
 void main(void)
 {
-    while (1) {
-        printk("******** ZETA BASIC SAMPLE! *******\n");
-        k_msleep(5000);
-    }
+    printk("******** ZETA BASIC SAMPLE! *******\n");
 }
 
-ZT_SERVICE_DECLARE(CORE, CORE_task, CORE_service_callback);
-ZT_SERVICE_DECLARE(HAL, HAL_task, HAL_service_callback);
-ZT_SERVICE_DECLARE(APP, APP_task, APP_service_callback);
+ZT_SERVICE_INIT(CORE, CORE_task, CORE_service_callback);
+ZT_SERVICE_INIT(HAL, HAL_task, HAL_service_callback);
+ZT_SERVICE_INIT(APP, APP_task, APP_service_callback);

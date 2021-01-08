@@ -22,12 +22,12 @@ Services:
       sub_channels:
           - !ref SENSOR_VAL
   - HAL:
-      priority: 4
+      priority: 2
       stack_size: 1024
       pub_channels:
           - !ref SENSOR_VAL
   - APP: 
-      priority: 3
+      priority: 1
       stack_size: 2048
       sub_channels:
           - !ref POWER_VAL

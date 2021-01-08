@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import setuptools
-
 from zeta import __version__
 
 with open("README.md", "r") as fh:
@@ -25,8 +24,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    entry_points={"console_scripts": ["zeta = zeta.zeta_cli:run"]},
+    entry_points={"console_scripts": ["zeta = zeta.zeta:run"]},
     include_package_data=True,
-    install_requires=[
-        "pyyaml", "pyserial", "pyserial-asyncio", "hexdump", "urwid"
-    ])
+    install_requires=["pyyaml"])

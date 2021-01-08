@@ -2,13 +2,7 @@
 import argparse
 import subprocess
 
-from yaml import dump as ydump
-from yaml import load as yload
-
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
+import yaml
 
 
 def sh(args, timeout=None, check_result=True):
@@ -22,11 +16,11 @@ def sh(args, timeout=None, check_result=True):
 def generate_file_version(inc=True):
     v = None
     with open("version.yaml", "r+") as pkg_version_file:
-        v = yload(pkg_version_file, Loader=Loader)
+        v = yaml.load(pkg_version_file, Loader=yaml.CLoader)
         if inc:
             v['build'] += 1
             pkg_version_file.seek(0)
-            pkg_version_file.write(ydump(v, Dumper=Dumper))
+            pkg_version_file.write(yaml.dump(v))
             pkg_version_file.truncate()
     with open("zeta/_version.py", "w") as version_file:
         release_candidate = ""
@@ -35,13 +29,6 @@ def generate_file_version(inc=True):
         version_file.write(
             "__version__: str = " +
             f"'{v['major']}.{v['minor']}.{v['build']}{release_candidate}'")
-
-
-def clean():
-    print("[PIP cli]: clean generated files")
-    sh("rm -rf build", check_result=False)
-    sh("rm -rf dist", check_result=False)
-    sh("rm -rf zeta_cli.egg-info", check_result=False)
 
 
 if __name__ == "__main__":
@@ -66,10 +53,6 @@ if __name__ == "__main__":
                         "--upload",
                         help="Upload pip package",
                         action="store_true")
-    parser.add_argument("-i",
-                        "--install",
-                        help="Install and force update of the package",
-                        action="store_true")
     args = parser.parse_args()
     if args.version:
         generate_file_version(inc=False)
@@ -80,8 +63,7 @@ if __name__ == "__main__":
         print("[PIP cli]: increment build version for the package")
         generate_file_version(inc=True)
 
-    if args.dist or args.dist_inc or args.install:
-        clean()
+    if args.dist or args.dist_inc:
         print("[PIP cli]: generating pip package")
         generate_file_version(inc=False)
         sh("rm -rf dist", check_result=False)
@@ -91,11 +73,8 @@ if __name__ == "__main__":
         print("[PIP cli]: uploading package to the cloud")
         sh("python3 -m twine upload --repository testpypi dist/*")
 
-    if args.install:
-        print("[PIP cli]: install or update zeta python package")
-        sh("pip3 uninstall zeta-cli -y", check_result=False)
-        sh("pip3 install ./dist/zeta_cli-*.whl")
-        clean()
-
     if args.clean:
-        clean()
+        print("[PIP cli]: clean generated files")
+        sh("rm -rf build", check_result=False)
+        sh("rm -rf dist", check_result=False)
+        sh("rm -rf zeta_cli.egg-info", check_result=False)

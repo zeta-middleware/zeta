@@ -31,4 +31,4 @@ void ${service_name}_task()
     }
 }
 
-ZT_SERVICE_DECLARE(${service_name}, ${service_name}_task, ${service_name}_service_callback);
+ZT_SERVICE_INIT(${service_name}, ${service_name}_task, ${service_name}_service_callback);

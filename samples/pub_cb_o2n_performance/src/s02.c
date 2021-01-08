@@ -7,8 +7,8 @@ LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 K_SEM_DEFINE(S02_callback_sem, 0, 1);
 
-extern uint32_t total_cycles;
-extern uint32_t start_cycles;
+extern u32_t total_cycles;
+extern u32_t start_cycles;
 /**
  * @brief This is the function used by Zeta to tell the S02 that one(s) of the
  * channels which it is subscribed has changed. This callback will be called passing the
@@ -34,4 +34,4 @@ void S02_task()
     }
 }
 
-ZT_SERVICE_DECLARE(S02, S02_task, S02_service_callback);
+ZT_SERVICE_INIT(S02, S02_task, S02_service_callback);

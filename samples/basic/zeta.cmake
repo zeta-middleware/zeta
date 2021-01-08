@@ -10,8 +10,7 @@ execute_process(COMMAND zeta gen -b "${CMAKE_CURRENT_LIST_DIR}/build"
 if(ztcli_gen_exit_code GREATER 0)
   message( FATAL_ERROR "ZetaCli generation failed with exit code: ${ztcli_gen_exit_code}")
 endif()
-
-
+                      
 if(CONF_FILE)
   # CONF_FILE has either been specified on the cmake CLI or is already
   # in the CMakeCache.txt. This has precedence over the environment
@@ -28,8 +27,5 @@ endif()
 
 list(APPEND CONF_FILE "${CMAKE_CURRENT_LIST_DIR}/build/zeta/zeta.conf")
 list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/build/zeta/include/")
-list(APPEND SOURCES 
-    "${CMAKE_CURRENT_LIST_DIR}/src/main.c"
-)
 
 set(ZEPHYR_EXTRA_MODULES "${CMAKE_CURRENT_LIST_DIR}/build/zeta")

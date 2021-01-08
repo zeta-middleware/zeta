@@ -7,7 +7,7 @@ LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 K_SEM_DEFINE(PONG_callback_sem, 0, 1);
 
-extern u32_t end_cycles;
+extern uint32_t end_cycles;
 static zt_channel_e current_ping = 0;
 
 /**
@@ -55,4 +55,4 @@ void PONG_task()
     }
 }
 
-ZT_SERVICE_INIT(PONG, PONG_task, PONG_service_callback);
+ZT_SERVICE_DECLARE(PONG, PONG_task, PONG_service_callback);

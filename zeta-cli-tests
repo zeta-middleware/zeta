@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-import subprocess
 import os
+import subprocess
 import traceback
 
 
@@ -30,7 +30,7 @@ def test_zeta_cli():
 
 
 def running_project():
-    sh("west build -b native_posix")
+    sh("west build -p auto -b native_posix")
     try:
         sh("west build -t run", timeout=2)
     except subprocess.TimeoutExpired:

@@ -9,31 +9,31 @@
 void test_data()
 {
     zt_data_t *data0 = ZT_DATA_S8(-1);
-    zassert_equal(data0->s8.size, sizeof(s8_t),
+    zassert_equal(data0->s8.size, sizeof(int8_t),
                   "[%s] zt_data size %d is wrong. It must be 1!\n", __FUNCTION__,
                   data0->s8.size);
     zt_data_t *data1 = ZT_DATA_U8(-1);
-    zassert_equal(data1->u8.size, sizeof(u8_t),
+    zassert_equal(data1->u8.size, sizeof(uint8_t),
                   "[%s] zt_data size %d is wrong. It must be 1!\n", __FUNCTION__,
                   data1->u8.size);
     zt_data_t *data2 = ZT_DATA_S16(-1);
-    zassert_equal(data2->s16.size, sizeof(s16_t),
+    zassert_equal(data2->s16.size, sizeof(int16_t),
                   "[%s] zt_data size %d is wrong. It must be 2!\n", __FUNCTION__,
                   data2->s16.size);
     zt_data_t *data3 = ZT_DATA_U16(-1);
-    zassert_equal(data3->u16.size, sizeof(u16_t),
+    zassert_equal(data3->u16.size, sizeof(uint16_t),
                   "[%s] zt_data size %d is wrong. It must be 2!\n", __FUNCTION__,
                   data3->u16.size);
     zt_data_t *data4 = ZT_DATA_S32(-1);
-    zassert_equal(data4->s32.size, sizeof(s32_t),
+    zassert_equal(data4->s32.size, sizeof(int32_t),
                   "[%s] zt_data size %d is wrong. It must be 4!\n", __FUNCTION__,
                   data4->s32.size);
     zt_data_t *data5 = ZT_DATA_U32(-1);
-    zassert_equal(data5->u32.size, sizeof(u32_t),
+    zassert_equal(data5->u32.size, sizeof(uint32_t),
                   "[%s] zt_data size %d is wrong. It must be 4!\n", __FUNCTION__,
                   data5->s32.size);
     zt_data_t *data6 = ZT_DATA_S64(-1);
-    zassert_equal(data6->s64.size, sizeof(s64_t),
+    zassert_equal(data6->s64.size, sizeof(int64_t),
                   "[%s] zt_data size %d is wrong. It must be 8!\n", __FUNCTION__,
                   data6->s64.size);
     zt_data_t *data7 = ZT_DATA_BYTES(64, 0);
@@ -78,7 +78,7 @@ void test_data()
                   data8->u64.value);
 
     zt_data_t *data = ZT_DATA_U64(-1);
-    zassert_equal(data->s8.size, sizeof(u64_t),
+    zassert_equal(data->s8.size, sizeof(uint64_t),
                   "[%s] zt_data size %d is wrong. It must be 8!\n", __FUNCTION__,
                   data->s8.size);
     zassert_equal(data->s8.value, -1, "[%s] zt_data value is wrong %d. It must be -1!\n",
@@ -172,6 +172,58 @@ void test_channels_name(void)
 }
 
 void test_channels_size(void)
+{
+    size_t sz = 0;
+    int error = 0;
+
+    /* Checking an invalid call */
+    sz = zt_channel_size(ZT_CHANNEL_COUNT, &error);
+    zassert_equal(error, -EINVAL,
+                  "[%s] zt_channel_size is not setting error to -EINVAL!\n",
+                  __FUNCTION__);
+    zassert_equal(sz, 0, "[%s] zt_channel_size is not returning 0 in an invalid call!\n",
+                  __FUNCTION__);
+
+    /* Checking FIRMWARE_VERSION size*/
+    sz = zt_channel_size(ZT_FIRMWARE_VERSION_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 4, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+
+    /* Checking CH01 size*/
+    sz = zt_channel_size(ZT_CH01_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 1, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+    /* Checking CH02 size*/
+    sz = zt_channel_size(ZT_CH02_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 2, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+
+    /* Checking CH03 size*/
+    sz = zt_channel_size(ZT_CH03_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 8, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+    /* Checking CH04 size*/
+    sz = zt_channel_size(ZT_CH04_CHANNEL, &error);
+    zassert_equal(error, 0,
+                  "[%s] zt_channel_size is setting error to %d in a valid call!\n",
+                  __FUNCTION__, error);
+    zassert_equal(sz, 128, "[%s] zt_channel_size returned a wrong size value: %d\n",
+                  __FUNCTION__, sz);
+}
+
+void test_channels_messages(void)
 {
     size_t sz = 0;
     int error = 0;

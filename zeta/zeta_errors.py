@@ -1,6 +1,7 @@
 EZTFILE = 1  # Error related a file and directory name
 EZTFIELD = 2
 EZTCHECKFAILED = 3
+EZTINVREF = 4
 EZTUNEXP = 10
 
 

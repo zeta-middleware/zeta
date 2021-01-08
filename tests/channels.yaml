@@ -1,0 +1,31 @@
+- FIRMWARE_VERSION: !include firmware_version.yaml
+
+- CH01:
+    size: 1
+    read_only: True
+- CH02:
+    size: 2
+    persistent: True
+- CH03:
+    size: 8
+    on_changed: True
+- CH04:
+    size: 128
+- CH05:
+    size: 255
+- MSG_CH01:
+    size: 5
+- MSG_CH02:
+    size: 5
+- MCH01:
+    message: !ref REQ
+- MCH02:
+    message: !ref RESP
+- MCH03:
+    message: !ref ARR
+- MCH04:
+    message: !ref UNI
+- MCH05:
+    message: !ref FLAGS
+- MCH06:
+    message: !ref COMPLEX

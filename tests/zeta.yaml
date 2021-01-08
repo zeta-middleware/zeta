@@ -4,47 +4,10 @@ Config:
   storage_period: 17
       
 Channels:
-  - FIRMWARE_VERSION:
-      size: 4
-      read_only: True
-      initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
-
-  - CH01:
-      size: 1
-      read_only: True
-  - CH02:
-      size: 2
-      persistent: True
-  - CH03:
-      size: 8
-      on_changed: True
-  - CH04:
-      size: 128
-  - CH05:
-      size: 255
+  !include channels.yaml
 
 Services:
-  - PING: 
-      priority: 2
-      stack_size: 2048
-      pub_channels:
-        - !ref CH01
-        - !ref CH02
-        - !ref CH03
-        - !ref CH04
-        - !ref CH05
-  - PONG:
-      priority: 3
-      stack_size: 2048
-      sub_channels:
-        - !ref CH01
-        - !ref CH02
-        - !ref CH05
+  !include services.yaml
 
-  - PONG2:
-      priority: 3
-      stack_size: 2048
-      sub_channels:
-        - !ref CH03
-        - !ref CH04
-        - !ref CH05
+Messages:
+  !include messages.yaml

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-import subprocess
 import os
 import signal
+import subprocess
 from time import sleep
 
 
@@ -19,7 +19,7 @@ def sh(args, timeout=None, check_result=True, cd=False):
 def execution_routine():
     # Testing routine in native_posix
     sh("rm -rf build")
-    sh("west build -b native_posix")
+    sh("west build -p auto -b native_posix")
     process = subprocess.Popen("west build -t run",
                                shell=True,
                                preexec_fn=os.setsid)
@@ -30,7 +30,7 @@ def execution_routine():
     sh("rm -rf build")
 
     # Testing routine in nrf52_pca10040
-    sh("west build -b nrf52_pca10040")
+    sh("west build -b nrf52dk_nrf52832")
     sh("rm -rf build")
 
     # Go back to samples folder
@@ -47,6 +47,7 @@ def test_samples():
     run_test("basic")
     run_test("light_control")
     run_test("sensors-over-internet")
+    run_test("sensors-over-internet-msg")
     run_test("pub_cb_o2n_performance")
     run_test("pub_cb_o2o_performance")
 

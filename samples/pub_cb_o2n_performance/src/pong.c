@@ -7,8 +7,8 @@ LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
 
 K_SEM_DEFINE(PONG_callback_sem, 0, 1);
 
-extern u32_t total_cycles;
-extern u32_t start_cycles;
+extern uint32_t total_cycles;
+extern uint32_t start_cycles;
 
 /**
  * @brief This is the function used by Zeta to tell the PONG that one(s) of the
@@ -36,4 +36,4 @@ void PONG_task()
     }
 }
 
-ZT_SERVICE_INIT(PONG, PONG_task, PONG_service_callback);
+ZT_SERVICE_DECLARE(PONG, PONG_task, PONG_service_callback);

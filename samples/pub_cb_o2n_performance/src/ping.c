@@ -10,9 +10,9 @@ LOG_MODULE_DECLARE(zeta, CONFIG_ZETA_LOG_LEVEL);
 K_SEM_DEFINE(PING_callback_sem, 0, 1);
 
 
-u32_t end_cycles   = 0;
-u32_t total_cycles = 0;
-u32_t start_cycles = 0;
+uint32_t end_cycles   = 0;
+uint32_t total_cycles = 0;
+uint32_t start_cycles = 0;
 /**
  * @brief This is the function used by Zeta to tell the PING that one(s) of the
  * channels which it is subscribed has changed. This callback will be called passing the
@@ -32,11 +32,11 @@ void PING_service_callback(zt_channel_e id)
 void PING_task()
 {
     LOG_DBG("PING Service has started...[OK]");
-    u8_t current_channel     = ZT_C01_CHANNEL;
-    u8_t number_of_callbacks = 1;
-    zt_data_t *ping_data     = ZT_DATA_U32(0xF0F0F0F0);
-    total_cycles             = 0;
-    start_cycles             = k_cycle_get_32();
+    uint8_t current_channel     = ZT_C01_CHANNEL;
+    uint8_t number_of_callbacks = 1;
+    zt_data_t *ping_data        = ZT_DATA_U32(0xF0F0F0F0);
+    total_cycles                = 0;
+    start_cycles                = k_cycle_get_32();
     zt_chan_pub(current_channel, ping_data);
     int count = 1000;
     while (1) {
@@ -67,4 +67,4 @@ void PING_task()
     }
 }
 
-ZT_SERVICE_INIT(PING, PING_task, PING_service_callback);
+ZT_SERVICE_DECLARE(PING, PING_task, PING_service_callback);

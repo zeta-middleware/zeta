@@ -56,7 +56,7 @@ RUN export PATH=~/.local/bin:$PATH
 
 ## Initializing west environment
 RUN (cd ${ZEPHYR_BASE}/.. && west init -l ${ZEPHYR_BASE} && west update)
-RUN source /home/user/zephyrproject/zephyr/zephyr-env.sh
+RUN /home/user/zephyrproject/zephyr/zephyr-env.sh
 
 # Setting locales and language
 RUN sudo apt-get install -y locales

@@ -30,7 +30,7 @@ def execution_routine():
     sh("rm -rf build")
 
     # Testing routine in nrf52_pca10040
-    sh("west build -b nrf52dk_nrf52832")
+    sh("west build -b nrf52840dk_nrf52840")
     sh("rm -rf build")
 
     # Go back to samples folder

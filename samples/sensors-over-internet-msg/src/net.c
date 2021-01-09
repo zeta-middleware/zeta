@@ -113,9 +113,11 @@ void NET_task()
         net_handle_channel_callback(channel_id);
         handle_net_requests();
         k_sleep(K_SECONDS(10));
+#if defined(CONFIG_TRACING)
         uint32_t per = cpu_stats_non_idle_and_sched_get_percent();
         LOG_WRN("CPU usage: %u%%\n", per);
         cpu_stats_reset_counters();
+#endif
     }
 }
 

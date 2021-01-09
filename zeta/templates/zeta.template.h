@@ -58,7 +58,7 @@
  * the forwarder of messages between services and channels.
  *
  */
-#define ZT_FORWARDER_THREAD_STACK_SIZE 512
+#define ZT_FORWARDER_THREAD_STACK_SIZE 2048
 
 #define ZT_FWD_OP_READ 0
 #define ZT_FWD_OP_PUBLISH 1

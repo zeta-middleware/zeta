@@ -32,14 +32,14 @@ Services:
         - !ref NET_RESPONSE
   - BOARD:
       priority: 1
-      stack_size: 512
+      stack_size: 1024
       pub_channels:
         - !ref SENSOR_A
         - !ref SENSOR_B
         - !ref SENSOR_C
   - NET:
       priority: 3
-      stack_size: 512
+      stack_size: 1024
       pub_channels:
         - !ref NET_REQUEST
       sub_channels:

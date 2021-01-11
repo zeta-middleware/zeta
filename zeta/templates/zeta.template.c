@@ -190,7 +190,6 @@ static void __zt_monitor_thread(void)
     uint8_t id = 0;
     while (1) {
         k_msgq_get(&zt_channels_changed_msgq, &id, K_FOREVER);
-        printk("[printk]: monitor...\n");
         if (id < ZT_CHANNEL_COUNT) {
             if (__zt_channels[id].flag.field.pend_callback) {
                 for (zt_service_t **s = __zt_channels[id].subscribers; *s != NULL; ++s) {

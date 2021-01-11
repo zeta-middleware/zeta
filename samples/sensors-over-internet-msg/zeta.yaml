@@ -18,7 +18,7 @@ Channels:
 Services:
   - CORE:
       priority: 2
-      stack_size: 512
+      stack_size: 2048
       sub_channels:
         - !ref SENSORS
         - !ref NET_REQUEST
@@ -26,12 +26,12 @@ Services:
         - !ref NET_RESPONSE
   - BOARD:
       priority: 1
-      stack_size: 512
+      stack_size: 2048
       pub_channels:
         - !ref SENSORS
   - NET:
       priority: 3
-      stack_size: 512
+      stack_size: 2048
       pub_channels:
         - !ref NET_REQUEST
       sub_channels:

@@ -9,6 +9,7 @@ from ctypes import c_uint8, c_size_t,\
 
 import zmq
 from zmq.asyncio import Context
+from zeta import ZetaISCPacket, ZetaISCHeader, ZetaISCHeaderDataInfo
 
 zeta_isc = None
 context = Context.instance()
@@ -100,77 +101,6 @@ class ZT_MSG(ctypes.Union):
     ]
 
 
-class ZetaISCPacket(ctypes.LittleEndianStructure):
-    class ZetaISCHeader(ctypes.LittleEndianStructure):
-        """struct zt_isc_header_op {
-            uint8_t channel : 8;  /**!> 256 channels available*/
-            uint8_t type : 2;     /**!> 0: event, 1: command, 2: response, 3: reserved */
-            uint8_t cmd : 5;      /**!> 0: pub, 1: read, 2..: reserved */
-            uint8_t has_data : 1; /**!> 0: no data, 1: contains data */
-        };
-        """
-        _pack_ = 1
-        _fields_ = [
-            ("channel", c_uint8, 8),
-            ("type", c_uint8, 2),
-            ("cmd", c_uint8, 5),
-            ("has_data", c_uint8, 1),
-        ]
-
-    class ZetaISCHeaderDataInfo(ctypes.LittleEndianStructure):
-        """
-        struct zt_isc_header_data_info {
-            uint8_t crc : 8;  /**!> CCITT 8, polynom 0x07, initial value 0x00 */
-            uint8_t size : 8; /**!> data size */
-        };
-        """
-        _pack_ = 1
-        _fields_ = [
-            ("crc", c_uint8),
-            ("size", c_uint8),
-        ]
-
-    _pack_ = 1
-    _fields_ = [
-        ("header", ZetaISCHeader),
-        ("data_info", ZetaISCHeaderDataInfo),
-    ]
-
-    def __init__(self):
-        self.__data = b''
-
-    def set_data(self, data: bytes):
-        self.__data = data
-        self.header.has_data = 1
-        self.data_info.crc = crc8(data)
-        self.data_info.size = len(data)
-
-    def data(self):
-        return self.__data
-
-    def set_header(self, data: bytes = 0):
-        cast(ctypes.byref(self.header),
-             POINTER(c_char * sizeof(self.header))).contents.raw = data
-
-    def set_data_info(self, data: bytes = 0):
-        cast(ctypes.byref(self.data_info),
-             POINTER(c_char * sizeof(self.data_info))).contents.raw = data
-
-    def raw_header(self):
-        return cast(ctypes.byref(self),
-                    POINTER(c_char * sizeof(self))).contents.raw
-
-    def __repr__(self):
-        representation = "ZetaISCPacket(\n" + \
-             f"    type: {self.header.type}\n" + \
-             f"    cmd: {self.header.cmd}\n" + \
-             f"    channel {self.header.channel}\n" + \
-             f"    crc: {self.data_info.crc}\n" + \
-             f"    size: {self.data_info.size}\n" + \
-             f"    data: {self.__data}\n)"
-        return representation
-
-
 class ZetaChannel:
     def __init__(self, cid, name, data, read_only, size, persistent, flags,
                  sem, subscribers):
@@ -203,24 +133,27 @@ class ZetaHighLevelISC:
     async def read_channel(self, cid):
         await self.sem.acquire()
         print("reading channel")
+        channel_data = None
         try:
-            return self.__channels[cid]
-        except IndexError as exc:
-            print(exc)
+            channel_data = self.__channels[cid]
+        except IndexError:
+            pass
         self.sem.release()
+        return channel_data
 
     async def set_channel(self, cid, msg):
         await self.sem.acquire()
         print("changing channel")
+        set_result = 0
         try:
             if self.__channels[cid] != msg:
                 self.__channels[cid] = msg
-                await self.channel_changed_queue.put(bytes([cid] + msg))
-            return 0
+                await self.channel_changed_queue.put(cid)
         except IndexError as exc:
             print(exc)
-            return 1
+            set_result = 1
         self.sem.release()
+        return set_result
 
 
 class ZetaSerialDataHandler:
@@ -249,7 +182,7 @@ class ZetaSerialDataHandler:
                 self.__current_pkt = ZetaISCPacket()
                 self.__current_pkt.set_header(self.__buffer[:2])
                 self.__buffer = self.__buffer[2:]
-                if self.__current_pkt.header.has_data:
+                if self.__current_pkt.header.has_data != ZetaISCPacket.NO_DATA:
                     self.__state = self.STATE_DIGEST_HEADER_DATA_INFO
                 else:
                     print("Only a command!")
@@ -307,12 +240,13 @@ async def callback_handler(channel_changed_queue: asyncio.Queue,
     socket = context.socket(zmq.PUB)
     socket.bind("tcp://*:5556")
     while (True):
-        channel_data = await channel_changed_queue.get()
-        pkt = ZetaISCPacket()
-        pkt.header.channel = channel_data[0]
-        pkt.set_data(channel_data[1:])
+        channel = await channel_changed_queue.get()
+        pkt = ZetaISCPacket(header=ZetaISCHeader(
+            channel=channel, has_data=ZetaISCPacket.DATA_AVAILABLE),
+                            data=await zeta_isc.read_channel(channel))
+        pkt.set_data(channel[1:])
         await zt_data_handler.send_command(pkt)
-        await socket.send(channel_data)
+        await socket.send(channel)
 
 
 async def pub_read_handler(channel_changed_queue: asyncio.Queue):
@@ -323,28 +257,30 @@ async def pub_read_handler(channel_changed_queue: asyncio.Queue):
     socket.bind("tcp://*:5555")
 
     while True:
-        message = await socket.recv()
+        pkt = ZetaISCPacket.from_bytes(await socket.recv())
+        print("Received request: %s" % pkt)
         """
-        if the message has only one byte it is a read
+        if the pkt has only one byte it is a read
         """
-        if len(message) == 1:
-            response_message = await zeta_isc.read_channel(message)
-            await socket.send(message + response_message)
-        else:
-            cid, *msg = message
-            response_message = b'\x01'
-            if await zeta_isc.set_channel(cid, msg) == 0:
-                await channel_changed_queue.put(message)
-                response_message = b'\x00'
-            await socket.send(response_message)
+        if pkt.header.op == ZetaISCPacket.OP_COMMAND:
+            if pkt.header.otype == ZetaISCPacket.OTYPE_READ:
+                pkt.header.op = ZetaISCPacket.OP_RESPONSE
+                response_message = await zeta_isc.read_channel(
+                    pkt.header.channel)
+                if response_message:
+                    pkt.header.status = ZetaISCPacket.STATUS_OK
+                    pkt.set_data(response_message)
+                else:
+                    pkt.header.status = ZetaISCPacket.STATUS_FAILED
 
-        print("Received request: %s" % message)
-
-        #  Do some 'work'
-        await asyncio.sleep(1)
-
-        #  Send reply back to client
-        # await socket.send(b"\x02" + struct_contents(req))
+            elif pkt.header.otype == ZetaISCPacket.OTYPE_WRITE:
+                pass
+                # cid, *msg = pkt
+                # response_message = b'\x01'
+                # if await zeta_isc.set_channel(cid, msg) == 0:
+                #     await channel_changed_queue.put(pkt)
+                #     response_message = b'\x00'
+            await socket.send(pkt.to_bytes())
 
 
 async def isc_run(zeta, port: str = "/dev/ttyACM0", baudrate: int = 115200):

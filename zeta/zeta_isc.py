@@ -148,9 +148,8 @@ class ZetaHighLevelISC:
         try:
             if self.__channels[cid] != msg:
                 self.__channels[cid] = msg
-                await self.channel_changed_queue.put(cid)
-        except IndexError as exc:
-            print(exc)
+                await self.channel_changed_queue.put(bytes([cid]) + msg)
+        except IndexError:
             set_result = 1
         self.sem.release()
         return set_result
@@ -240,28 +239,33 @@ async def callback_handler(channel_changed_queue: asyncio.Queue,
     socket = context.socket(zmq.PUB)
     socket.bind("tcp://*:5556")
     while (True):
-        channel = await channel_changed_queue.get()
+        """ The data comes from the channel_changed_queue in the following
+        format:
+
+              +------------+---------+
+        Bytes |     0      |  1 ...  |
+              +------------+---------+
+              | channel id | message |
+              +------------+---------+
+        """
+        channel, *message = await channel_changed_queue.get()
+
         pkt = ZetaISCPacket(header=ZetaISCHeader(
             channel=channel, has_data=ZetaISCPacket.DATA_AVAILABLE),
-                            data=await zeta_isc.read_channel(channel))
-        pkt.set_data(channel[1:])
-        await zt_data_handler.send_command(pkt)
-        await socket.send(channel)
+                            data=bytes(message))
+        print("Send packet to subscribers", pkt)
+        # await zt_data_handler.send_command(pkt)
+        await socket.send(pkt.to_bytes())
 
 
 async def pub_read_handler(channel_changed_queue: asyncio.Queue):
     print("Response handler running...")
     socket = context.socket(zmq.REP)
-    # req = REQ(1, FLAG_(0, 1, 1, 0), (c_uint8 * 32)(*range(32)))
-    # print(f"{ctypes.sizeof(req)} bytes: {struct_contents(req)}")
     socket.bind("tcp://*:5555")
 
     while True:
         pkt = ZetaISCPacket.from_bytes(await socket.recv())
         print("Received request: %s" % pkt)
-        """
-        if the pkt has only one byte it is a read
-        """
         if pkt.header.op == ZetaISCPacket.OP_COMMAND:
             if pkt.header.otype == ZetaISCPacket.OTYPE_READ:
                 pkt.header.op = ZetaISCPacket.OP_RESPONSE
@@ -274,12 +278,15 @@ async def pub_read_handler(channel_changed_queue: asyncio.Queue):
                     pkt.header.status = ZetaISCPacket.STATUS_FAILED
 
             elif pkt.header.otype == ZetaISCPacket.OTYPE_WRITE:
-                pass
-                # cid, *msg = pkt
-                # response_message = b'\x01'
-                # if await zeta_isc.set_channel(cid, msg) == 0:
-                #     await channel_changed_queue.put(pkt)
-                #     response_message = b'\x00'
+                pkt.header.op = ZetaISCPacket.OP_RESPONSE
+                op_status = await zeta_isc.set_channel(pkt.header.channel,
+                                                       pkt.data())
+                if op_status:
+                    pkt.header.status = ZetaISCPacket.STATUS_FAILED
+                else:
+                    pkt.header.status = ZetaISCPacket.STATUS_OK
+                pkt.clear_data()
+
             await socket.send(pkt.to_bytes())
 
 

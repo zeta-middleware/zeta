@@ -172,8 +172,9 @@ class ZetaSerialDataHandler:
         await self.digest()
 
     async def send_command(self, cmd: ZetaISCPacket):
-        await self.oqueue.put(cmd.raw_header())
-        await self.oqueue.put(cmd.data())
+        pass
+        # await self.oqueue.put(cmd.raw_header())
+        # await self.oqueue.put(cmd.data())
 
     async def digest(self):
         if self.__state == self.STATE_DIGEST_HEADER_OP:
@@ -242,17 +243,18 @@ async def callback_handler(channel_changed_queue: asyncio.Queue,
         """ The data comes from the channel_changed_queue in the following
         format:
 
-              +------------+---------+
-        Bytes |     0      |  1 ...  |
-              +------------+---------+
-              | channel id | message |
-              +------------+---------+
+        +------------+-----------+
+        |   Byte[0]  |  Byte[1:] |
+        +------------+-----------+
+        | channel id |  message  |
+        +------------+-----------+
         """
         channel, *message = await channel_changed_queue.get()
 
-        pkt = ZetaISCPacket(header=ZetaISCHeader(
-            channel=channel, has_data=ZetaISCPacket.DATA_AVAILABLE),
-                            data=bytes(message))
+        pkt = ZetaISCPacket().set_header(
+            channel=channel,
+            op=ZetaISCPacket.OP_EVENT,
+            otype=ZetaISCPacket.OTYPE_CHANGED).set_data(bytes(message))
         print("Send packet to subscribers", pkt)
         # await zt_data_handler.send_command(pkt)
         await socket.send(pkt.to_bytes())

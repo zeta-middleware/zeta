@@ -3,7 +3,7 @@ from ctypes import c_uint8, sizeof, cast, POINTER, c_char
 from libscrc import crc8
 
 
-class ZetaISCHeader(ctypes.LittleEndianStructure):
+class IPCHeader(ctypes.LittleEndianStructure):
     """
 
     struct zt_isc_header_op {
@@ -25,7 +25,7 @@ class ZetaISCHeader(ctypes.LittleEndianStructure):
     ]
 
 
-class ZetaISCHeaderDataInfo(ctypes.LittleEndianStructure):
+class IPCHeaderDataInfo(ctypes.LittleEndianStructure):
     """
     struct zt_isc_header_data_info {
         uint8_t crc : 8;  /**!> CCITT 8, polynom 0x07, initial value 0x00 */
@@ -40,7 +40,7 @@ class ZetaISCHeaderDataInfo(ctypes.LittleEndianStructure):
     ]
 
 
-class ZetaISCPacket(ctypes.LittleEndianStructure):
+class IPCPacket(ctypes.LittleEndianStructure):
     OP_EVENT = 0
     OP_COMMAND = 1
     OP_RESPONSE = 2
@@ -56,11 +56,10 @@ class ZetaISCPacket(ctypes.LittleEndianStructure):
     STATUS_FAILED = 1
 
     _pack_ = 1
-    _fields_ = [("header", ZetaISCHeader),
-                ("data_info", ZetaISCHeaderDataInfo)]
+    _fields_ = [("header", IPCHeader), ("data_info", IPCHeaderDataInfo)]
 
     def __init__(self, *args, **kwargs):
-        super(ZetaISCPacket, self).__init__(*args, **kwargs)
+        super(IPCPacket, self).__init__(*args, **kwargs)
         if "data" in kwargs.keys():
             self.set_data(kwargs["data"])
         else:
@@ -130,7 +129,7 @@ class ZetaISCPacket(ctypes.LittleEndianStructure):
                     POINTER(c_char * sizeof(self))).contents.raw
 
     def __repr__(self):
-        representation = "ZetaISCPacket(\n" + \
+        representation = "IPCPacket(\n" + \
              f"    op: {self.header.op}\n" + \
              f"    otype: {self.header.otype}\n" + \
              f"    channel {self.header.channel}\n" + \

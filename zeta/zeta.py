@@ -98,6 +98,12 @@ class Channel(object):
         self.pub_services_obj = []
         self.sub_services_obj = []
 
+    def __repr__(self):
+        channel_repr = []
+        for k, v in self.__dict__.items():
+            channel_repr.append("\n" + f"    {k}: {v}")
+        return f"Channel({''.join(channel_repr)});"
+
 
 class Service(object):
     """Represents a service written on YAML file.

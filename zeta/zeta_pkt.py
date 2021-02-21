@@ -130,9 +130,9 @@ class IPCPacket(ctypes.LittleEndianStructure):
 
     def __repr__(self):
         representation = "IPCPacket(\n" + \
+             f"    channel {self.header.channel}\n" + \
              f"    op: {self.header.op}\n" + \
              f"    otype: {self.header.otype}\n" + \
-             f"    channel {self.header.channel}\n" + \
              f"    status {self.header.status}\n"
         if self.header.has_data == self.DATA_AVAILABLE:
             representation += f"    crc: {self.data_info.crc}\n" + \

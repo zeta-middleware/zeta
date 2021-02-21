@@ -129,27 +129,25 @@ class IPC:
             print(ipc_channel)
 
     async def digest_packet(self, pkt: IPCPacket):
-        if pkt.header.op == IPCPacket.OP_COMMAND:
-            if pkt.header.otype == IPCPacket.OTYPE_READ:
-                pkt.header.op = IPCPacket.OP_RESPONSE
-                response_message = await self.read_channel(pkt.header.channel)
-                if response_message:
-                    pkt.header.status = IPCPacket.STATUS_OK
-                    pkt.set_data(response_message)
-                else:
-                    pkt.header.status = IPCPacket.STATUS_FAILED
+        if pkt.header.op == IPCPacket.OP_READ:
+            pkt.header.op = IPCPacket.OP_READ_RESPONSE
+            response_message = await self.read_channel(pkt.header.channel)
+            if response_message:
+                pkt.header.status = IPCPacket.STATUS_OK
+                pkt.set_data(response_message)
+            else:
+                pkt.header.status = IPCPacket.STATUS_FAILED
 
-            elif pkt.header.otype == IPCPacket.OTYPE_WRITE:
-                pkt.header.op = IPCPacket.OP_RESPONSE
-                op_status = await self.set_channel(pkt.header.channel,
-                                                   pkt.data())
-                if op_status:
-                    pkt.header.status = IPCPacket.STATUS_FAILED
-                else:
-                    pkt.header.status = IPCPacket.STATUS_OK
-                pkt.clear_data()
-        else:
-            pkt.header.status = IPCPacket.STATUS_FAILED
+        elif pkt.header.op == IPCPacket.OP_WRITE:
+            pkt.header.op = IPCPacket.OP_WRITE_RESPONSE
+            op_status = await self.set_channel(pkt.header.channel, pkt.data())
+            if op_status:
+                pkt.header.status = IPCPacket.STATUS_FAILED
+            else:
+                pkt.header.status = IPCPacket.STATUS_OK
+            pkt.clear_data()
+        elif pkt.header.op == IPCPacket.OP_DEBUG:
+            print(f">>> [Target ISC]: {pkt.data()}")
         return pkt
 
     async def read_channel(self, cid):
@@ -284,10 +282,10 @@ async def callback_handler(channel_changed_queue: asyncio.Queue,
         """
         channel, *message = await channel_changed_queue.get()
 
-        pkt = IPCPacket().set_header(channel=channel,
-                                     op=IPCPacket.OP_COMMAND,
-                                     otype=IPCPacket.OTYPE_WRITE).set_data(
-                                         bytes(message))
+        pkt = IPCPacket().set_header(
+            channel=channel,
+            op=IPCPacket.OP_UPDATE,
+        ).set_data(bytes(message))
         print("Send packet to subscribers", pkt)
         await zt_data_handler.send_command(pkt)
         await socket.send(pkt.to_bytes())

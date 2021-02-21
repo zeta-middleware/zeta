@@ -6,11 +6,11 @@ from libscrc import crc8
 class IPCHeader(ctypes.LittleEndianStructure):
     """
 
-    struct zt_isc_header_op {
-        uint8_t channel : 8;  /**!> 256 channels available*/
-        uint8_t op : 2;     /**!> 0: event, 1: command, 2: response, 3: reserved */
-        uint8_t otype : 4;      /**!> 0: pub, 1: read, 2..: reserved */
-        uint8_t status : 1;      /**!> 0: ok, 1: failed */
+    struct zt_isc_header {
+        uint8_t channel : 8; /**!> 256 channels available*/
+        uint8_t op : 3; /**!> 0: read, 1: write, 2: read response,
+                              3: write response, 4: update */
+        uint8_t status : 4;   /**!> 0: ok, 1: failed */
         uint8_t has_data : 1; /**!> 0: no data, 1: contains data */
     };
 
@@ -18,9 +18,8 @@ class IPCHeader(ctypes.LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ("channel", c_uint8, 8),
-        ("op", c_uint8, 2),
-        ("otype", c_uint8, 4),
-        ("status", c_uint8, 1),
+        ("op", c_uint8, 3),
+        ("status", c_uint8, 4),
         ("has_data", c_uint8, 1),
     ]
 
@@ -41,13 +40,12 @@ class IPCHeaderDataInfo(ctypes.LittleEndianStructure):
 
 
 class IPCPacket(ctypes.LittleEndianStructure):
-    OP_EVENT = 0
-    OP_COMMAND = 1
-    OP_RESPONSE = 2
-
-    OTYPE_READ = 0
-    OTYPE_WRITE = 1
-    OTYPE_CHANGED = 2
+    OP_READ = 0
+    OP_WRITE = 1
+    OP_READ_RESPONSE = 2
+    OP_WRITE_RESPONSE = 3
+    OP_UPDATE = 4
+    OP_DEBUG = 5
 
     DATA_UNAVALABLE = 0
     DATA_AVAILABLE = 1
@@ -101,12 +99,10 @@ class IPCPacket(ctypes.LittleEndianStructure):
     def set_header(self,
                    channel: int,
                    op: int,
-                   otype: int,
                    status: int = 0,
                    has_data: int = 0):
         self.header.channel = channel
         self.header.op = op
-        self.header.otype = otype
         self.header.status = status
         self.header.has_data = has_data
         return self
@@ -132,7 +128,6 @@ class IPCPacket(ctypes.LittleEndianStructure):
         representation = "IPCPacket(\n" + \
              f"    channel {self.header.channel}\n" + \
              f"    op: {self.header.op}\n" + \
-             f"    otype: {self.header.otype}\n" + \
              f"    status {self.header.status}\n"
         if self.header.has_data == self.DATA_AVAILABLE:
             representation += f"    crc: {self.data_info.crc}\n" + \

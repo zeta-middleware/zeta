@@ -11,6 +11,7 @@ import zmq
 from zmq.asyncio import Context
 from .zeta import Channel
 from .zeta_pkt import IPCPacket
+from .messages import ZetaMessage
 
 ipc = None
 context = Context.instance()
@@ -102,16 +103,74 @@ class ZT_MSG(ctypes.Union):
     ]
 
 
+class ZT_MSG_BASE(ctypes.LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [("size", ctypes.c_size_t)]
+
+
+def repr(self):
+    channel_repr = []
+    for k, v in self.__dict__.items():
+        channel_repr.append("\n" + f"    {k}: {v}")
+    return f"CustomMessage({''.join(channel_repr)});"
+
+
 class IPCChannel():
     def __init__(self, metadata: Channel = None):
         self.metadata = metadata
         self.data = bytes(self.metadata.size)
+        self.add_global_message()
 
     def __repr__(self):
         channel_repr = []
         for k, v in self.__dict__.items():
             channel_repr.append("\n" + f"    {k}: {v}")
         return f"IPCChannel({''.join(channel_repr)});"
+
+    def add_global_message(self):
+        if self.metadata.message_obj is not None:
+            message_code_factory = ZetaMessage(
+                name=self.metadata.message_obj.name,
+                **self.metadata.message_obj.msg_format)
+
+            type_name = self.create_struct(self.metadata.message_obj.name,
+                                           message_code_factory)
+            globals()[self.metadata.message_obj.name] = type(
+                self.metadata.message_obj.name, (ZT_MSG_BASE, ),
+                {"_fields_": [("size", c_size_t), ("value", type_name)]})
+
+    def create_struct(self, name: str, struct: ZetaMessage):
+        size_suffix = ""
+        if struct.size > 1:
+            size_suffix = f"*{struct.size}"
+        if struct.mtype in ["struct", "union"]:
+            base_type = ctypes.LittleEndianStructure
+            if struct.mtype == "union":
+                base_type = ctypes.Union
+            fields_dict = []
+            for field in struct.fields:
+                fields_dict.append(
+                    (field.name.strip(), self.create_struct(field.name,
+                                                            field)))
+            t = type(name.title().strip(), (base_type, ), {
+                "_pack_": 1,
+                "_fields_": fields_dict
+            })
+            return eval(f"t{size_suffix}")
+        elif struct.mtype == "bitarray":
+            fields_dict = []
+            unsigned_type = 'u' if struct.mtype_base_type[0] == 'u' else ''
+            mtype_base_type = f"c_{unsigned_type}int{struct.mtype_base_type[1:]}"
+            for field in struct.fields:
+                fields_dict.append(
+                    (field.name.strip(), eval(mtype_base_type), field.size))
+            t = type(name.title().strip(), (ctypes.LittleEndianStructure, ), {
+                "_pack_": 1,
+                "_fields_": fields_dict
+            })
+            return eval(f"t{size_suffix}")
+        else:
+            return eval(f"c_{struct.mtype_obj.statement[:-2]}{size_suffix}")
 
 
 class IPC:
@@ -169,7 +228,8 @@ class IPC:
             assert self.__channels[
                 cid].metadata.read_only == 0, "This is a read-only channel"
             assert self.__channels[cid].metadata.size >= len(
-                msg), "Message sent is too big"
+                msg
+            ), f"Message sent to channel {cid} is too big. {self.__channels[cid].metadata.size}"
             if self.__channels[cid].data != msg:
                 self.__channels[cid].data = msg
                 await self.channel_changed_queue.put(bytes([cid]) + msg)

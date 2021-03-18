@@ -66,6 +66,17 @@ class ZetaMessage:
                                     parent=self,
                                     **sub_fields))
 
+    def __repr__(self):
+        # print(self.name)
+        # print(self.fields)
+        message_repr = []
+        for k, v in self.__dict__.items():
+            if k not in ["parent", "size"]:
+                message_repr.append("\n" +
+                                    textwrap.indent(f"{k}: {v}", "    " *
+                                                    (self.level + 1)))
+        return f"Message({''.join(message_repr)});"
+
     def digest_type(self) -> None:
         """Digests the mtype and mounts the necessary data to the code
         generation.

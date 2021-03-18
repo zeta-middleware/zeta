@@ -176,6 +176,9 @@ class Message:
         self.name = name
         self.msg_format = msg_format if msg_format else {}
 
+    def __repr__(self):
+        return f"Message({self.name} -> {self.msg_format})"
+
 
 class Zeta(object):
     """Represents the Zeta object that has access to services, channels

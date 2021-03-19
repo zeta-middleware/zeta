@@ -1,11 +1,10 @@
 import asyncio
 import serial_asyncio as serial
+from serial.serialutil import SerialException
 from libscrc import crc8
 
 import ctypes
-from ctypes import c_uint8, c_size_t,\
-    c_uint16, c_uint32, c_uint64,\
-    c_int8, c_int16, c_int32, c_int64, POINTER, c_char, sizeof, cast
+from ctypes import c_size_t, POINTER, c_char, sizeof, cast
 
 import zmq
 from zmq.asyncio import Context
@@ -15,97 +14,12 @@ from .messages import ZetaMessage
 
 ipc = None
 context = Context.instance()
-
-
-class ZT_MSG_U8(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_uint8),
-    ]
-
-
-class ZT_MSG_U16(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_uint16),
-    ]
-
-
-class ZT_MSG_U32(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_uint32),
-    ]
-
-
-class ZT_MSG_U64(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_uint64),
-    ]
-
-
-class ZT_MSG_S8(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_int8),
-    ]
-
-
-class ZT_MSG_S16(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_int16),
-    ]
-
-
-class ZT_MSG_S32(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_int32),
-    ]
-
-
-class ZT_MSG_S64(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_int64),
-    ]
-
-
-class ZT_MSG_BYTES(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ("size", c_size_t),
-        ("value", c_uint8 * 256),
-    ]
+target_attached = False
 
 
 class ZT_MSG(ctypes.Union):
-    _fields_ = [
-        ("s8", ZT_MSG_S8),
-        ("u8", ZT_MSG_U8),
-        ("s16", ZT_MSG_S16),
-        ("u16", ZT_MSG_U16),
-        ("s32", ZT_MSG_S32),
-        ("u32", ZT_MSG_U32),
-        ("s64", ZT_MSG_S64),
-        ("u64", ZT_MSG_U64),
-        ("bytes", ZT_MSG_BYTES),
-    ]
-
-
-class ZT_MSG_BASE(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [("size", ctypes.c_size_t)]
+    '''All the messages defined by the config file will be filled up here'''
+    pass
 
 
 def repr(self):
@@ -115,11 +29,29 @@ def repr(self):
     return f"CustomMessage({''.join(channel_repr)});"
 
 
+def create_base_message(yamlfile: str = "./zeta.yaml"):
+    import os
+    import zeta
+    if os.path.exists(yamlfile):
+        with open(yamlfile, 'r') as f:
+            zeta = zeta.Zeta(f)
+            messages = []
+            for channel in zeta.channels:
+                msg = IPCChannel(channel).message_union_field()
+                if (msg):
+                    messages.append(msg)
+            return type("ZT_MSG", (ctypes.Union, ), {
+                "_pack_": 1,
+                "_fields_": messages
+            })
+    else:
+        print("[ZETA]: Error. Zeta YAML file does not exist!")
+
+
 class IPCChannel():
     def __init__(self, metadata: Channel = None):
         self.metadata = metadata
         self.data = bytes(self.metadata.size)
-        self.add_global_message()
 
     def __repr__(self):
         channel_repr = []
@@ -127,17 +59,24 @@ class IPCChannel():
             channel_repr.append("\n" + f"    {k}: {v}")
         return f"IPCChannel({''.join(channel_repr)});"
 
-    def add_global_message(self):
+    def message_union_field(self):
         if self.metadata.message_obj is not None:
             message_code_factory = ZetaMessage(
                 name=self.metadata.message_obj.name,
                 **self.metadata.message_obj.msg_format)
 
-            type_name = self.create_struct(self.metadata.message_obj.name,
-                                           message_code_factory)
-            globals()[self.metadata.message_obj.name] = type(
-                self.metadata.message_obj.name, (ZT_MSG_BASE, ),
-                {"_fields_": [("size", c_size_t), ("value", type_name)]})
+            return (self.metadata.message_obj.name,
+                    type(
+                        self.metadata.message_obj.name,
+                        (ctypes.LittleEndianStructure, ), {
+                            "_pack_":
+                            1,
+                            "_fields_": [("size", c_size_t),
+                                         ("value",
+                                          self.create_struct(
+                                              self.metadata.message_obj.name,
+                                              message_code_factory))]
+                        }))
 
     def create_struct(self, name: str, struct: ZetaMessage):
         size_suffix = ""
@@ -160,7 +99,7 @@ class IPCChannel():
         elif struct.mtype == "bitarray":
             fields_dict = []
             unsigned_type = 'u' if struct.mtype_base_type[0] == 'u' else ''
-            mtype_base_type = f"c_{unsigned_type}int{struct.mtype_base_type[1:]}"
+            mtype_base_type = f"ctypes.c_{unsigned_type}int{struct.mtype_base_type[1:]}"
             for field in struct.fields:
                 fields_dict.append(
                     (field.name.strip(), eval(mtype_base_type), field.size))
@@ -170,11 +109,16 @@ class IPCChannel():
             })
             return eval(f"t{size_suffix}")
         else:
-            return eval(f"c_{struct.mtype_obj.statement[:-2]}{size_suffix}")
+            return eval(
+                f"ctypes.c_{struct.mtype_obj.statement[:-2]}{size_suffix}")
 
 
 class IPC:
-    def __init__(self, zeta, channel_changed_queue: asyncio.Queue):
+    def __init__(
+        self,
+        zeta,
+        channel_changed_queue: asyncio.Queue,
+    ):
         self.__zeta = zeta
         self.sem = asyncio.Lock()
         self.channel_changed_queue = channel_changed_queue
@@ -262,7 +206,8 @@ class SerialDataHandler:
 
     async def send_command(self, cmd: IPCPacket):
         print("sending command via uart!")
-        await self.oqueue.put(cmd.to_bytes())
+        if target_attached:
+            await self.oqueue.put(cmd.to_bytes())
 
     async def digest(self):
         if self.__state == self.STATE_DIGEST_HEADER_OP:
@@ -369,13 +314,36 @@ async def isc_run(zeta, port: str = "/dev/ttyACM0", baudrate: int = 115200):
     channel_changed_queue = asyncio.Queue()
     ipc = IPC(zeta, channel_changed_queue)
     zt_data_handler = SerialDataHandler()
-    reader, writer = await serial.open_serial_connection(
-        url=port,
-        baudrate=baudrate,
-    )
-    await asyncio.gather(
-        uart_write_handler(writer, zt_data_handler.oqueue),
-        uart_read_handler(reader, zt_data_handler.iqueue),
+    coroutines = [
         zt_data_handler.run(),
         callback_handler(channel_changed_queue, zt_data_handler),
-        pub_read_handler(channel_changed_queue))
+        pub_read_handler(channel_changed_queue)
+    ]
+    try:
+        reader, writer = await serial.open_serial_connection(
+            url=port,
+            baudrate=baudrate,
+        )
+    except SerialException as exc:
+        print(exc)
+    else:
+        global target_attached
+        target_attached = True
+        coroutines.append(uart_write_handler(writer, zt_data_handler.oqueue))
+        coroutines.append(uart_read_handler(reader, zt_data_handler.iqueue))
+    global ZT_MSG
+    ZT_MSG = create_base_message()
+    s = ZT_MSG()
+    print("D:", s._fields_)
+    print("D: RESPONSE size", ctypes.sizeof(s.RESPONSE.value))
+    print("D:", type(s.RESPONSE.value))
+    s.REQUEST.value.payload = 65535
+    print("D: REQUEST payload", s.REQUEST.value.payload)
+    s.REQUEST.size = ctypes.sizeof(s.REQUEST.value)
+    print("D:", s.REQUEST.size)
+    print("D:", (s.RESPONSE.value.g.f0))
+    print("D:", (s.RESPONSE.value.g.f1))
+    print("D:", (s.RESPONSE.value.g.f2))
+    print("D:", (s.RESPONSE.value.g.f3))
+
+    await asyncio.gather(*coroutines)

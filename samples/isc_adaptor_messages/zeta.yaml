@@ -7,8 +7,10 @@ Channels:
       read_only: True
       initial_value: [0xF1, 0xF2, 0xF3, 0xF4]
   - TEST_STRUCT:
-      message: !ref SENSORS_MSG
+      message: !ref RESPONSE
       persistent: true
+  - TEST_STRUCT2:
+      message: !ref REQUEST
         
 Services:
   - CORE:
@@ -18,7 +20,7 @@ Services:
         - !ref TEST_STRUCT
 
 Messages:
-  - SENSORS_MSG:
+  - RESPONSE:
       mtype: struct
       fields:
         - a:
@@ -53,3 +55,8 @@ Messages:
               - f3:
                   mtype: bits
                   size: 8
+  - REQUEST:
+      mtype: struct
+      fields:
+        - payload:
+            mtype: u16

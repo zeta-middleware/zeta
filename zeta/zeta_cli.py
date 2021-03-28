@@ -545,7 +545,7 @@ class ZetaCLI(object):
             with cmakelists.open() as cmakelists_file:
                 for line, line_content in enumerate(
                         cmakelists_file.readlines()):
-                    # @todo: check it with an regex. Maybe the line is comment
+                    #@todo: check it with an regex. Maybe the line is comment
                     # out and it will not be true that it is setup ok
                     if "include(zeta.cmake NO_POLICY_SCOPE)" in line_content:
                         output["cmakelists_output"] = (

@@ -67,8 +67,6 @@ class ZetaMessage:
                                     **sub_fields))
 
     def __repr__(self):
-        # print(self.name)
-        # print(self.fields)
         message_repr = []
         for k, v in self.__dict__.items():
             if k not in ["parent", "size"]:

@@ -227,31 +227,6 @@ uint64_t digest_byte_test()
     SELF_TEST_FINISH();
 }
 
-// static uint8_t SELF_TEST()
-// {
-//     uint8_t test_failed       = 0;
-//     uint64_t self_test_result = digest_byte_test();
-//     size_t written_size       = 0;
-
-//     struct zt_isc_net_pkt pkt = ZT_ISC_NET_PKT_WITH_MSG_SIZE(255);
-//     pkt.header.op             = OP_DEBUG;
-//     pkt.header.has_data       = DATA_AVAILABLE;
-//     if (self_test_result) {
-//         written_size =
-//             snprintk(pkt.message, pkt.message_info.size,
-//                      "Self test failed with code: 0x%08llX\n", self_test_result);
-//         test_failed = 1;
-//     } else {
-//         written_size = snprintk(pkt.message, pkt.message_info.size,
-//                                 "Self test ok. Target ISC running...\n");
-//     }
-//     pkt.message_info.size = written_size;
-//     zt_isc_net_pkt_calc_crc(&pkt);
-//     zt_isc_net_pkt_send(&pkt);
-//     return test_failed;
-// }
-
-
 int zt_serial_ipc_send_update_to_host(zt_channel_e id)
 {
     return k_msgq_put(&__channel_updated_queue, &id, K_NO_WAIT);
@@ -291,14 +266,9 @@ void __zt_serial_ipc_rx_thread(void)
         return;
     }
 
-    // if (SELF_TEST()) {
-    //     return;
-    // }
     __current_rx_thread       = k_current_get();
     char data                 = 0;
     struct zt_isc_net_pkt pkt = ZT_ISC_NET_PKT_WITH_MSG_SIZE(255);
-    // pkt.header.op             = OP_DEBUG;
-    // zt_isc_net_pkt_set_message(&pkt, "hello world", sizeof("hello world!"));
 
     while (1) {
         if (!k_msgq_get(uart_get_input_msgq(), &data, K_FOREVER)) {
@@ -333,17 +303,9 @@ void __zt_serial_ipc_rx_thread(void)
                         if (err) {
                             printk("publishing status %d\n", err);
                         }
-                        // printk("Size = %u, level = %d\n", s->sunlight_level_msg.size,
-                        //        s->sunlight_level_msg.value.level);
-                        // printk("write or update\n");
-                        // for (int i = 0; i < pkt.message_info.size; ++i) {
-                        //     printk("%02X ", pkt.message[i]);
-                        // }
-                        // printk("\n");
                     }
                 }
                 }
-                // zt_isc_net_pkt_send(&pkt);
                 zt_isc_net_pkt_clear(&pkt);
             }
         }
@@ -357,5 +319,3 @@ K_THREAD_DEFINE(zt_serial_ipc_rx_id, ZT_SERIAL_IPC_RX_THREAD_STACK_SIZE,
 K_THREAD_DEFINE(zt_serial_ipc_tx_id, ZT_SERIAL_IPC_TX_THREAD_STACK_SIZE,
                 __zt_serial_ipc_tx_thread, NULL, NULL, NULL, ZT_SERIAL_TX_THREAD_PRIORITY,
                 0, 0);
-// ZT_SERVICE_DECLARE(ISC, ISC_task, ISC_service_callback);
-// ZT_SERVICE_DECLARE(ISC_TX, ISC_TX_task, ISC_TX_service_callback);

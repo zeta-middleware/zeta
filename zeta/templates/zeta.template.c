@@ -128,17 +128,6 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
     if (id < ZT_CHANNEL_COUNT) {
         int error             = 0;
         zt_channel_t *channel = &__zt_channels[id];
-        zt_service_t **pub    = NULL;
-
-        //@TODO: Remover este comentário. Essa modificação deve ser feita separadamente
-        // for (pub = channel->publishers; *pub != NULL; ++pub) {
-        //     if ((&(*pub)->thread) == k_current_get()) {
-        //         break;
-        //     }
-        // }
-        // ZT_CHECK_VAL(*pub, NULL, -EACCES,
-        //              "The current thread has not the permission to change channel
-        //              #%d!", id);
         ZT_CHECK_VAL(channel_data, NULL, -EFAULT,
                      "publish function was called with channel_value paramater as NULL!");
         ZT_CHECK(channel->read_only != 0, -EPERM, "The channel #%d is read only!", id);

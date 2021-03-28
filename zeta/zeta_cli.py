@@ -216,7 +216,7 @@ class ZetaHeader(HeaderFileFactory):
                 messages_structs += ("\n" + message_code_factory.code())
                 messages_structs += textwrap.dedent(f'''
 
-                typedef struct {{
+                typedef struct  __attribute__((__packed__)) {{
                     size_t size;
                     {message_code_factory.mtype_obj.statement} value;
                 }} zt_data_{message.name.lower()}_t;\n''')
@@ -231,7 +231,7 @@ class ZetaHeader(HeaderFileFactory):
                     else "data", ", ..." if message_code_factory.size else ""))
                 messages_structs += textwrap.dedent(f'''
 
-                typedef struct {{
+                typedef struct  __attribute__((__packed__)) {{
                     size_t size;
                     {message_code_factory.mtype_obj.statement} value {"[{}]".format(message_code_factory.size) if message_code_factory.size else ""};
                 }} zt_data_{message.name.lower()}_t;\n''')

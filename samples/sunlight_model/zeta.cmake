@@ -30,7 +30,7 @@ list(APPEND CONF_FILE "${CMAKE_CURRENT_LIST_DIR}/build/zeta/zeta.conf")
 list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/build/zeta/include/")
 list(APPEND SOURCES 
     "${CMAKE_CURRENT_LIST_DIR}/src/core.c"
-    "${CMAKE_CURRENT_LIST_DIR}/src/isc.c"
+    # "${CMAKE_CURRENT_LIST_DIR}/src/isc.c"
 )
 
 set(ZEPHYR_EXTRA_MODULES "${CMAKE_CURRENT_LIST_DIR}/build/zeta")

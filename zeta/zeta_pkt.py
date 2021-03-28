@@ -70,6 +70,11 @@ class IPCPacket(ctypes.LittleEndianStructure):
         self.__data = data
         return self
 
+    def set_data_with_struct(self, struct):
+        struct_data = self.struct_contents(struct)
+        self.set_data(struct_data)
+        return self
+
     def clear_data(self):
         self.header.has_data = self.DATA_UNAVALABLE
         self.data_info.crc = 0
@@ -90,8 +95,12 @@ class IPCPacket(ctypes.LittleEndianStructure):
         return pkt
 
     def to_bytes(self):
-        return (cast(ctypes.byref(self), POINTER(
-            c_char * sizeof(self))).contents.raw) + self.__data
+        if self.header.has_data:
+            return (cast(ctypes.byref(self), POINTER(
+                c_char * sizeof(self))).contents.raw) + self.__data
+        else:
+            return cast(ctypes.byref(self.header),
+                        POINTER(c_char * sizeof(self.header))).contents.raw
 
     def data(self):
         return self.__data
@@ -135,12 +144,10 @@ class IPCPacket(ctypes.LittleEndianStructure):
                               f"    data: {self.__data}"
         return representation + '\n)'
 
+    def struct_contents(self, struct) -> bytes:
+        return cast(ctypes.byref(struct),
+                    POINTER(c_char * sizeof(struct))).contents.raw
 
-def struct_contents(struct):
-    return cast(ctypes.byref(struct),
-                POINTER(c_char * sizeof(struct))).contents.raw
-
-
-def struct_contents_set(struct, raw_data):
-    cast(ctypes.byref(struct),
-         POINTER(c_char * sizeof(struct))).contents.raw = raw_data
+    def struct_contents_set(self, struct, raw_data):
+        cast(ctypes.byref(struct),
+             POINTER(c_char * sizeof(struct))).contents.raw = raw_data

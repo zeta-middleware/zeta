@@ -17,6 +17,7 @@ K_SEM_DEFINE(CORE_callback_sem, 0, 1);
 void CORE_service_callback(zt_channel_e id)
 {
     k_sem_give(&CORE_callback_sem);
+    // printk("%s triggered!\n", __FUNCTION__);
 }
 
 /**

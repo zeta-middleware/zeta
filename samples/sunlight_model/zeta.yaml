@@ -6,6 +6,7 @@ Channels:
       message: !ref SUNLIGHT_LEVEL_MSG
   - LIGHT_STATUS:
       message: !ref LIGHT_STATUS_MSG
+      on_changed: True
         
 Services:
   - CORE:
@@ -15,14 +16,6 @@ Services:
         - !ref LIGHT_STATUS
       sub_channels:
         - !ref SUNLIGHT_LEVEL
-  - ISC:
-      priority: 3
-      stack_size: 2048
-  - ISC_TX:
-      priority: 4
-      stack_size: 1024
-      sub_channels:
-        - !ref LIGHT_STATUS
 Messages:
   - FIRMWARE_VERSION_MSG:
       mtype: struct

@@ -4,7 +4,7 @@ from serial.serialutil import SerialException
 from libscrc import crc8
 
 import ctypes
-from ctypes import c_size_t, POINTER, c_char, sizeof, cast
+from ctypes import c_uint32, POINTER, c_char, sizeof, cast
 
 import zmq
 from zmq.asyncio import Context
@@ -51,7 +51,8 @@ def create_base_message(yamlfile: str = "./zeta.yaml"):
 class IPCChannel():
     def __init__(self, metadata: Channel = None):
         self.metadata = metadata
-        self.data = bytes(self.metadata.size)
+        """ Add 4 because of the size_t field on the union's channel"""
+        self.data = bytes(self.metadata.size + 4)
 
     def __repr__(self):
         channel_repr = []
@@ -65,17 +66,17 @@ class IPCChannel():
                 name=self.metadata.message_obj.name,
                 **self.metadata.message_obj.msg_format)
 
+            type_generated = self.create_struct(self.metadata.message_obj.name,
+                                                message_code_factory)
+            self.metadata.size = ctypes.sizeof(type_generated)
             return (self.metadata.message_obj.name,
                     type(
                         self.metadata.message_obj.name,
                         (ctypes.LittleEndianStructure, ), {
                             "_pack_":
                             1,
-                            "_fields_": [("size", c_size_t),
-                                         ("value",
-                                          self.create_struct(
-                                              self.metadata.message_obj.name,
-                                              message_code_factory))]
+                            "_fields_": [("size", c_uint32),
+                                         ("value", type_generated)]
                         }))
 
     def create_struct(self, name: str, struct: ZetaMessage):
@@ -127,7 +128,9 @@ class IPC:
 
     def create_channels(self):
         for channel in self.__zeta.channels:
-            self.__channels.append(IPCChannel(channel))
+            current_channel = IPCChannel(channel)
+            current_channel.message_union_field()
+            self.__channels.append(current_channel)
         for ipc_channel in self.__channels:
             print(ipc_channel)
 
@@ -171,7 +174,8 @@ class IPC:
         try:
             assert self.__channels[
                 cid].metadata.read_only == 0, "This is a read-only channel"
-            assert self.__channels[cid].metadata.size >= len(
+            '''Add 4 because of the size_t field on the union's channel'''
+            assert self.__channels[cid].metadata.size + 4 >= len(
                 msg
             ), f"Message sent to channel {cid} is too big. {self.__channels[cid].metadata.size}"
             if self.__channels[cid].data != msg:
@@ -217,8 +221,8 @@ class SerialDataHandler:
                 self.__buffer = self.__buffer[2:]
                 if self.__current_pkt.header.has_data != IPCPacket.DATA_UNAVALABLE:
                     self.__state = self.STATE_DIGEST_HEADER_DATA_INFO
-                else:
-                    print("Only a command!")
+                # else:
+                #     print("Only a command!")
         if self.__state == self.STATE_DIGEST_HEADER_DATA_INFO:
             if len(self.__buffer) >= 2:
                 self.__current_pkt.set_data_info_from_bytes(self.__buffer[:2])
@@ -238,6 +242,12 @@ class SerialDataHandler:
                 self.__buffer = bytearray()
 
     async def run(self):
+        await asyncio.sleep(1)
+        pkt = IPCPacket().set_header(
+            channel=0,
+            op=IPCPacket.OP_DEBUG,
+        )
+        await self.send_command(pkt)
         while (True):
             data = await self.iqueue.get()
             # print("digesting data", data)
@@ -331,19 +341,19 @@ async def isc_run(zeta, port: str = "/dev/ttyACM0", baudrate: int = 115200):
         target_attached = True
         coroutines.append(uart_write_handler(writer, zt_data_handler.oqueue))
         coroutines.append(uart_read_handler(reader, zt_data_handler.iqueue))
-    global ZT_MSG
-    ZT_MSG = create_base_message()
-    s = ZT_MSG()
-    print("D:", s._fields_)
-    print("D: RESPONSE size", ctypes.sizeof(s.RESPONSE.value))
-    print("D:", type(s.RESPONSE.value))
-    s.REQUEST.value.payload = 65535
-    print("D: REQUEST payload", s.REQUEST.value.payload)
-    s.REQUEST.size = ctypes.sizeof(s.REQUEST.value)
-    print("D:", s.REQUEST.size)
-    print("D:", (s.RESPONSE.value.g.f0))
-    print("D:", (s.RESPONSE.value.g.f1))
-    print("D:", (s.RESPONSE.value.g.f2))
-    print("D:", (s.RESPONSE.value.g.f3))
+    # global ZT_MSG
+    # ZT_MSG = create_base_message()
+    # s = ZT_MSG()
+    # print("D:", s._fields_)
+    # print("D: RESPONSE size", ctypes.sizeof(s.RESPONSE.value))
+    # print("D:", type(s.RESPONSE.value))
+    # s.REQUEST.value.payload = 65535
+    # print("D: REQUEST payload", s.REQUEST.value.payload)
+    # s.REQUEST.size = ctypes.sizeof(s.REQUEST.value)
+    # print("D:", s.REQUEST.size)
+    # print("D:", (s.RESPONSE.value.g.f0))
+    # print("D:", (s.RESPONSE.value.g.f1))
+    # print("D:", (s.RESPONSE.value.g.f2))
+    # print("D:", (s.RESPONSE.value.g.f3))
 
     await asyncio.gather(*coroutines)

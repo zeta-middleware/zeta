@@ -87,11 +87,11 @@ class ZetaMessage:
         """
         if self.mtype == 'struct':
             self.mtype_obj = MsgType(
-                statement="struct"
+                statement="struct __attribute__((__packet__))"
                 if self.level > 0 else f"struct {self.name}",
                 separator="\n",
                 begin="{\n",
-                end="\n}",
+                end="\n} __attribute__((__packed__))",
                 sizable=f"[{self.size}]" if self.size > 0 else "")
             self.name = "" if self.level == 0 else " " + self.name
         elif self.mtype == 'union':

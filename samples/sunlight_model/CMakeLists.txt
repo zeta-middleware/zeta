@@ -8,8 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 list(APPEND HEADERS "${CMAKE_CURRENT_LIST_DIR}/include/")
 
-list(APPEND SOURCES 
-  "${CMAKE_CURRENT_LIST_DIR}/src/zt_uart.c"
-  )
+# list(APPEND SOURCES 
+#   "${CMAKE_CURRENT_LIST_DIR}/src/zt_uart.c"
+#   )
 include_directories(${HEADERS})
 target_sources(app PRIVATE ${SOURCES})

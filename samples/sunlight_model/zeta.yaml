@@ -16,6 +16,11 @@ Services:
         - !ref LIGHT_STATUS
       sub_channels:
         - !ref SUNLIGHT_LEVEL
+  - LIGHT:
+      priority: 6
+      stack_size: 512
+      sub_channels:
+        - !ref LIGHT_STATUS
 Messages:
   - FIRMWARE_VERSION_MSG:
       mtype: struct

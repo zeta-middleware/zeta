@@ -51,6 +51,7 @@ RUN git clone -q https://github.com/zephyrproject-rtos/zephyr --branch v2.4.0 --
 RUN pip3 install wheel && \
 	pip3 install -r ${ZEPHYR_BASE}/scripts/requirements.txt && \
 	pip3 install sh
+    pip3 install libscrc
 RUN pip3 install --user -U west
 RUN export PATH=~/.local/bin:$PATH
 

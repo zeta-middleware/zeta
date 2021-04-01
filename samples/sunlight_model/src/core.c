@@ -32,7 +32,7 @@ void CORE_task()
         zt_chan_read(ZT_SUNLIGHT_LEVEL_CHANNEL, msg);
         zt_data_t* light_status = ZT_DATA_LIGHT_STATUS_MSG(0);
         light_status->light_status_msg.value.is_on =
-            (msg->sunlight_level_msg.value.level > 0);
+            (msg->sunlight_level_msg.value.level <= 10);
         zt_chan_pub(ZT_LIGHT_STATUS_CHANNEL, light_status);
     }
 }

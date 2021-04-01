@@ -148,6 +148,6 @@ class IPCPacket(ctypes.LittleEndianStructure):
         return cast(ctypes.byref(struct),
                     POINTER(c_char * sizeof(struct))).contents.raw
 
-    def struct_contents_set(self, struct, raw_data):
+    def struct_contents_set(self, struct):
         cast(ctypes.byref(struct),
-             POINTER(c_char * sizeof(struct))).contents.raw = raw_data
+             POINTER(c_char * sizeof(struct))).contents.raw = self.__data

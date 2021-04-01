@@ -239,7 +239,7 @@ void __zt_serial_ipc_tx_thread(void)
         if (!k_msgq_get(&__channel_updated_queue, &id, K_FOREVER)) {
             // printk("sending to host: %d\n", id);
             struct zt_isc_net_pkt pkt   = ZT_ISC_NET_PKT_WITH_MSG_SIZE(255);
-            pkt.header.op               = OP_UPDATE;
+            pkt.header.op               = OP_WRITE;
             pkt.header.channel          = id;
             zt_data_t *channel_message  = ZT_DATA_BYTES(255, 0);
             channel_message->bytes.size = zt_channel_size(id, NULL);

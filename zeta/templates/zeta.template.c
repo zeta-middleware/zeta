@@ -137,7 +137,7 @@ int zt_chan_pub(zt_channel_e id, zt_data_t *channel_data)
                  "Could not publish the channel. Channel is busy");
 
 #ifdef CONFIG_ZETA_FORWARDER
-        zt_isc_packet_t packet = {.service_id = (*pub)->id,
+        zt_isc_packet_t packet = {.service_id = 0,
                                   .channel_id = channel->id,
                                   .op         = ZT_FWD_OP_PUBLISH,
                                   .size       = channel->size};

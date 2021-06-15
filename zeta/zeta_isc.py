@@ -341,19 +341,5 @@ async def isc_run(zeta, port: str = "/dev/ttyACM0", baudrate: int = 115200):
         target_attached = True
         coroutines.append(uart_write_handler(writer, zt_data_handler.oqueue))
         coroutines.append(uart_read_handler(reader, zt_data_handler.iqueue))
-    # global ZT_MSG
-    # ZT_MSG = create_base_message()
-    # s = ZT_MSG()
-    # print("D:", s._fields_)
-    # print("D: RESPONSE size", ctypes.sizeof(s.RESPONSE.value))
-    # print("D:", type(s.RESPONSE.value))
-    # s.REQUEST.value.payload = 65535
-    # print("D: REQUEST payload", s.REQUEST.value.payload)
-    # s.REQUEST.size = ctypes.sizeof(s.REQUEST.value)
-    # print("D:", s.REQUEST.size)
-    # print("D:", (s.RESPONSE.value.g.f0))
-    # print("D:", (s.RESPONSE.value.g.f1))
-    # print("D:", (s.RESPONSE.value.g.f2))
-    # print("D:", (s.RESPONSE.value.g.f3))
 
     await asyncio.gather(*coroutines)

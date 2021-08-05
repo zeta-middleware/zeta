@@ -1,0 +1,13 @@
+/ {
+leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+			label = "Blue LED";
+		};
+	};
+};
+
+&spi1 {
+     status="disabled";
+};

@@ -1,8 +1,10 @@
 import asyncio
+import sys
+
 import zmq
-from zmq.asyncio import Context
-from colored import fg, bg, attr
+from colored import attr, bg, fg
 from zeta import IPCPacket, create_base_message
+from zmq.asyncio import Context
 
 context = Context.instance()
 
@@ -35,4 +37,4 @@ async def sub_handler():
 try:
     asyncio.run(sub_handler())
 except KeyboardInterrupt:
-    exit(1)
+    sys.exit(1)

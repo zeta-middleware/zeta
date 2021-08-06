@@ -24,11 +24,13 @@ async def sub_handler():
         pkt.struct_contents_set(msg)
         if msg.LIGHT_STATUS_MSG.value.is_on:
             COUNTER += 1
-        print("test")
+        print("pub")
+        if COUNTER >= 3:
+            raise GeneratorExit(int(COUNTER == 0))
 
 
 async def monitor():
-    await asyncio.sleep(5)
+    await asyncio.sleep(60)
     if COUNTER > 0:
         print("Test pass!")
     else:

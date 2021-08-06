@@ -1,3 +1,4 @@
 #!/bin/sh -l
 
- sh zeta-update-cli && sh zeta-mid-tests && python3 zeta-cli-tests && python3 zeta-sample-tests
+sh zeta-update-cli && sh zeta-mid-tests && python3 zeta-cli-tests && python3 zeta-sample-tests && sh zeta-isc-tests 
+

@@ -1,9 +1,10 @@
 import asyncio
-import zmq
-from zmq.asyncio import Context
 import ctypes
-from colored import fg, bg, attr
+
+import zmq
+from colored import attr, bg, fg
 from zeta import IPCPacket, create_base_message
+from zmq.asyncio import Context
 
 context = Context.instance()
 
@@ -56,9 +57,6 @@ async def pub_handler(status_queue):
 
 
 async def main():
-    # global ZT_MSG
-    # ZT_MSG = create_base_message("./zeta.yaml")
-    # s = ZT_MSG()
     status_queue = asyncio.Queue()
     await asyncio.gather(pub_handler(status_queue), sub_handler(status_queue))
 

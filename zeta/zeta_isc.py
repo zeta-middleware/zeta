@@ -1,16 +1,16 @@
 import asyncio
-import serial_asyncio as serial
-from serial.serialutil import SerialException
-from libscrc import crc8
-
 import ctypes
-from ctypes import c_uint32, POINTER, c_char, sizeof, cast
+from ctypes import POINTER, c_char, c_uint32, cast, sizeof
 
+import serial_asyncio as serial
 import zmq
+from libscrc import crc8
+from serial.serialutil import SerialException
 from zmq.asyncio import Context
+
+from .messages import ZetaMessage
 from .zeta import Channel
 from .zeta_pkt import IPCPacket
-from .messages import ZetaMessage
 
 ipc = None
 context = Context.instance()
@@ -31,6 +31,7 @@ def repr(self):
 
 def create_base_message(yamlfile: str = "./zeta.yaml"):
     import os
+
     import zeta
     if os.path.exists(yamlfile):
         with open(yamlfile, 'r') as f:
@@ -214,32 +215,31 @@ class SerialDataHandler:
             await self.oqueue.put(cmd.to_bytes())
 
     async def digest(self):
-        if self.__state == self.STATE_DIGEST_HEADER_OP:
-            if len(self.__buffer) >= 2:
-                self.__current_pkt = IPCPacket()
-                self.__current_pkt.set_header_from_bytes(self.__buffer[:2])
-                self.__buffer = self.__buffer[2:]
-                if self.__current_pkt.header.has_data != IPCPacket.DATA_UNAVALABLE:
-                    self.__state = self.STATE_DIGEST_HEADER_DATA_INFO
-                # else:
-                #     print("Only a command!")
-        if self.__state == self.STATE_DIGEST_HEADER_DATA_INFO:
-            if len(self.__buffer) >= 2:
-                self.__current_pkt.set_data_info_from_bytes(self.__buffer[:2])
-                self.__buffer = self.__buffer[2:]
-                self.__state = self.STATE_DIGEST_BODY
-        if self.__state == self.STATE_DIGEST_BODY:
-            if len(self.__buffer) == self.__current_pkt.data_info.size:
-                if crc8(self.__buffer) == self.__current_pkt.data_info.crc:
-                    self.__current_pkt.set_data(bytes(self.__buffer))
-                    print("Pkt received by uart: {}".format(
-                        self.__current_pkt))
-                    await ipc.digest_packet(self.__current_pkt)
-                    self.__current_pkt = None
-                else:
-                    print("CRC error, pkt discarded")
-                self.__state = self.STATE_DIGEST_HEADER_OP
-                self.__buffer = bytearray()
+        if self.__state == self.STATE_DIGEST_HEADER_OP and len(
+                self.__buffer) >= 2:
+            self.__current_pkt = IPCPacket()
+            self.__current_pkt.set_header_from_bytes(self.__buffer[:2])
+            self.__buffer = self.__buffer[2:]
+            if self.__current_pkt.header.has_data != IPCPacket.DATA_UNAVALABLE:
+                self.__state = self.STATE_DIGEST_HEADER_DATA_INFO
+            # else:
+            #     print("Only a command!")
+        if self.__state == self.STATE_DIGEST_HEADER_DATA_INFO and len(
+                self.__buffer) >= 2:
+            self.__current_pkt.set_data_info_from_bytes(self.__buffer[:2])
+            self.__buffer = self.__buffer[2:]
+            self.__state = self.STATE_DIGEST_BODY
+        if self.__state == self.STATE_DIGEST_BODY and len(
+                self.__buffer) == self.__current_pkt.data_info.size:
+            if crc8(self.__buffer) == self.__current_pkt.data_info.crc:
+                self.__current_pkt.set_data(bytes(self.__buffer))
+                print("Pkt received by uart: {}".format(self.__current_pkt))
+                await ipc.digest_packet(self.__current_pkt)
+                self.__current_pkt = None
+            else:
+                print("CRC error, pkt discarded")
+            self.__state = self.STATE_DIGEST_HEADER_OP
+            self.__buffer = bytearray()
 
     async def run(self):
         await asyncio.sleep(1)

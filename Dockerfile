@@ -76,9 +76,10 @@ ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
 # Zeta IPC host dependencies 
-RUN pip3 install pip install pyserial-asyncio
+RUN pip3 install pyserial-asyncio
 RUN pip3 install pyzmq
-
+RUN pip3 install psutil 
+RUN pip3 install colored
 # Going to workdirectory
 WORKDIR ${APP}
 COPY zeta-tests /zeta-tests

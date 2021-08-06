@@ -1,0 +1,3 @@
+#!/bin/sh -l
+
+cd tests/ipc_test && python3 exec_test.py && cd -

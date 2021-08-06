@@ -48,7 +48,6 @@ async def pub_handler_ok():
 async def main():
     global ZT_MSG
     ZT_MSG = create_base_message("./zeta.yaml")
-    # s = ZT_MSG()
     await asyncio.gather(pub_handler_ok())
 
 

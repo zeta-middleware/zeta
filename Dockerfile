@@ -82,7 +82,7 @@ RUN pip3 install psutil
 RUN pip3 install colored
 # Going to workdirectory
 WORKDIR ${APP}
-COPY zeta-tests /zeta-tests
 COPY . .
+RUN python3 pip_cli -i
 
-CMD ["/zeta-tests"]
+CMD ["./zeta-tests"]

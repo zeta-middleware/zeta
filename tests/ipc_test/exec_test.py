@@ -18,7 +18,7 @@ def kill(proc_pid):
     process.kill()
 
 
-run("echo ok && west build -b hifive1_revb".split())
+run("west build -b hifive1_revb", shell=True)
 
 with Popen(["renode", "renode_setup.resc", "--disable-xwt"]) as renode:
     sleep(10)

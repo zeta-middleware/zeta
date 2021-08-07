@@ -14,9 +14,8 @@ config ZETA_STORAGE
        bool "Enable zeta storage support"
        select FLASH
        select FLASH_PAGE_LAYOUT
-       select FLASH_MAP
+       select NVS
        select MPU_ALLOW_FLASH_WRITE
-       select NVS  
 
 config ZETA_FORWARDER
        bool "Enable the zeta forwarder thread"

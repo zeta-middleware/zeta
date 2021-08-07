@@ -1,5 +1,7 @@
 Config:
   sector_count: 4
+  storage_partition: 'storage'
+  storage_period: 17
 
 Channels:
   - FIRMWARE_VERSION:

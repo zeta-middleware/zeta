@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.13.1)
 
-set(BOARD_ROOT ${CMAKE_SOURCE_DIR})
-
 include(zeta.cmake NO_POLICY_SCOPE)
 
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})

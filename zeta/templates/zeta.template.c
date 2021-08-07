@@ -221,6 +221,7 @@ static void __zt_monitor_thread(void)
 
 #ifdef CONFIG_ZETA_STORAGE
 
+
 static void __zt_recover_data_from_flash(void)
 {
     int rc = 0;
@@ -273,18 +274,29 @@ static void __zt_persist_data_on_flash(void)
     }
 }
 
+#define STORAGE_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(NVS_STORAGE_PARTITION)
+#define FLASH_NODE DT_MTD_FROM_FIXED_PARTITION(STORAGE_NODE)
+
+
 static void __zt_storage_thread(void)
 {
     struct flash_pages_info info;
+
+    const struct device *flash_dev = DEVICE_DT_GET(FLASH_NODE);
+    while (!device_is_ready(flash_dev)) {
+        printk("Flash device %s is not ready\n", flash_dev->name);
+        // return;
+        k_msleep(1000);
+    }
+
     zt_fs.offset = FLASH_AREA_OFFSET(NVS_STORAGE_PARTITION);
-    int rc       = flash_get_page_info_by_offs(
-        device_get_binding(DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL), zt_fs.offset, &info);
+    int rc       = flash_get_page_info_by_offs(flash_dev, zt_fs.offset, &info);
     if (rc) {
         printk("Unable to get page info");
     }
     zt_fs.sector_size  = info.size;
     zt_fs.sector_count = NVS_SECTOR_COUNT;
-    rc                 = nvs_init(&zt_fs, DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
+    rc                 = nvs_init(&zt_fs, flash_dev->name);
     if (rc) {
         LOG_INF("Flash Init failed");
     } else {

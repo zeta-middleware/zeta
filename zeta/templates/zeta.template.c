@@ -285,8 +285,7 @@ static void __zt_storage_thread(void)
     const struct device *flash_dev = DEVICE_DT_GET(FLASH_NODE);
     while (!device_is_ready(flash_dev)) {
         printk("Flash device %s is not ready\n", flash_dev->name);
-        // return;
-        k_msleep(1000);
+        return;
     }
 
     zt_fs.offset = FLASH_AREA_OFFSET(NVS_STORAGE_PARTITION);

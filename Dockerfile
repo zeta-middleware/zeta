@@ -56,7 +56,7 @@ RUN rm "renode_1.12.0_amd64.deb"
 # Getting zephyr and creating the environment 
 #TODO: Ponto de falha por sempre utilizar o requirements do master. Isso foi feito pois em versões antigas do zephyr os requirements estavam quebrados.
 # RUN git clone -q -b v2.3.0-rc1 --single-branch https://github.com/zephyrproject-rtos/zephyr ${ZEPHYR_BASE}
-RUN git clone -q https://github.com/zephyrproject-rtos/zephyr --branch v2.4.0 --single-branch ${ZEPHYR_BASE}
+RUN git clone -q https://github.com/zephyrproject-rtos/zephyr --branch v2.6.0 --single-branch ${ZEPHYR_BASE}
 
 RUN pip3 install wheel 
 RUN pip3 install sh 

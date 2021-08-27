@@ -28,5 +28,6 @@ setuptools.setup(
     entry_points={"console_scripts": ["zeta = zeta.zeta_cli:run"]},
     include_package_data=True,
     install_requires=[
-        "pyyaml", "pyserial", "pyserial-asyncio", "hexdump", "urwid"
+        "pyyaml", "pyserial", "pyserial-asyncio", "hexdump", "urwid",
+        "libscrc", "pyzmq"
     ])

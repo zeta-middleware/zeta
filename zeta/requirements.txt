@@ -1,0 +1,6 @@
+pyserial_asyncio==0.5
+urwid==2.1.2
+hexdump==3.3
+libscrc==1.7.1
+pyserial==3.5
+pyzmq==22.2.1

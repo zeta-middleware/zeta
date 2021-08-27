@@ -297,13 +297,7 @@ void __zt_serial_ipc_rx_thread(void)
 
                 case OP_WRITE:
                 case OP_UPDATE: {
-                    if (pkt.header.channel == ZT_SUNLIGHT_LEVEL_CHANNEL) {
-                        zt_data_t *s = (zt_data_t *) pkt.message;
-                        int err      = zt_chan_pub(pkt.header.channel, s);
-                        if (err) {
-                            printk("publishing status %d\n", err);
-                        }
-                    }
+                    zt_chan_pub(pkt.header.channel, (zt_data_t *) pkt.message);
                 }
                 }
                 zt_isc_net_pkt_clear(&pkt);
